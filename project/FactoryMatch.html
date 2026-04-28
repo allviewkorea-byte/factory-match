@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>공장매칭 · FactoryMatch</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
+<style>
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/PretendardVariable.woff2') format('woff2-variations');
+}
+</style>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="pages.jsx"></script>
+<script type="text/babel" src="searchux.jsx"></script>
+<script type="text/babel" src="auth.jsx"></script>
+<script type="text/babel" src="account.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "density": "comfortable",
+  "heroVariant": "split"
+}/*EDITMODE-END*/;
+
+// 인증 / 메인 라우트 화이트리스트
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'search', 'mypage', 'admin'];
+const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // 로그인 상태 (localStorage 영속)
+  const [authed, setAuthed] = useState(() => {
+    try { return localStorage.getItem('fm-authed') === '1'; } catch { return false; }
+  });
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [profile, setProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fm-profile') || 'null'); }
+    catch { return null; }
+  });
+
+  const [route, setRoute] = useState(() => {
+    const h = (window.location.hash || '').replace('#', '');
+    if (AUTH_ROUTES.includes(h)) return h;
+    if (APP_ROUTES.includes(h)) return h;
+    // 첫 방문 — 로그아웃 상태면 랜딩
+    try {
+      return localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing';
+    } catch { return 'landing'; }
+  });
+  const [factoryId, setFactoryId] = useState(null);
+  const [rfqIds, setRfqIds] = useState(['f1', 'f2']);
+  const [searchQ, setSearchQ] = useState('');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-density', tweaks.density);
+  }, [tweaks.density]);
+
+  // 라우트 변경 시 hash 동기화
+  useEffect(() => {
+    const target = route === 'home' ? '' : route;
+    if ((window.location.hash || '').replace('#', '') !== target) {
+      window.location.hash = target;
+    }
+  }, [route]);
+
+  // 외부 nav 이벤트 (auth 로고 클릭 등)
+  useEffect(() => {
+    const h = (e) => nav(e.detail);
+    window.addEventListener('auth-nav', h);
+    return () => window.removeEventListener('auth-nav', h);
+  }, []);
+
+  const nav = (r) => {
+    setRoute(r);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 인증 핸들러
+  const handleAuthSubmit = ({ email, google }) => {
+    setPendingEmail(email);
+    if (google) {
+      // 구글 로그인은 인증 단계 스킵 → 온보딩 (신규) or 메인 (기존)
+      const existed = !!profile;
+      if (existed) {
+        try { localStorage.setItem('fm-authed', '1'); } catch {}
+        setAuthed(true);
+        nav('home');
+      } else {
+        nav('onboarding');
+      }
+      return;
+    }
+    nav('verify');
+  };
+  const handleVerifyComplete = () => nav('onboarding');
+  const handleOnboardingComplete = (data) => {
+    setProfile(data);
+    try {
+      localStorage.setItem('fm-profile', JSON.stringify(data || {}));
+    } catch {}
+    nav('welcome');
+  };
+  const handleEnterApp = () => {
+    try { localStorage.setItem('fm-authed', '1'); } catch {}
+    setAuthed(true);
+    nav('home');
+  };
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('fm-authed');
+      localStorage.removeItem('fm-profile');
+    } catch {}
+    setAuthed(false);
+    setProfile(null);
+    nav('landing');
+  };
+  const [detailFrom, setDetailFrom] = useState('list');   // 상세 진입 직전 라우트
+  const [chatTarget, setChatTarget] = useState(null);     // 채팅 상대 제조사 id
+
+  const openFactory = (id, fromRoute) => {
+    setFactoryId(id);
+    setDetailFrom(fromRoute || (APP_ROUTES.includes(route) ? route : 'list'));
+    setRoute('detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const openChat = (factoryId) => {
+    setChatTarget(factoryId || null);
+    setRoute('chat');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const addRFQ = (id) => {
+    setRfqIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const handleSearch = (q) => {
+    setSearchQ(q);
+    setRoute('list');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 인증 라우트들 — Header 없이 풀스크린
+  if (AUTH_ROUTES.includes(route)) {
+    return (
+      <>
+        {route === 'landing' && <LandingPage onNav={nav}/>}
+        {route === 'login' && <AuthFormPage mode="login" onNav={nav} onSubmit={handleAuthSubmit}/>}
+        {route === 'signup' && <AuthFormPage mode="signup" onNav={nav} onSubmit={handleAuthSubmit}/>}
+        {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
+        {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
+        {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}
+      </>
+    );
+  }
+
+  // 메인 앱 — 미인증이면 랜딩으로 강제
+  if (!authed && route !== 'home') {
+    // 첫 hash 진입을 무시하고 랜딩으로
+  }
+
+  return (
+    <>
+      <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed}/>
+      {route === 'home' && (
+        <HomePage
+          onNav={nav}
+          onOpenFactory={(id) => openFactory(id, 'home')}
+          onSearch={handleSearch}
+          density={tweaks.density}
+          heroVariant={tweaks.heroVariant}
+        />
+      )}
+      {route === 'list' && (
+        <ListPage
+          onOpenFactory={(id) => openFactory(id, 'list')}
+          onAddRFQ={addRFQ}
+          rfqIds={rfqIds}
+          density={tweaks.density}
+          initialQuery={searchQ}
+        />
+      )}
+      {route === 'detail' && (
+        <DetailPage
+          factoryId={factoryId}
+          onBack={() => nav(detailFrom || 'list')}
+          backLabel={
+            detailFrom === 'rfq' ? '견적 요청서로 돌아가기'
+            : detailFrom === 'home' ? '홈으로 돌아가기'
+            : '제조사 목록으로'
+          }
+          onAddRFQ={addRFQ}
+          rfqIds={rfqIds}
+          onChat={openChat}
+        />
+      )}
+      {route === 'rfq' && (
+        <RfqPage
+          rfqIds={rfqIds}
+          setRfqIds={setRfqIds}
+          onOpenFactory={(id) => openFactory(id, 'rfq')}
+          onNav={nav}
+        />
+      )}
+      {route === 'search' && (
+        <SearchUXPage/>
+      )}
+      {route === 'chat' && (
+        <ChatPage
+          initialFactoryId={chatTarget}
+          onBack={() => nav('list')}
+          onOpenFactory={(id) => openFactory(id, 'chat')}
+        />
+      )}
+      {route === 'mypage' && (
+        <MyPage
+          profile={profile}
+          onSwitchRole={(r) => setProfile(p => ({ ...(p || {}), role: r }))}
+          onOpenFactory={(id) => openFactory(id, 'mypage')}
+          onNav={nav}
+        />
+      )}
+      {route === 'admin' && (
+        <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
+      )}
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="밀도 (Density)">
+          <TweakRadio
+            value={tweaks.density}
+            onChange={(v) => setTweak('density', v)}
+            options={[
+              { value: 'comfortable', label: 'Comfortable' },
+              { value: 'compact', label: 'Compact' },
+            ]}
+          />
+        </TweakSection>
+        <TweakSection title="히어로 레이아웃">
+          <TweakRadio
+            value={tweaks.heroVariant}
+            onChange={(v) => setTweak('heroVariant', v)}
+            options={[
+              { value: 'split', label: 'Default' },
+              { value: 'centered', label: 'Centered' },
+            ]}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('app'));
+root.render(<App/>);
+</script>
+</body>
+</html>
