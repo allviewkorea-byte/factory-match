@@ -1526,6 +1526,10 @@ function SearchUXPage() {
   const [focused, setFocused] = useStateSX(false);
   const [sort, setSort] = useStateSX('rel');
 
+  const [aiResult, setAiResult] = useStateSX(null);
+  const [loading, setLoading] = useStateSX(false);
+  const [aiError, setAiError] = useStateSX(null);
+
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];
     if (sort === 'popular') arr.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
@@ -1533,6 +1537,39 @@ function SearchUXPage() {
     else arr.sort((a, b) => b.rel - a.rel);
     return arr;
   }, [sort]);
+
+  async function handleSearch() {
+    if (!query.trim()) return;
+    setLoading(true);
+    setAiError(null);
+    setAiResult(null);
+    try {
+      const resp = await fetch('/.netlify/functions/ai-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (!resp.ok) throw new Error('API error');
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      data.topCategories = data.topCategories.map((c, i) => ({
+        glyph: 'metal',
+        count: 0,
+        avgLead: '협의',
+        avgPrice: '협의',
+        ...c,
+        id: c.id || `ai-${i}`,
+      }));
+      setAiResult(data);
+    } catch (e) {
+      setAiError('AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const rec3 = aiResult ? aiResult.topCategories : SX_RECOMMEND_3;
+  const topMatch = rec3[0] ? rec3[0].match : 92;
 
   return (
     <main className="search-page">
@@ -1556,6 +1593,7 @@ function SearchUXPage() {
             placeholder="제품·키워드 입력 (예: 음료자판기)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
           />
@@ -1576,11 +1614,48 @@ function SearchUXPage() {
             <span className="sx-toggle-hint">{smart ? 'AI가 3개만 추출' : '전체 리스트 탐색'}</span>
           </span>
         </label>
-        <button className="sx-search-btn">
+        <button className="sx-search-btn" onClick={handleSearch} disabled={loading}>
           <Icon name="search" size={15} stroke={2.4}/>
-          검색
+          {loading ? '분석 중…' : '검색'}
         </button>
       </div>
+
+      {loading && (
+        <div className="sx-ai-loading">
+          <span className="sx-mode-pulse"/>
+          Claude가 공급망을 분석하고 있습니다...
+        </div>
+      )}
+
+      {aiError && (
+        <div className="sx-ai-error">{aiError}</div>
+      )}
+
+      {aiResult && (
+        <div className="sx-supply-chain">
+          <div className="sx-supply-header">
+            <Icon name="sparkle" size={13} stroke={2.4}/>
+            공급망 분석
+            <span className="sx-supply-intent">· {aiResult.intent}</span>
+          </div>
+          <div className="sx-supply-steps">
+            {aiResult.supplyChain.map((s, i) => (
+              <React.Fragment key={i}>
+                <div className="sx-supply-step">
+                  <div className="sx-supply-step-num">{s.step}</div>
+                  <div className="sx-supply-step-label">{s.label}</div>
+                  <div className="sx-supply-step-detail">{s.detail}</div>
+                </div>
+                {i < aiResult.supplyChain.length - 1 && (
+                  <div className="sx-supply-arrow">
+                    <Icon name="chevron_right" size={16} stroke={2}/>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="sx-related">
         <span className="sx-related-k">
@@ -1607,11 +1682,11 @@ function SearchUXPage() {
               </div>
               <div>
                 <strong>"{query}"</strong>에 가장 적합한 <strong>3개 카테고리</strong>를 추출했습니다 ·
-                매칭률·거래량·리드타임 종합 분석
+                {aiResult ? 'Claude 실시간 분석 완료' : '매칭률·거래량·리드타임 종합 분석'}
               </div>
               <div className="sx-mode-banner-meta">
                 <span className="sx-mode-pulse"/>
-                AI 분석 0.4초
+                {aiResult ? 'Claude AI' : 'AI 분석 0.4초'}
               </div>
             </div>
 
@@ -1623,15 +1698,15 @@ function SearchUXPage() {
               <div className="sx-rec-h-rank">
                 매칭률
                 <div className="sx-rec-h-bar">
-                  <div className="sx-rec-h-bar-fill" style={{ width: '92%' }}/>
+                  <div className="sx-rec-h-bar-fill" style={{ width: `${topMatch}%` }}/>
                 </div>
-                <strong>92%</strong>
+                <strong>{topMatch}%</strong>
               </div>
             </div>
 
             <div className="sx-rec-grid">
-              {SX_RECOMMEND_3.map((r, i) => (
-                <button key={r.id} className="sx-rec">
+              {rec3.map((r, i) => (
+                <button key={r.id || i} className="sx-rec">
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
                     <SXGlyph kind={r.glyph}/>

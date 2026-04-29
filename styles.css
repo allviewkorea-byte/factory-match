@@ -4708,3 +4708,77 @@ a { color: inherit; text-decoration: none; }
 }
 @keyframes _spin { to { transform: rotate(360deg); } }
 
+/* ── AI 공급망 분석 ── */
+.sx-ai-loading {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px; margin-bottom: 16px;
+  background: oklch(0.97 0.02 250);
+  border: 1.5px solid oklch(0.86 0.08 250);
+  border-radius: 12px;
+  font-size: 13px; font-weight: 500;
+  color: oklch(0.55 0.15 250);
+}
+.sx-ai-error {
+  padding: 12px 18px; margin-bottom: 16px;
+  background: #fff1f1;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  font-size: 13px; color: #ef4444;
+}
+.sx-search-btn:disabled {
+  opacity: 0.6; cursor: not-allowed;
+}
+.sx-supply-chain {
+  background: oklch(0.97 0.02 250);
+  border: 1.5px solid oklch(0.86 0.08 250);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+.sx-supply-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  color: oklch(0.55 0.15 250);
+  margin-bottom: 14px;
+}
+.sx-supply-intent {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.sx-supply-steps {
+  display: flex; align-items: flex-start; gap: 6px;
+  flex-wrap: wrap;
+}
+.sx-supply-step {
+  background: #fff;
+  border: 1.5px solid oklch(0.86 0.08 250);
+  border-radius: 10px;
+  padding: 10px 13px;
+  min-width: 80px; max-width: 130px;
+  text-align: center;
+  flex: 1;
+}
+.sx-supply-step-num {
+  width: 18px; height: 18px;
+  background: oklch(0.55 0.15 250);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 6px;
+}
+.sx-supply-step-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--ink-1);
+  margin-bottom: 3px;
+}
+.sx-supply-step-detail {
+  font-size: 10px; color: var(--ink-4);
+  line-height: 1.4; word-break: keep-all;
+}
+.sx-supply-arrow {
+  color: oklch(0.60 0.14 250);
+  flex-shrink: 0;
+  margin-top: 22px;
+}
+
