@@ -92,10 +92,6 @@ const Header = ({ route, onNav, density, onLogout, authed }) => {
           </nav>
         </div>
         <div className="hdr-right">
-          <button className="hdr-icon-btn" aria-label="알림">
-            <Icon name="bell" size={18}/>
-            <span className="hdr-dot"/>
-          </button>
           <div className="hdr-divider"/>
           <button
             className={'hdr-icon-btn hdr-admin' + (route === 'admin' ? ' is-active' : '')}
@@ -224,12 +220,12 @@ const ManufacturerCard = ({ f, onOpen, onSelect, selected, density, compact = fa
           <div className="stat-sep"/>
           <div className="stat">
             <span className="stat-k">리드타임</span>
-            <span className="stat-v">{f.leadDays}일</span>
+            <span className="stat-v">{f.leadDays > 0 ? f.leadDays + '일' : '−'}</span>
           </div>
           <div className="stat-sep"/>
           <div className="stat">
             <span className="stat-k">응답</span>
-            <span className="stat-v">{f.responseHr}h</span>
+            <span className="stat-v">{f.responseHr > 0 ? f.responseHr + 'h' : '−'}</span>
           </div>
           <div className="stat-sep"/>
           <div className="stat">
@@ -895,10 +891,14 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 {[
                   { id: 'all', label: '전국' },
                   { id: 'gyeonggi', label: '수도권 (서울·경기·인천)' },
-                  { id: 'incheon', label: '인천' },
-                  { id: 'gyeongnam', label: '경상남도' },
                   { id: 'busan', label: '부산' },
+                  { id: 'gyeongnam', label: '경남' },
                   { id: 'ulsan', label: '울산' },
+                  { id: 'daegu', label: '대구·경북' },
+                  { id: 'chungcheong', label: '충청 (충남·충북·대전·세종)' },
+                  { id: 'jeonla', label: '광주·전남·전북' },
+                  { id: 'gangwon', label: '강원' },
+                  { id: 'jeju', label: '제주' },
                 ].map(r => (
                   <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
                     <input
@@ -1050,9 +1050,6 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               <div className="map-side-body">
                 <div className="map-side-row">
                   <h3>{selectedFactory.name}</h3>
-                  <button className="map-side-close" onClick={() => setSelected(null)}>
-                    <Icon name="close" size={14} stroke={2}/>
-                  </button>
                   <div className="mcard-rating">
                     <Icon name="star" size={11} stroke={2}/>
                     <strong>{selectedFactory.rating}</strong>
@@ -1065,8 +1062,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 <p className="map-side-desc">{selectedFactory.summary}</p>
                 <div className="map-side-stats">
                   <div><span>MOQ</span><strong>{selectedFactory.moq.toLocaleString()} {selectedFactory.moqUnit || '피스'}</strong></div>
-                  <div><span>리드타임</span><strong>{selectedFactory.leadDays}일</strong></div>
-                  <div><span>응답</span><strong>{selectedFactory.responseHr}h</strong></div>
+                  <div><span>리드타임</span><strong>{selectedFactory.leadDays > 0 ? selectedFactory.leadDays + '일' : '−'}</strong></div>
+                  <div><span>응답</span><strong>{selectedFactory.responseHr > 0 ? selectedFactory.responseHr + 'h' : '−'}</strong></div>
                 </div>
                 <div className="map-side-actions">
                   <button className="btn btn-secondary" onClick={() => onOpenFactory(selectedFactory.id)}>
@@ -1612,7 +1609,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
                 </button>
               ) : (
-                <button className="btn btn-primary btn-send">
+                <button className="btn btn-primary btn-send" onClick={() => { setRfqIds([]); onNav('home'); }}>
                   <Icon name="check" size={14} stroke={2.4}/> {selected.length}개사에 발송
                 </button>
               )}
@@ -1707,6 +1704,7 @@ function scoreFactory(factory, searchTerms) {
   (st.keywords || []).forEach(kw => {
     const k = kw.toLowerCase();
     if ((factory.summary || '').toLowerCase().includes(k) || (factory.name || '').includes(kw)) score += 8;
+    if ((factory.products || []).some(p => (p || '').toLowerCase().includes(k))) score += 10;
   });
   return score;
 }
@@ -1753,39 +1751,55 @@ function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [] }) {
       }));
       setAiResult(data);
 
-      // Load factories and score them against AI search terms
-      const st = data.searchTerms || {};
-      let allFactories = [];
-      if (window._sb) {
-        try {
-          const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
-          if (rows && rows.length) allFactories = rows;
-        } catch (_) {}
+      // Use server-matched factories from Netlify function if available
+      if (data.matchedFactories && data.matchedFactories.length > 0) {
+        let allFactories = [];
+        if (window._sb) {
+          try {
+            const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
+            if (rows && rows.length) allFactories = rows;
+          } catch (_) {}
+        }
+        if (!allFactories.length) allFactories = (window.MFG_DATA || {}).FACTORIES || [];
+
+        const byId = {};
+        allFactories.forEach(f => { byId[f.id] = f; });
+        const scored = data.matchedFactories
+          .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
+          .filter(Boolean);
+        setMatchedFactories(scored);
+      } else {
+        // Fallback: score locally
+        const st = data.searchTerms || {};
+        let allFactories = [];
+        if (window._sb) {
+          try {
+            const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
+            if (rows && rows.length) allFactories = rows;
+          } catch (_) {}
+        }
+        if (!allFactories.length) allFactories = (window.MFG_DATA || {}).FACTORIES || [];
+
+        const bestPossible =
+          (st.industries || []).length * 30 +
+          (st.processes || []).length * 25 +
+          (st.materials || []).length * 15 +
+          (st.keywords || []).length * 18;
+
+        const scored = allFactories
+          .filter(f => !f.hidden)
+          .map(f => ({ ...f, _score: scoreFactory(f, st) }))
+          .filter(f => f._score > 0)
+          .sort((a, b) => b._score - a._score)
+          .slice(0, 6)
+          .map(f => ({
+            ...f,
+            _matchPct: bestPossible > 0
+              ? Math.min(98, Math.max(38, Math.round((f._score / bestPossible) * 100)))
+              : 60,
+          }));
+        setMatchedFactories(scored);
       }
-      if (!allFactories.length) {
-        allFactories = (window.MFG_DATA || {}).FACTORIES || [];
-      }
-
-      const bestPossible =
-        (st.industries || []).length * 30 +
-        (st.processes || []).length * 25 +
-        (st.materials || []).length * 15 +
-        (st.keywords || []).length * 8;
-
-      const scored = allFactories
-        .filter(f => !f.hidden)
-        .map(f => ({ ...f, _score: scoreFactory(f, st) }))
-        .filter(f => f._score > 0)
-        .sort((a, b) => b._score - a._score)
-        .slice(0, 6)
-        .map(f => ({
-          ...f,
-          _matchPct: bestPossible > 0
-            ? Math.min(98, Math.max(38, Math.round((f._score / bestPossible) * 100)))
-            : 60,
-        }));
-
-      setMatchedFactories(scored);
     } catch (e) {
       setAiError('AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {

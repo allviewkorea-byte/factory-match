@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
+
 const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사용자가 제품명, 재료명, 또는 문장으로 검색하면 공급망과 제조사 매칭에 필요한 모든 정보를 분석합니다.
 
 반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이 순수 JSON):
@@ -43,6 +46,44 @@ topCategories 규칙:
 - supplyChain은 3~5단계
 - 한국 제조업 실정에 맞는 구체적 내용으로 채울 것`;
 
+function scoreFactory(factory, st) {
+  let score = 0;
+  (st.industries || []).forEach(ind => { if ((factory.industries || []).includes(ind)) score += 30; });
+  (st.processes || []).forEach(proc => { if ((factory.processes || []).includes(proc)) score += 25; });
+  (st.materials || []).forEach(mat => {
+    const m = mat.toLowerCase();
+    if ((factory.materials || []).some(fm => fm.toLowerCase().includes(m) || m.includes(fm.toLowerCase()))) score += 15;
+  });
+  (st.keywords || []).forEach(kw => {
+    const k = kw.toLowerCase();
+    if ((factory.name || '').toLowerCase().includes(k)) score += 10;
+    if ((factory.summary || '').toLowerCase().includes(k)) score += 8;
+    if ((factory.products || []).some(p => (p || '').toLowerCase().includes(k))) score += 10;
+  });
+  return score;
+}
+
+// Query Supabase for factories matching any of the given keywords in name/products/summary
+async function fetchFactoriesByKeywords(keywords) {
+  if (!keywords || keywords.length === 0) return [];
+
+  // Build OR filter: name.ilike.*kw*, summary.ilike.*kw* for each keyword
+  const orParts = keywords.flatMap(kw => {
+    const enc = encodeURIComponent(`%${kw}%`);
+    return [`name.ilike.${enc}`, `summary.ilike.${enc}`];
+  }).join(',');
+
+  const url = `${SUPABASE_URL}/rest/v1/factories?hidden=eq.false&select=id,name,city,industries,processes,materials,products,summary&or=(${orParts})&limit=200`;
+  const resp = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+  });
+  if (!resp.ok) return [];
+  return resp.json();
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -73,7 +114,8 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'API 키가 설정되지 않았습니다' }) };
   }
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  // Step 1: Call Claude to get search terms
+  const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -90,16 +132,16 @@ exports.handler = async (event) => {
     }),
   });
 
-  if (!resp.ok) {
-    const err = await resp.text();
+  if (!claudeResp.ok) {
+    const err = await claudeResp.text();
     return {
       statusCode: 502,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: `Anthropic API 오류: ${resp.status}`, detail: err }),
+      body: JSON.stringify({ error: `Anthropic API 오류: ${claudeResp.status}`, detail: err }),
     };
   }
 
-  const data = await resp.json();
+  const data = await claudeResp.json();
   const textBlock = data.content.find((b) => b.type === 'text');
   if (!textBlock) {
     return { statusCode: 502, body: JSON.stringify({ error: '응답 텍스트가 없습니다' }) };
@@ -115,6 +157,46 @@ exports.handler = async (event) => {
       statusCode: 502,
       body: JSON.stringify({ error: 'JSON 파싱 실패', raw: textBlock.text }),
     };
+  }
+
+  // Step 2: Query Supabase using Claude's keywords to find matching factories by name/summary
+  const st = result.searchTerms || {};
+  const searchKeywords = [
+    ...(st.keywords || []),
+    ...(st.materials || []),
+    // Also split the original query into individual words for name matching
+    ...query.split(/[\s,·]+/).filter(w => w.length >= 2),
+  ];
+
+  const [byKeyword] = await Promise.all([
+    fetchFactoriesByKeywords([...new Set(searchKeywords)]).catch(() => []),
+  ]);
+
+  const factories = byKeyword;
+
+  // Step 3: Score and rank
+  if (factories.length > 0) {
+    const bestPossible =
+      (st.industries || []).length * 30 +
+      (st.processes || []).length * 25 +
+      (st.materials || []).length * 15 +
+      (st.keywords || []).length * 18;
+
+    const scored = factories
+      .map(f => ({ id: f.id, _score: scoreFactory(f, st) }))
+      .filter(f => f._score > 0)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, 6)
+      .map(f => ({
+        id: f.id,
+        matchPct: bestPossible > 0
+          ? Math.min(98, Math.max(38, Math.round((f._score / bestPossible) * 100)))
+          : 60,
+      }));
+
+    result.matchedFactories = scored;
+  } else {
+    result.matchedFactories = [];
   }
 
   return {

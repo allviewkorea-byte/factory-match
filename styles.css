@@ -929,7 +929,7 @@ a { color: inherit; text-decoration: none; }
 .list-shell {
   flex: 1;
   display: grid;
-  grid-template-columns: 660px 1fr;
+  grid-template-columns: 1fr minmax(280px, 30%);
   gap: 16px;
   min-height: 0;
 }
@@ -4833,7 +4833,7 @@ a { color: inherit; text-decoration: none; }
 /* ── AI 공급망 분석 ── */
 .sx-ai-loading {
   display: flex; align-items: center; gap: 10px;
-  padding: 14px 20px; margin-bottom: 16px;
+  padding: 14px 20px 14px 36px; margin-bottom: 16px;
   background: oklch(0.97 0.02 250);
   border: 1.5px solid oklch(0.86 0.08 250);
   border-radius: 12px;

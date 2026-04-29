@@ -33,7 +33,7 @@ function App() {
     } catch { return 'landing'; }
   });
   const [factoryId, setFactoryId] = useState(null);
-  const [rfqIds, setRfqIds] = useState(['f1', 'f2']);
+  const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
 
   useEffect(() => {
