@@ -1519,7 +1519,23 @@ const SXGlyph = ({ kind }) => {
 
 const SX_RELATED_KEYWORDS = ['자판기', '냉장기기', '전자제어', '금속가공', '컨베이어', '컵디스펜서'];
 
-function SearchUXPage() {
+function scoreFactory(factory, searchTerms) {
+  const st = searchTerms || {};
+  let score = 0;
+  (st.industries || []).forEach(ind => { if ((factory.industries || []).includes(ind)) score += 30; });
+  (st.processes || []).forEach(proc => { if ((factory.processes || []).includes(proc)) score += 25; });
+  (st.materials || []).forEach(mat => {
+    const m = mat.toLowerCase();
+    if ((factory.materials || []).some(fm => fm.toLowerCase().includes(m) || m.includes(fm.toLowerCase()))) score += 15;
+  });
+  (st.keywords || []).forEach(kw => {
+    const k = kw.toLowerCase();
+    if ((factory.summary || '').toLowerCase().includes(k) || (factory.name || '').includes(kw)) score += 8;
+  });
+  return score;
+}
+
+function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [] }) {
   const [query, setQuery] = useStateSX('음료자판기');
   const [smart, setSmart] = useStateSX(true);
   const [activeKw, setActiveKw] = useStateSX(null);
@@ -1529,6 +1545,7 @@ function SearchUXPage() {
   const [aiResult, setAiResult] = useStateSX(null);
   const [loading, setLoading] = useStateSX(false);
   const [aiError, setAiError] = useStateSX(null);
+  const [matchedFactories, setMatchedFactories] = useStateSX([]);
 
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];
@@ -1543,6 +1560,7 @@ function SearchUXPage() {
     setLoading(true);
     setAiError(null);
     setAiResult(null);
+    setMatchedFactories([]);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
         method: 'POST',
@@ -1552,15 +1570,46 @@ function SearchUXPage() {
       if (!resp.ok) throw new Error('API error');
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
-      data.topCategories = data.topCategories.map((c, i) => ({
-        glyph: 'metal',
-        count: 0,
-        avgLead: '협의',
-        avgPrice: '협의',
-        ...c,
-        id: c.id || `ai-${i}`,
+
+      data.topCategories = (data.topCategories || []).map((c, i) => ({
+        glyph: 'metal', count: 0, avgLead: '협의', avgPrice: '협의',
+        ...c, id: c.id || `ai-${i}`,
       }));
       setAiResult(data);
+
+      // Load factories and score them against AI search terms
+      const st = data.searchTerms || {};
+      let allFactories = [];
+      if (window._sb) {
+        try {
+          const { data: rows } = await window._sb.from('factories').select('*');
+          if (rows && rows.length) allFactories = rows;
+        } catch (_) {}
+      }
+      if (!allFactories.length) {
+        allFactories = (window.MFG_DATA || {}).FACTORIES || [];
+      }
+
+      const bestPossible =
+        (st.industries || []).length * 30 +
+        (st.processes || []).length * 25 +
+        (st.materials || []).length * 15 +
+        (st.keywords || []).length * 8;
+
+      const scored = allFactories
+        .filter(f => !f.hidden)
+        .map(f => ({ ...f, _score: scoreFactory(f, st) }))
+        .filter(f => f._score > 0)
+        .sort((a, b) => b._score - a._score)
+        .slice(0, 6)
+        .map(f => ({
+          ...f,
+          _matchPct: bestPossible > 0
+            ? Math.min(98, Math.max(38, Math.round((f._score / bestPossible) * 100)))
+            : 60,
+        }));
+
+      setMatchedFactories(scored);
     } catch (e) {
       setAiError('AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
@@ -1652,6 +1701,38 @@ function SearchUXPage() {
                   </div>
                 )}
               </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {matchedFactories.length > 0 && (
+        <div className="sx-match-section">
+          <div className="sx-match-header">
+            <h2>
+              <Icon name="factory" size={15} stroke={2}/>
+              매칭 제조사
+            </h2>
+            <span className="sx-match-count">{matchedFactories.length}개사 매칭</span>
+          </div>
+          <div className="sx-match-grid">
+            {matchedFactories.map(f => (
+              <div key={f.id} className="sx-match-card-wrap">
+                <div
+                  className="sx-match-score-badge"
+                  style={{ background: f._matchPct >= 70 ? '#16a34a' : f._matchPct >= 50 ? '#d97706' : '#64748b' }}
+                >
+                  <span className="sx-match-score-pct">{f._matchPct}%</span>
+                  <span className="sx-match-score-label">매칭</span>
+                </div>
+                <ManufacturerCard
+                  f={f}
+                  onOpen={onOpenFactory}
+                  onSelect={onAddRFQ}
+                  selected={rfqIds.includes(f.id)}
+                  compact
+                />
+              </div>
             ))}
           </div>
         </div>

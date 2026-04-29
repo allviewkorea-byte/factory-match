@@ -169,7 +169,13 @@ function App() {
           onNav={nav}
         />
       )}
-      {route === 'search' && <SearchUXPage/>}
+      {route === 'search' && (
+        <SearchUXPage
+          onOpenFactory={(id) => openFactory(id, 'search')}
+          onAddRFQ={addRFQ}
+          rfqIds={rfqIds}
+        />
+      )}
       {route === 'chat' && (
         <ChatPage
           initialFactoryId={chatTarget}

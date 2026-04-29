@@ -1,4 +1,4 @@
-const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사용자가 제품명, 재료명, 또는 문장으로 검색하면 해당 제품의 공급망과 관련 제조 카테고리를 분석합니다.
+const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사용자가 제품명, 재료명, 또는 문장으로 검색하면 공급망과 제조사 매칭에 필요한 모든 정보를 분석합니다.
 
 반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이 순수 JSON):
 {
@@ -20,14 +20,27 @@ const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사
       "avgLead": "14일",
       "avgPrice": "₩5k~"
     }
-  ]
+  ],
+  "searchTerms": {
+    "industries": ["machine"],
+    "processes": ["cnc", "assembly"],
+    "materials": ["알루미늄"],
+    "keywords": ["선풍기", "모터"]
+  }
 }
 
-규칙:
-- supplyChain: 원재료부터 완제품까지 3~5단계
-- topCategories: 정확히 3개, match는 65~98 사이, 내림차순 정렬
+searchTerms 규칙:
+- industries: 반드시 이 목록에서만 선택 → machine, electronics, chemical, food, textile
+- processes: 반드시 이 목록에서만 선택 → cnc, injection, press, mold, cutting, welding, painting, assembly
+- materials: 한국어 재료명 (예: 알루미늄, ABS, PP, SUS304, 냉연강판, FR-4)
+- keywords: 제품·부품·특성 관련 한국어 키워드 3~8개
+- 공급망 각 단계마다 관련 industries/processes 포함
+
+topCategories 규칙:
+- 정확히 3개, match는 65~98 사이, 내림차순 정렬
 - glyph는 반드시 위 목록 중 하나 선택
 - count는 해당 카테고리 예상 제조사 수 (10~500 사이 정수)
+- supplyChain은 3~5단계
 - 한국 제조업 실정에 맞는 구체적 내용으로 채울 것`;
 
 exports.handler = async (event) => {
@@ -70,7 +83,7 @@ exports.handler = async (event) => {
     },
     body: JSON.stringify({
       model: 'claude-opus-4-7',
-      max_tokens: 1024,
+      max_tokens: 1500,
       thinking: { type: 'adaptive' },
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: query }],
