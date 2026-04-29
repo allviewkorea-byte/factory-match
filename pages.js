@@ -777,12 +777,25 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
   useEffectP(() => {
     if (!window._sb) { setDbLoading(false); return; }
-    window._sb.from('factories').select('*').eq('hidden', false).order('rating', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) { setDbError(error.message); }
-        else if (data && data.length > 0) { setFactories(data.map(window._dbRowToFactory)); }
-        setDbLoading(false);
-      });
+    let mounted = true;
+    const PAGE = 1000;
+
+    const loadPage = async (from, acc) => {
+      const { data, error } = await window._sb
+        .from('factories').select('*').eq('hidden', false)
+        .order('rating', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (!mounted) return;
+      if (error) { setDbError(error.message); setDbLoading(false); return; }
+      if (!data || data.length === 0) { setDbLoading(false); return; }
+      const next = [...acc, ...data.map(window._dbRowToFactory)];
+      setFactories(next);
+      setDbLoading(false);
+      if (data.length === PAGE) loadPage(from + PAGE, next);
+    };
+
+    loadPage(0, []);
+    return () => { mounted = false; };
   }, []);
 
   const filtered = useMemoP(() => {
@@ -3649,6 +3662,12 @@ const AdminPage = ({ onOpenFactory }) => {
   const [data, setData] = useState(ADMIN_FACTORIES);
   const [totalCount, setTotalCount] = useState(null);
   const [tab, setTab] = useState('factories');
+
+  useEffect(() => {
+    if (!window._sb) return;
+    window._sb.from('factories').select('*', { count: 'exact', head: true })
+      .then(({ count }) => { if (count != null) setTotalCount(count); });
+  }, []);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [showUpload, setShowUpload] = useState(false);
