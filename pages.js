@@ -238,8 +238,98 @@ const ManufacturerCard = ({ f, onOpen, onSelect, selected, density, compact = fa
 // ──────────────────────────────────────────────────────────
 // Korea map placeholder (Naver-ish styling)
 // ──────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// 주소 → SVG 좌표 매핑 (viewBox 0 0 100 100)
+// ──────────────────────────────────────────────────────────
+const CITY_COORDS = [
+  // 서울
+  { kw: ['서울'],                                    x: 39, y: 20 },
+  // 인천
+  { kw: ['인천'],                                    x: 32, y: 27 },
+  // 경기 세부
+  { kw: ['고양시', '경기 고양'],                     x: 36, y: 22 },
+  { kw: ['파주시', '경기 파주'],                     x: 35, y: 20 },
+  { kw: ['김포시', '경기 김포'],                     x: 34, y: 25 },
+  { kw: ['부천시', '경기 부천'],                     x: 35, y: 27 },
+  { kw: ['광명시', '경기 광명'],                     x: 37, y: 28 },
+  { kw: ['안양시', '경기 안양'],                     x: 39, y: 30 },
+  { kw: ['과천시', '경기 과천'],                     x: 40, y: 28 },
+  { kw: ['남양주시', '경기 남양주'],                 x: 44, y: 24 },
+  { kw: ['양주시', '경기 양주'],                     x: 42, y: 23 },
+  { kw: ['구리시', '경기 구리'],                     x: 42, y: 24 },
+  { kw: ['성남시', '경기 성남', '판교', '분당'],     x: 42, y: 27 },
+  { kw: ['용인시', '경기 용인'],                     x: 43, y: 31 },
+  { kw: ['안산시', '경기 안산'],                     x: 37, y: 33 },
+  { kw: ['시흥시', '경기 시흥'],                     x: 36, y: 33 },
+  { kw: ['수원시', '경기 수원'],                     x: 40, y: 33 },
+  { kw: ['화성시', '경기 화성'],                     x: 39, y: 37 },
+  { kw: ['오산시', '경기 오산'],                     x: 41, y: 37 },
+  { kw: ['평택시', '경기 평택'],                     x: 41, y: 40 },
+  { kw: ['이천시', '경기 이천'],                     x: 46, y: 35 },
+  { kw: ['포천시', '경기 포천'],                     x: 45, y: 22 },
+  { kw: ['경기'],                                    x: 40, y: 30 },
+  // 강원
+  { kw: ['춘천시', '강원 춘천'],                     x: 50, y: 27 },
+  { kw: ['원주시', '강원 원주'],                     x: 51, y: 34 },
+  { kw: ['강릉시', '강원 강릉'],                     x: 59, y: 33 },
+  { kw: ['동해시', '강원 동해'],                     x: 60, y: 39 },
+  { kw: ['강원'],                                    x: 55, y: 32 },
+  // 충청
+  { kw: ['세종'],                                    x: 41, y: 49 },
+  { kw: ['대전'],                                    x: 42, y: 53 },
+  { kw: ['천안시', '충남 천안'],                     x: 41, y: 45 },
+  { kw: ['아산시', '충남 아산'],                     x: 39, y: 45 },
+  { kw: ['당진시', '충남 당진'],                     x: 36, y: 44 },
+  { kw: ['홍성군', '충남 홍성'],                     x: 37, y: 50 },
+  { kw: ['서산시', '충남 서산'],                     x: 35, y: 47 },
+  { kw: ['충남'],                                    x: 39, y: 50 },
+  { kw: ['청주시', '충북 청주'],                     x: 45, y: 47 },
+  { kw: ['충주시', '충북 충주'],                     x: 48, y: 41 },
+  { kw: ['충북'],                                    x: 46, y: 46 },
+  // 전라
+  { kw: ['광주'],                                    x: 47, y: 74 },
+  { kw: ['전주시', '전북 전주'],                     x: 46, y: 66 },
+  { kw: ['군산시', '전북 군산'],                     x: 41, y: 62 },
+  { kw: ['익산시', '전북 익산'],                     x: 43, y: 63 },
+  { kw: ['전북'],                                    x: 45, y: 66 },
+  { kw: ['여수시', '전남 여수'],                     x: 55, y: 83 },
+  { kw: ['순천시', '전남 순천'],                     x: 54, y: 79 },
+  { kw: ['목포시', '전남 목포'],                     x: 41, y: 80 },
+  { kw: ['광양시', '전남 광양'],                     x: 57, y: 79 },
+  { kw: ['나주시', '전남 나주'],                     x: 46, y: 76 },
+  { kw: ['전남'],                                    x: 49, y: 79 },
+  // 경상
+  { kw: ['대구'],                                    x: 63, y: 67 },
+  { kw: ['포항시', '경북 포항'],                     x: 73, y: 60 },
+  { kw: ['구미시', '경북 구미'],                     x: 60, y: 62 },
+  { kw: ['경주시', '경북 경주'],                     x: 70, y: 67 },
+  { kw: ['안동시', '경북 안동'],                     x: 65, y: 53 },
+  { kw: ['영주시', '경북 영주'],                     x: 63, y: 49 },
+  { kw: ['김천시', '경북 김천'],                     x: 58, y: 63 },
+  { kw: ['경북'],                                    x: 65, y: 60 },
+  { kw: ['울산'],                                    x: 73, y: 72 },
+  { kw: ['부산'],                                    x: 70, y: 80 },
+  { kw: ['창원시', '경남 창원'],                     x: 63, y: 78 },
+  { kw: ['김해시', '경남 김해'],                     x: 68, y: 78 },
+  { kw: ['거제시', '경남 거제'],                     x: 67, y: 84 },
+  { kw: ['진주시', '경남 진주'],                     x: 58, y: 82 },
+  { kw: ['양산시', '경남 양산'],                     x: 69, y: 75 },
+  { kw: ['사천시', '경남 사천'],                     x: 57, y: 83 },
+  { kw: ['경남'],                                    x: 63, y: 80 },
+  // 제주
+  { kw: ['제주', '서귀포'],                          x: 55, y: 94 },
+];
+
+function getCityCoord(city) {
+  if (!city) return null;
+  for (const entry of CITY_COORDS) {
+    if (entry.kw.some(k => city.includes(k))) return { x: entry.x, y: entry.y };
+  }
+  return null;
+}
+
 const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
-  // Simplified Korea silhouette as SVG path; coords are normalized 0..100
+  const [tip, setTip] = React.useState(null);
   const pinFor = (id) => factories.find(f => f.id === id);
 
   return (
@@ -286,12 +376,17 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
         {factories.map(f => {
           const isSel = f.id === selectedId;
           const isHov = f.id === hoveredId;
+          const coord = getCityCoord(f.city) || (f.coord || { x: 50, y: 50 });
+          const koreanProducts = (f.products || []).filter(p => /[가-힯]/.test(p));
+          const tipItems = koreanProducts.length > 0 ? koreanProducts : (f.materials || []);
           return (
             <button
               key={f.id}
               className={`map-pin ${isSel ? 'is-selected' : ''} ${isHov ? 'is-hovered' : ''}`}
-              style={{ left: `${f.coord.x}%`, top: `${f.coord.y}%` }}
+              style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
               onClick={() => onPin(f.id)}
+              onMouseEnter={() => setTip({ f, x: coord.x, y: coord.y, tipItems })}
+              onMouseLeave={() => setTip(null)}
               aria-label={f.name}
             >
               <span className="map-pin-dot"/>
@@ -299,6 +394,23 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
             </button>
           );
         })}
+        {tip && (
+          <div
+            className="map-pin-tip"
+            style={{
+              left: `${Math.min(tip.x + 2, 68)}%`,
+              top:  `${Math.max(tip.y - 14, 2)}%`,
+            }}
+          >
+            <div className="map-pin-tip-name">{tip.f.name}</div>
+            {tip.f.city && <div className="map-pin-tip-city">{tip.f.city}</div>}
+            {tip.tipItems.length > 0 && (
+              <div className="map-pin-tip-products">
+                {tip.tipItems.slice(0, 3).join(' · ')}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Map controls */}
@@ -3471,6 +3583,65 @@ const MyPage = ({ profile, onSwitchRole, onOpenFactory, onNav }) => {
 };
 
 // ──────────────────────────────────────────────────────────
+// ── 공공데이터 CSV 업로드 헬퍼 ──────────────────────────────
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const buf = new Uint8Array(e.target.result);
+      // UTF-8 BOM?
+      if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+        resolve(new TextDecoder('utf-8').decode(buf.slice(3)));
+        return;
+      }
+      // Try strict UTF-8 first (throws on bad sequences = EUC-KR file)
+      try {
+        resolve(new TextDecoder('utf-8', { fatal: true }).decode(buf));
+      } catch (_) {
+        // Fall back to EUC-KR / CP949
+        try { resolve(new TextDecoder('euc-kr').decode(buf)); }
+        catch (e2) { reject(new Error('UTF-8 또는 EUC-KR 파일만 지원합니다.')); }
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      result.push(cur.trim()); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function extractRegion(addr) {
+  if (!addr) return 'etc';
+  if (addr.includes('서울'))                              return 'seoul';
+  if (addr.includes('경기'))                              return 'gyeonggi';
+  if (addr.includes('인천'))                              return 'incheon';
+  if (addr.includes('부산'))                              return 'busan';
+  if (addr.includes('울산'))                              return 'ulsan';
+  if (addr.includes('경남'))                              return 'gyeongnam';
+  if (addr.includes('대구') || addr.includes('경북'))     return 'daegu';
+  if (addr.includes('광주') || addr.includes('전남') || addr.includes('전북')) return 'jeonla';
+  if (addr.includes('대전') || addr.includes('충남') || addr.includes('충북') || addr.includes('세종')) return 'chungcheong';
+  if (addr.includes('강원'))                              return 'gangwon';
+  if (addr.includes('제주'))                              return 'jeju';
+  return 'etc';
+}
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
@@ -3481,6 +3652,7 @@ const AdminPage = ({ onOpenFactory }) => {
   const [showUpload, setShowUpload] = useState(false);
 
   // Upload flow phases: idle → preview → uploading → result
+  const [uploadMode, setUploadMode] = useState('standard'); // 'standard' | 'public'
   const [uploadPhase, setUploadPhase] = useState('idle');
   const [parsedRows, setParsedRows] = useState([]);
   const [parseErrors, setParseErrors] = useState([]);
@@ -3488,6 +3660,7 @@ const AdminPage = ({ onOpenFactory }) => {
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
   const [uploadResult, setUploadResult] = useState(null);
   const fileInputRef = React.useRef(null);
+  const pubFileInputRef = React.useRef(null);
 
   const resetUpload = () => {
     setUploadPhase('idle');
@@ -3623,6 +3796,104 @@ const AdminPage = ({ onOpenFactory }) => {
     setUploadPhase('result');
   };
 
+  // ── 공공데이터 CSV 파싱 (순번, 회사명, 단지명, 생산품, 공장주소) ──
+  const parsePublicFile = async (file) => {
+    if (!file) return;
+    resetUpload();
+    try {
+      const text = await readFileText(file);
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) throw new Error('데이터 행이 없습니다.');
+
+      const headers = parseCSVLine(lines[0]).map(h => h.replace(/^﻿/, '').trim());
+      // 헤더 인덱스 탐색 (BOM·공백 허용)
+      const idx = {
+        seq:     headers.findIndex(h => h.includes('순번')),
+        name:    headers.findIndex(h => h.includes('회사명') || h.includes('업체명')),
+        complex: headers.findIndex(h => h.includes('단지명')),
+        product: headers.findIndex(h => h.includes('생산품') || h.includes('제품')),
+        address: headers.findIndex(h => h.includes('공장주소') || h.includes('주소')),
+      };
+      if (idx.name < 0) throw new Error('회사명 컬럼을 찾을 수 없습니다. 헤더를 확인하세요.');
+
+      const rows = [], errors = [];
+      lines.slice(1).forEach((line, i) => {
+        const vals = parseCSVLine(line);
+        const get = (j) => (j >= 0 ? (vals[j] || '').trim() : '');
+        const name = get(idx.name);
+        if (!name) { errors.push({ rowNum: i + 2, msg: '회사명 없음' }); return; }
+        const seqRaw = get(idx.seq);
+        const seq = parseInt(seqRaw) || (i + 1);
+        const city = get(idx.address);
+        rows.push({
+          id:          'pub_' + seq,
+          name,
+          en:          '',
+          city,
+          region:      extractRegion(city),
+          coord_x:     50,
+          coord_y:     50,
+          industries:  [],
+          processes:   [],
+          products:    get(idx.product).split(/[,;／]/).map(s => s.trim()).filter(Boolean),
+          materials:   [],
+          moq:         1,
+          moq_unit:    '협의',
+          lead_days:   0,
+          price_range: '',
+          employees:   0,
+          founded:     0,
+          certs:       [],
+          oem:         false,
+          odm:         false,
+          export:      false,
+          rating:      0,
+          reviews:     0,
+          response_hr: 24,
+          deals:       0,
+          hidden:      true,
+          summary:     get(idx.complex),
+          image:       '#a8b4c8',
+        });
+      });
+
+      setParsedRows(rows);
+      setParseErrors(errors);
+      setUploadPhase('preview');
+    } catch (e) {
+      alert('파싱 오류: ' + e.message);
+    }
+  };
+
+  // ── 공공데이터 업로드: 1000행 배치, 기존 pub_ 이외 ID 보호 ──
+  const confirmPublicUpload = async () => {
+    if (!window._sb) { alert('Supabase 연결이 없습니다.'); return; }
+    setUploadPhase('uploading');
+    const BATCH = 1000;
+    let ok = 0, fail = 0;
+    const failedRows = [];
+    setUploadProgress({ done: 0, total: parsedRows.length });
+
+    for (let i = 0; i < parsedRows.length; i += BATCH) {
+      const chunk = parsedRows.slice(i, i + BATCH);
+      const { error } = await window._sb
+        .from('factories')
+        .upsert(chunk, { onConflict: 'id' });
+      if (!error) {
+        ok += chunk.length;
+      } else {
+        fail += chunk.length;
+        failedRows.push({ id: `${i+1}~${Math.min(i+BATCH, parsedRows.length)}행`, name: '', msg: error.message });
+      }
+      setUploadProgress({ done: Math.min(i + BATCH, parsedRows.length), total: parsedRows.length });
+      // UI 업데이트를 위한 마이크로태스크 양보
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    setUploadResult({ ok, fail, failedRows });
+    setUploadPhase('result');
+  };
+
   const togglePublic = (id) => {
     setData(d => d.map(x => x.id === id ? { ...x, public: !x.public } : x));
   };
@@ -3641,7 +3912,13 @@ const AdminPage = ({ onOpenFactory }) => {
     rfq: 248, chat: 89, users: 1342,
   };
 
-  const PREVIEW_COLS = [
+  const PREVIEW_COLS = uploadMode === 'public' ? [
+    { key: 'id',      label: '순번' },
+    { key: 'name',    label: '회사명' },
+    { key: 'city',    label: '공장주소', render: v => v ? v.slice(0, 20) + (v.length > 20 ? '…' : '') : '—' },
+    { key: 'products',label: '생산품', render: v => (v || []).slice(0, 3).join(', ') || '—' },
+    { key: 'summary', label: '단지명' },
+  ] : [
     { key: 'id',       label: 'ID' },
     { key: 'name',     label: '업체명' },
     { key: 'city',     label: '도시' },
@@ -3848,41 +4125,68 @@ const AdminPage = ({ onOpenFactory }) => {
                   type="file"
                   accept=".csv"
                   style={{ display: 'none' }}
-                  onChange={(e) => { const f = e.target.files[0]; if (f) parseFile(f); e.target.value = ''; }}
+                  onChange={(e) => { const f = e.target.files[0]; if (f) (uploadMode === 'public' ? parsePublicFile(f) : parseFile(f)); e.target.value = ''; }}
                 />
+
+                <div className="upload-mode-toggle">
+                  <button
+                    className={uploadMode === 'standard' ? 'is-active' : ''}
+                    onClick={() => setUploadMode('standard')}
+                  >
+                    기본 형식 (27개 필드)
+                  </button>
+                  <button
+                    className={uploadMode === 'public' ? 'is-active' : ''}
+                    onClick={() => setUploadMode('public')}
+                  >
+                    공공데이터 형식
+                  </button>
+                </div>
+
                 <div
                   className={'upload-drop' + (dragOver ? ' is-drag' : '')}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) parseFile(f); }}
+                  onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) (uploadMode === 'public' ? parsePublicFile(f) : parseFile(f)); }}
                 >
                   <Icon name="upload" size={32} stroke={1.4}/>
                   <strong>CSV 파일을 끌어다 놓으세요</strong>
-                  <span>.csv · 최대 10MB · 한 번에 1,000개까지</span>
+                  <span>.csv · 최대 10MB · UTF-8 / EUC-KR 지원</span>
                   <button className="btn btn-primary btn-sm" onClick={() => fileInputRef.current?.click()}>
                     <Icon name="plus" size={12} stroke={2.2}/>
                     파일 선택
                   </button>
                 </div>
 
-                <div className="upload-template">
-                  <Icon name="info" size={13} stroke={2}/>
-                  <div>
-                    <strong>27개 필드</strong>
-                    <span>id, name, city, region, processes(;구분), certs(;구분), moq, lead_days, rating 등. 배열은 세미콜론(;)으로 구분.</span>
+                {uploadMode === 'standard' ? (
+                  <>
+                    <div className="upload-template">
+                      <Icon name="info" size={13} stroke={2}/>
+                      <div>
+                        <strong>27개 필드</strong>
+                        <span>id, name, city, region, processes(;구분), certs(;구분), moq, lead_days, rating 등. 배열은 세미콜론(;)으로 구분.</span>
+                      </div>
+                      <button className="link-btn" onClick={downloadTemplate}>템플릿 다운로드</button>
+                    </div>
+                    <div className="upload-rules">
+                      <h4>업로드 규칙</h4>
+                      <ul>
+                        <li><Icon name="check" size={11} stroke={2.4}/> id 중복 시 upsert (덮어쓰기)</li>
+                        <li><Icon name="check" size={11} stroke={2.4}/> processes / certs / materials 등 배열은 세미콜론(;) 구분</li>
+                        <li><Icon name="check" size={11} stroke={2.4}/> oem / odm / export → true 또는 false</li>
+                        <li><Icon name="check" size={11} stroke={2.4}/> name이 없는 행은 자동으로 건너뜀</li>
+                      </ul>
+                    </div>
+                  </>
+                ) : (
+                  <div className="upload-template">
+                    <Icon name="info" size={13} stroke={2}/>
+                    <div>
+                      <strong>공공데이터 형식</strong>
+                      <span>순번, 회사명, 단지명, 생산품, 공장주소 컬럼. id는 pub_순번으로 자동 생성. 대용량(수십만 행) 지원.</span>
+                    </div>
                   </div>
-                  <button className="link-btn" onClick={downloadTemplate}>템플릿 다운로드</button>
-                </div>
-
-                <div className="upload-rules">
-                  <h4>업로드 규칙</h4>
-                  <ul>
-                    <li><Icon name="check" size={11} stroke={2.4}/> id 중복 시 upsert (덮어쓰기)</li>
-                    <li><Icon name="check" size={11} stroke={2.4}/> processes / certs / materials 등 배열은 세미콜론(;) 구분</li>
-                    <li><Icon name="check" size={11} stroke={2.4}/> oem / odm / export → true 또는 false</li>
-                    <li><Icon name="check" size={11} stroke={2.4}/> name이 없는 행은 자동으로 건너뜀</li>
-                  </ul>
-                </div>
+                )}
               </>
             )}
 
@@ -3941,9 +4245,13 @@ const AdminPage = ({ onOpenFactory }) => {
 
                 <footer className="modal-foot">
                   <button className="btn btn-secondary" onClick={resetUpload}>다시 선택</button>
-                  <button className="btn btn-primary" onClick={confirmUpload} disabled={parsedRows.length === 0}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={uploadMode === 'public' ? confirmPublicUpload : confirmUpload}
+                    disabled={parsedRows.length === 0}
+                  >
                     <Icon name="upload" size={13} stroke={2.2}/>
-                    {parsedRows.length}개 업로드 시작
+                    {parsedRows.length.toLocaleString()}개 업로드 시작
                   </button>
                 </footer>
               </>
@@ -3961,7 +4269,7 @@ const AdminPage = ({ onOpenFactory }) => {
                   />
                 </div>
                 <span className="upload-progress-label">
-                  {uploadProgress.done} / {uploadProgress.total}행
+                  {uploadProgress.done.toLocaleString()} / {uploadProgress.total.toLocaleString()} 처리 중…
                   {uploadProgress.total > 0 && ` (${Math.round(uploadProgress.done / uploadProgress.total * 100)}%)`}
                 </span>
               </div>

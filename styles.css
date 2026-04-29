@@ -4889,3 +4889,59 @@ a { color: inherit; text-decoration: none; }
   line-height: 1;
 }
 
+/* ── Map pin tooltip ── */
+.map-pin-tip {
+  position: absolute;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 9px 12px;
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.13);
+  min-width: 130px;
+  max-width: 200px;
+  white-space: nowrap;
+}
+.map-pin-tip-name {
+  font-size: 13px; font-weight: 700; color: var(--ink-1);
+  margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis;
+}
+.map-pin-tip-city {
+  font-size: 11px; color: var(--ink-3);
+  margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis;
+}
+.map-pin-tip-products {
+  font-size: 11px; color: var(--ink-2); font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Upload mode toggle ── */
+.upload-mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.upload-mode-toggle button {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.upload-mode-toggle button:hover {
+  border-color: var(--brand);
+  color: var(--brand-fg);
+}
+.upload-mode-toggle button.is-active {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-fg);
+  font-weight: 600;
+}
+
