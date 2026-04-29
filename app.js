@@ -22,6 +22,9 @@ function App() {
   });
 
   const [route, setRoute] = useState(() => {
+    const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
+    if (APP_ROUTES.includes(p)) return p;
+    if (AUTH_ROUTES.includes(p)) return p;
     const h = (window.location.hash || '').replace('#', '');
     if (AUTH_ROUTES.includes(h)) return h;
     if (APP_ROUTES.includes(h)) return h;
