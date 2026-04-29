@@ -3651,19 +3651,48 @@ const AdminPage = ({ onOpenFactory }) => {
   const [filter, setFilter] = useState('all');
   const [showUpload, setShowUpload] = useState(false);
 
-  // Upload flow phases: idle → preview → uploading → result
-  const [uploadMode, setUploadMode] = useState('standard'); // 'standard' | 'public'
+  // Upload flow phases: idle → mapping → preview → uploading → result
   const [uploadPhase, setUploadPhase] = useState('idle');
+  const [rawHeaders, setRawHeaders] = useState([]);
+  const [rawLines, setRawLines] = useState([]);
+  const [colMap, setColMap] = useState({});
   const [parsedRows, setParsedRows] = useState([]);
   const [parseErrors, setParseErrors] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
   const [uploadResult, setUploadResult] = useState(null);
   const fileInputRef = React.useRef(null);
-  const pubFileInputRef = React.useRef(null);
+
+  const MAPPING_FIELDS = [
+    { field: 'id_src',   label: 'ID 번호', required: false },
+    { field: 'name',     label: '회사명',   required: true  },
+    { field: 'city',     label: '주소',     required: false },
+    { field: 'products', label: '생산품',   required: false },
+    { field: 'summary',  label: '단지명',   required: false },
+  ];
+  const FIELD_KEYWORDS = {
+    name:     ['회사명', '사업체명', '업체명', '공장명', '상호', '법인명'],
+    city:     ['공장주소', '주소', '본사소재지', '소재지', '주소지', '사업장주소'],
+    products: ['생산품', '주생산품', '제품', '생산제품', '품목', '주요생산품'],
+    id_src:   ['연번', '순번', '번호'],
+    summary:  ['단지명', '산업단지명', '단지'],
+  };
+  const autoMap = (headers) => {
+    const result = { name: -1, city: -1, products: -1, id_src: -1, summary: -1 };
+    headers.forEach((h, i) => {
+      const norm = h.replace(/\s/g, '');
+      for (const [field, kws] of Object.entries(FIELD_KEYWORDS)) {
+        if (result[field] === -1 && kws.some(kw => norm.includes(kw))) result[field] = i;
+      }
+    });
+    return result;
+  };
 
   const resetUpload = () => {
     setUploadPhase('idle');
+    setRawHeaders([]);
+    setRawLines([]);
+    setColMap({});
     setParsedRows([]);
     setParseErrors([]);
     setUploadProgress({ done: 0, total: 0 });
@@ -3680,216 +3709,92 @@ const AdminPage = ({ onOpenFactory }) => {
     URL.revokeObjectURL(url);
   };
 
-  // Step 1: Parse CSV → set parsedRows + parseErrors → show preview
-  const parseFile = async (file) => {
+  // Step 1: Read file → detect headers → show mapping phase
+  const parseFileHeaders = async (file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert('.csv 파일만 업로드할 수 있습니다.');
-      return;
-    }
-    resetUpload();
-    try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) throw new Error('데이터 행이 없어요. 헤더 외에 최소 1행이 필요합니다.');
-
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-      const rows = [];
-      const errors = [];
-
-      lines.slice(1).forEach((line, i) => {
-        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        const obj = {};
-        headers.forEach((h, j) => { obj[h] = vals[j] ?? ''; });
-
-        if (!obj.name) {
-          errors.push({ rowNum: i + 2, id: obj.id || '—', msg: 'name 컬럼이 비어있음' });
-          return;
-        }
-        rows.push({
-          id:          obj.id || ('gen_' + Date.now() + '_' + i),
-          name:        obj.name,
-          en:          obj.en || '',
-          city:        obj.city || '',
-          region:      obj.region || '',
-          coord_x:     parseFloat(obj.coord_x) || 50,
-          coord_y:     parseFloat(obj.coord_y) || 50,
-          industries:  (obj.industries || '').split(';').filter(Boolean),
-          processes:   (obj.processes  || '').split(';').filter(Boolean),
-          products:    (obj.products   || '').split(';').filter(Boolean),
-          materials:   (obj.materials  || '').split(';').filter(Boolean),
-          moq:         parseInt(obj.moq) || 1,
-          moq_unit:    obj.moq_unit || '피스',
-          lead_days:   parseInt(obj.lead_days) || 14,
-          price_range: obj.price_range || '',
-          employees:   parseInt(obj.employees) || 0,
-          founded:     parseInt(obj.founded) || 2000,
-          certs:       (obj.certs || '').split(';').filter(Boolean),
-          oem:         obj.oem === 'true' || obj.oem === '1',
-          odm:         obj.odm === 'true' || obj.odm === '1',
-          export:      obj.export === 'true' || obj.export === '1',
-          rating:      parseFloat(obj.rating) || 0,
-          reviews:     parseInt(obj.reviews) || 0,
-          response_hr: parseInt(obj.response_hr) || 24,
-          deals:       parseInt(obj.deals) || 0,
-          hidden:      obj.hidden === 'true' || obj.hidden === '1',
-          summary:     obj.summary || '',
-          image:       obj.image || '#a8b4c8',
-        });
-      });
-
-      setParsedRows(rows);
-      setParseErrors(errors);
-      setUploadPhase('preview');
-    } catch (e) {
-      alert('파싱 오류: ' + e.message);
-    }
-  };
-
-  // Step 2: Upsert to Supabase with per-row error tracking
-  const confirmUpload = async () => {
-    if (!window._sb) {
-      alert('Supabase 연결이 없습니다. 페이지를 새로고침 해주세요.');
-      return;
-    }
-    setUploadPhase('uploading');
-    const CHUNK = 100;
-    let ok = 0, fail = 0;
-    const failedRows = [];
-    setUploadProgress({ done: 0, total: parsedRows.length });
-
-    for (let i = 0; i < parsedRows.length; i += CHUNK) {
-      const chunk = parsedRows.slice(i, i + CHUNK);
-      const { error } = await window._sb.from('factories').upsert(chunk, { onConflict: 'id' });
-      if (!error) {
-        ok += chunk.length;
-      } else {
-        // Retry individually to pinpoint which rows failed
-        for (const row of chunk) {
-          const { error: rowErr } = await window._sb.from('factories').upsert([row], { onConflict: 'id' });
-          if (rowErr) {
-            fail++;
-            failedRows.push({ id: row.id, name: row.name, msg: rowErr.message });
-          } else {
-            ok++;
-          }
-        }
-      }
-      setUploadProgress({ done: Math.min(i + CHUNK, parsedRows.length), total: parsedRows.length });
-    }
-
-    // Refresh local factory list
-    try {
-      const { data: fresh } = await window._sb.from('factories').select('*');
-      if (fresh?.length) {
-        window.MFG_DATA.FACTORIES = fresh.map(window._dbRowToFactory);
-        setData(fresh.map(r => ({
-          ...window._dbRowToFactory(r),
-          public: !r.hidden,
-          registered: new Date().toISOString().slice(0, 10),
-          source: 'CSV',
-        })));
-      }
-    } catch (_) {}
-
-    setUploadResult({ ok, fail, failedRows });
-    setUploadPhase('result');
-  };
-
-  // ── 공공데이터 CSV 파싱 (순번, 회사명, 단지명, 생산품, 공장주소) ──
-  const parsePublicFile = async (file) => {
-    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) { alert('.csv 파일만 업로드할 수 있습니다.'); return; }
     resetUpload();
     try {
       const text = await readFileText(file);
       const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) throw new Error('데이터 행이 없습니다.');
-
+      if (lines.length < 2) throw new Error('데이터 행이 없습니다. 헤더 외에 최소 1행이 필요합니다.');
       const headers = parseCSVLine(lines[0]).map(h => h.replace(/^﻿/, '').trim());
-      // 헤더 인덱스 탐색 (BOM·공백 허용)
-      const idx = {
-        seq:     headers.findIndex(h => h.includes('순번')),
-        name:    headers.findIndex(h => h.includes('회사명') || h.includes('업체명')),
-        complex: headers.findIndex(h => h.includes('단지명')),
-        product: headers.findIndex(h => h.includes('생산품') || h.includes('제품')),
-        address: headers.findIndex(h => h.includes('공장주소') || h.includes('주소')),
-      };
-      if (idx.name < 0) throw new Error('회사명 컬럼을 찾을 수 없습니다. 헤더를 확인하세요.');
-
-      const rows = [], errors = [];
-      lines.slice(1).forEach((line, i) => {
-        const vals = parseCSVLine(line);
-        const get = (j) => (j >= 0 ? (vals[j] || '').trim() : '');
-        const name = get(idx.name);
-        if (!name) { errors.push({ rowNum: i + 2, msg: '회사명 없음' }); return; }
-        const seqRaw = get(idx.seq);
-        const seq = parseInt(seqRaw) || (i + 1);
-        const city = get(idx.address);
-        rows.push({
-          id:          'pub_' + seq,
-          name,
-          en:          '',
-          city,
-          region:      extractRegion(city),
-          coord_x:     50,
-          coord_y:     50,
-          industries:  [],
-          processes:   [],
-          products:    get(idx.product).split(/[,;／]/).map(s => s.trim()).filter(Boolean),
-          materials:   [],
-          moq:         1,
-          moq_unit:    '협의',
-          lead_days:   0,
-          price_range: '',
-          employees:   0,
-          founded:     0,
-          certs:       [],
-          oem:         false,
-          odm:         false,
-          export:      false,
-          rating:      0,
-          reviews:     0,
-          response_hr: 24,
-          deals:       0,
-          hidden:      true,
-          summary:     get(idx.complex),
-          image:       '#a8b4c8',
-        });
-      });
-
-      setParsedRows(rows);
-      setParseErrors(errors);
-      setUploadPhase('preview');
+      const dataLines = lines.slice(1).map(l => parseCSVLine(l));
+      setRawHeaders(headers);
+      setRawLines(dataLines);
+      setColMap(autoMap(headers));
+      setUploadPhase('mapping');
     } catch (e) {
       alert('파싱 오류: ' + e.message);
     }
   };
 
-  // ── 공공데이터 업로드: 1000행 배치, 기존 pub_ 이외 ID 보호 ──
-  const confirmPublicUpload = async () => {
+  // Step 2: Apply column mapping → generate parsedRows → show preview
+  const applyMapping = () => {
+    const get = (vals, idx) => (idx >= 0 && idx < vals.length ? (vals[idx] || '').trim() : '');
+    const rows = [], errors = [];
+    rawLines.forEach((vals, i) => {
+      const name = get(vals, colMap.name);
+      if (!name) { errors.push({ rowNum: i + 2, msg: '회사명 없음' }); return; }
+      const seqRaw = get(vals, colMap.id_src);
+      const seq = parseInt(seqRaw) || (i + 1);
+      const city = get(vals, colMap.city);
+      rows.push({
+        id:          'pub_' + seq,
+        name,
+        en:          '',
+        city,
+        region:      extractRegion(city),
+        coord_x:     50,
+        coord_y:     50,
+        industries:  [],
+        processes:   [],
+        products:    get(vals, colMap.products).split(/[,;／、]/).map(s => s.trim()).filter(Boolean),
+        materials:   [],
+        moq:         1,
+        moq_unit:    '협의',
+        lead_days:   0,
+        price_range: '',
+        employees:   0,
+        founded:     0,
+        certs:       [],
+        oem:         false,
+        odm:         false,
+        export:      false,
+        rating:      0,
+        reviews:     0,
+        response_hr: 24,
+        deals:       0,
+        hidden:      true,
+        summary:     get(vals, colMap.summary),
+        image:       '#a8b4c8',
+      });
+    });
+    setParsedRows(rows);
+    setParseErrors(errors);
+    setUploadPhase('preview');
+  };
+
+  // Step 3: 1000-row batch upsert
+  const confirmUpload = async () => {
     if (!window._sb) { alert('Supabase 연결이 없습니다.'); return; }
     setUploadPhase('uploading');
     const BATCH = 1000;
     let ok = 0, fail = 0;
     const failedRows = [];
     setUploadProgress({ done: 0, total: parsedRows.length });
-
     for (let i = 0; i < parsedRows.length; i += BATCH) {
       const chunk = parsedRows.slice(i, i + BATCH);
-      const { error } = await window._sb
-        .from('factories')
-        .upsert(chunk, { onConflict: 'id' });
+      const { error } = await window._sb.from('factories').upsert(chunk, { onConflict: 'id' });
       if (!error) {
         ok += chunk.length;
       } else {
         fail += chunk.length;
-        failedRows.push({ id: `${i+1}~${Math.min(i+BATCH, parsedRows.length)}행`, name: '', msg: error.message });
+        failedRows.push({ id: `${i+1}~${Math.min(i+BATCH,parsedRows.length)}행`, name: '', msg: error.message });
       }
       setUploadProgress({ done: Math.min(i + BATCH, parsedRows.length), total: parsedRows.length });
-      // UI 업데이트를 위한 마이크로태스크 양보
       await new Promise(r => setTimeout(r, 0));
     }
-
     setUploadResult({ ok, fail, failedRows });
     setUploadPhase('result');
   };
@@ -3912,20 +3817,12 @@ const AdminPage = ({ onOpenFactory }) => {
     rfq: 248, chat: 89, users: 1342,
   };
 
-  const PREVIEW_COLS = uploadMode === 'public' ? [
-    { key: 'id',      label: '순번' },
-    { key: 'name',    label: '회사명' },
-    { key: 'city',    label: '공장주소', render: v => v ? v.slice(0, 20) + (v.length > 20 ? '…' : '') : '—' },
-    { key: 'products',label: '생산품', render: v => (v || []).slice(0, 3).join(', ') || '—' },
-    { key: 'summary', label: '단지명' },
-  ] : [
+  const PREVIEW_COLS = [
     { key: 'id',       label: 'ID' },
-    { key: 'name',     label: '업체명' },
-    { key: 'city',     label: '도시' },
-    { key: 'processes',label: '공정', render: v => (v || []).join(', ') || '—' },
-    { key: 'moq',      label: 'MOQ' },
-    { key: 'lead_days',label: '리드(일)' },
-    { key: 'rating',   label: '평점' },
+    { key: 'name',     label: '회사명' },
+    { key: 'city',     label: '주소', render: v => v ? v.slice(0, 22) + (v.length > 22 ? '…' : '') : '—' },
+    { key: 'products', label: '생산품', render: v => (v || []).slice(0, 3).join(', ') || '—' },
+    { key: 'summary',  label: '단지명' },
   ];
 
   return (
@@ -4108,7 +4005,8 @@ const AdminPage = ({ onOpenFactory }) => {
             <header className="modal-head">
               <h3>
                 {uploadPhase === 'idle'      && 'CSV 일괄 업로드'}
-                {uploadPhase === 'preview'   && `미리보기 · ${parsedRows.length}개 행`}
+                {uploadPhase === 'mapping'   && `컬럼 매핑 · ${rawHeaders.length}개 감지`}
+                {uploadPhase === 'preview'   && `미리보기 · ${parsedRows.length.toLocaleString()}행`}
                 {uploadPhase === 'uploading' && '업로드 중…'}
                 {uploadPhase === 'result'    && '업로드 완료'}
               </h3>
@@ -4120,73 +4018,80 @@ const AdminPage = ({ onOpenFactory }) => {
             {/* Phase: idle — drop zone */}
             {uploadPhase === 'idle' && (
               <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  style={{ display: 'none' }}
-                  onChange={(e) => { const f = e.target.files[0]; if (f) (uploadMode === 'public' ? parsePublicFile(f) : parseFile(f)); e.target.value = ''; }}
+                <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }}
+                  onChange={(e) => { const f = e.target.files[0]; if (f) parseFileHeaders(f); e.target.value = ''; }}
                 />
-
-                <div className="upload-mode-toggle">
-                  <button
-                    className={uploadMode === 'standard' ? 'is-active' : ''}
-                    onClick={() => setUploadMode('standard')}
-                  >
-                    기본 형식 (27개 필드)
-                  </button>
-                  <button
-                    className={uploadMode === 'public' ? 'is-active' : ''}
-                    onClick={() => setUploadMode('public')}
-                  >
-                    공공데이터 형식
-                  </button>
-                </div>
-
                 <div
                   className={'upload-drop' + (dragOver ? ' is-drag' : '')}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) (uploadMode === 'public' ? parsePublicFile(f) : parseFile(f)); }}
+                  onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) parseFileHeaders(f); }}
                 >
                   <Icon name="upload" size={32} stroke={1.4}/>
                   <strong>CSV 파일을 끌어다 놓으세요</strong>
-                  <span>.csv · 최대 10MB · UTF-8 / EUC-KR 지원</span>
+                  <span>.csv · UTF-8 / EUC-KR · 컬럼명 자동 인식</span>
                   <button className="btn btn-primary btn-sm" onClick={() => fileInputRef.current?.click()}>
                     <Icon name="plus" size={12} stroke={2.2}/>
                     파일 선택
                   </button>
                 </div>
+                <div className="upload-template">
+                  <Icon name="info" size={13} stroke={2}/>
+                  <div>
+                    <strong>어떤 CSV든 OK</strong>
+                    <span>컬럼명을 자동 분석해 매핑합니다. 공공데이터·자체 양식 모두 지원.</span>
+                  </div>
+                  <button className="link-btn" onClick={downloadTemplate}>기본 템플릿</button>
+                </div>
+              </>
+            )}
 
-                {uploadMode === 'standard' ? (
-                  <>
-                    <div className="upload-template">
-                      <Icon name="info" size={13} stroke={2}/>
-                      <div>
-                        <strong>27개 필드</strong>
-                        <span>id, name, city, region, processes(;구분), certs(;구분), moq, lead_days, rating 등. 배열은 세미콜론(;)으로 구분.</span>
+            {/* Phase: mapping — review/adjust column mapping */}
+            {uploadPhase === 'mapping' && (
+              <>
+                <div className="mapping-info">
+                  <Icon name="layers" size={14} stroke={2}/>
+                  <span><strong>{rawHeaders.length}개 컬럼</strong> 감지 · <strong>{rawLines.length.toLocaleString()}행</strong></span>
+                </div>
+                <div className="mapping-table">
+                  {MAPPING_FIELDS.map(({ field, label, required }) => {
+                    const idx = colMap[field] ?? -1;
+                    return (
+                      <div key={field} className={`mapping-row ${idx >= 0 ? 'is-matched' : 'is-unmatched'}`}>
+                        <div className="mapping-target">
+                          {label}
+                          {required && <span className="mapping-required">필수</span>}
+                        </div>
+                        <div className="mapping-status">
+                          {idx >= 0
+                            ? <><Icon name="check" size={12} stroke={2.4}/><span className="mapping-col-name">{rawHeaders[idx]}</span></>
+                            : <><Icon name="info"  size={12} stroke={2}/> <span className="mapping-col-none">미감지</span></>
+                          }
+                        </div>
+                        <select
+                          className="mapping-select"
+                          value={idx >= 0 ? idx : ''}
+                          onChange={(e) => setColMap(m => ({ ...m, [field]: e.target.value === '' ? -1 : parseInt(e.target.value) }))}
+                        >
+                          <option value="">— 매핑 안 함 —</option>
+                          {rawHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                        </select>
                       </div>
-                      <button className="link-btn" onClick={downloadTemplate}>템플릿 다운로드</button>
-                    </div>
-                    <div className="upload-rules">
-                      <h4>업로드 규칙</h4>
-                      <ul>
-                        <li><Icon name="check" size={11} stroke={2.4}/> id 중복 시 upsert (덮어쓰기)</li>
-                        <li><Icon name="check" size={11} stroke={2.4}/> processes / certs / materials 등 배열은 세미콜론(;) 구분</li>
-                        <li><Icon name="check" size={11} stroke={2.4}/> oem / odm / export → true 또는 false</li>
-                        <li><Icon name="check" size={11} stroke={2.4}/> name이 없는 행은 자동으로 건너뜀</li>
-                      </ul>
-                    </div>
-                  </>
-                ) : (
-                  <div className="upload-template">
-                    <Icon name="info" size={13} stroke={2}/>
-                    <div>
-                      <strong>공공데이터 형식</strong>
-                      <span>순번, 회사명, 단지명, 생산품, 공장주소 컬럼. id는 pub_순번으로 자동 생성. 대용량(수십만 행) 지원.</span>
-                    </div>
+                    );
+                  })}
+                </div>
+                {(colMap.name ?? -1) < 0 && (
+                  <div className="mapping-warn">
+                    <Icon name="info" size={13} stroke={2}/> 회사명 컬럼을 반드시 지정해주세요.
                   </div>
                 )}
+                <footer className="modal-foot">
+                  <button className="btn btn-secondary" onClick={resetUpload}>다시 선택</button>
+                  <button className="btn btn-primary" onClick={applyMapping} disabled={(colMap.name ?? -1) < 0}>
+                    <Icon name="check" size={13} stroke={2.2}/>
+                    매핑 확인 · 미리보기
+                  </button>
+                </footer>
               </>
             )}
 
@@ -4245,11 +4150,7 @@ const AdminPage = ({ onOpenFactory }) => {
 
                 <footer className="modal-foot">
                   <button className="btn btn-secondary" onClick={resetUpload}>다시 선택</button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={uploadMode === 'public' ? confirmPublicUpload : confirmUpload}
-                    disabled={parsedRows.length === 0}
-                  >
+                  <button className="btn btn-primary" onClick={confirmUpload} disabled={parsedRows.length === 0}>
                     <Icon name="upload" size={13} stroke={2.2}/>
                     {parsedRows.length.toLocaleString()}개 업로드 시작
                   </button>
