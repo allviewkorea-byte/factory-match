@@ -163,24 +163,15 @@ function getCardKeywords(f) {
   return kws.slice(0, 3).join(' · ') || f.name.slice(0, 12);
 }
 
-const ManufacturerCard = ({ f, onOpen, onSelect, selected, density, compact = false }) => {
+const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
   const isCompact = compact || density === 'compact';
 
   return (
-    <article className={`mcard ${selected ? 'is-selected' : ''} ${isCompact ? 'is-compact' : ''}`}>
+    <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
         <div className="mcard-kw-text">{getCardKeywords(f)}</div>
-        {onSelect && (
-          <button
-            className={`mcard-select ${selected ? 'is-on' : ''}`}
-            onClick={(e) => { e.stopPropagation(); onSelect(f.id); }}
-            aria-label="견적 요청 선택"
-          >
-            {selected ? <Icon name="check" size={14} stroke={2.4}/> : null}
-          </button>
-        )}
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
@@ -887,7 +878,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [exportOnly, setExportOnly] = useStateP(false);
   const [sort, setSort] = useStateP('match');
   const [hovered, setHovered] = useStateP(null);
-  const [selected, setSelected] = useStateP('f1');
+  const [selected, setSelected] = useStateP(null);
   const [page, setPage] = useStateP(1);
   const PAGE_SIZE = 20;
 
@@ -940,7 +931,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const selectedFactory = filtered.find(f => f.id === selected) || filtered[0];
+  const selectedFactory = selected ? filtered.find(f => f.id === selected) : null;
 
   return (
     <div className="page page-list">
@@ -1099,8 +1090,6 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   <ManufacturerCard
                     f={f}
                     onOpen={onOpenFactory}
-                    onSelect={onAddRFQ}
-                    selected={rfqIds.includes(f.id)}
                     density={density}
                     compact
                   />
@@ -2016,8 +2005,6 @@ function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [], onSearch }) {
                 <ManufacturerCard
                   f={f}
                   onOpen={onOpenFactory}
-                  onSelect={onAddRFQ}
-                  selected={rfqIds.includes(f.id)}
                   compact
                 />
               </div>
