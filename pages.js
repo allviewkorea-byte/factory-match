@@ -460,6 +460,38 @@ const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
   const { FACTORIES, PROCESSES, CATEGORY_CARDS, TRENDING_SEARCHES } = window.MFG_DATA;
   const [q, setQ] = useStateP('');
   const [showAuto, setShowAuto] = useStateP(false);
+  const [trendingSearches, setTrendingSearches] = useStateP(TRENDING_SEARCHES);
+  const [industryCounts, setIndustryCounts] = useStateP({});
+
+  useEffectP(() => {
+    if (!window._sb) return;
+    window._sb.from('factories').select('products,industries').eq('hidden', false).limit(2000)
+      .then(({ data }) => {
+        if (!data || !data.length) return;
+        // Top products → trending keywords
+        const prodCount = {};
+        data.forEach(f => {
+          (f.products || []).forEach(p => {
+            if (p && typeof p === 'string') prodCount[p] = (prodCount[p] || 0) + 1;
+          });
+        });
+        const topKeywords = Object.entries(prodCount)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([p]) => p);
+        if (topKeywords.length >= 3) setTrendingSearches(topKeywords);
+
+        // Industry counts for dynamic section
+        const indCount = {};
+        data.forEach(f => {
+          (f.industries || []).forEach(ind => {
+            if (ind) indCount[ind] = (indCount[ind] || 0) + 1;
+          });
+        });
+        setIndustryCounts(indCount);
+      })
+      .catch(() => {});
+  }, []);
 
   // tier 폐지 → 평점 + 거래량 가중치로 추천
   const recommended = FACTORIES
@@ -565,7 +597,7 @@ const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
 
           <div className="hero-trending">
             <span className="hero-trending-k">인기:</span>
-            {TRENDING_SEARCHES.map(t => (
+            {trendingSearches.map(t => (
               <button key={t} className="hero-trending-item" onClick={() => onSearch?.(t)}>
                 {t}
               </button>
@@ -590,15 +622,15 @@ const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
       <section className="section">
         <div className="section-head">
           <div>
-            <h2 className="section-title">가공 방식별 탐색</h2>
-            <p className="section-sub">Browse by process · 8개 가공방식 · 891개 제조사</p>
+            <h2 className="section-title">업종 · 가공 방식별 탐색</h2>
+            <p className="section-sub">Browse by industry & process</p>
           </div>
           <button className="link-btn" onClick={() => onNav('list')}>
             전체 보기 <Icon name="chevron_right" size={14} stroke={2}/>
           </button>
         </div>
         <div className="cat-grid">
-          {CATEGORY_CARDS.map((c, i) => {
+          {CATEGORY_CARDS.map((c) => {
             const proc = PROCESSES.find(p => p.id === c.process);
             return (
               <button key={c.process} className="cat-card" onClick={() => onSearch?.(proc.label)}>
@@ -622,6 +654,25 @@ const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
               </button>
             );
           })}
+          {window.MFG_DATA.INDUSTRIES
+            .filter(ind => (industryCounts[ind.id] || 0) >= 5)
+            .map(ind => (
+              <button key={ind.id} className="cat-card" onClick={() => onSearch?.(ind.label)}>
+                <div className="cat-card-vis" data-cat={ind.id}>
+                  <CatGlyph kind={ind.id}/>
+                </div>
+                <div className="cat-card-body">
+                  <div className="cat-card-row">
+                    <h3 className="cat-card-title">{ind.label}</h3>
+                  </div>
+                  <div className="cat-card-meta">
+                    <span className="cat-card-en">{ind.en}</span>
+                    <span className="cat-card-count">{industryCounts[ind.id]}개사</span>
+                  </div>
+                </div>
+              </button>
+            ))
+          }
         </div>
       </section>
 
@@ -767,6 +818,53 @@ const CatGlyph = ({ kind }) => {
         <circle cx="50" cy="14" r="1.5" fill="currentColor" opacity=".6"/>
         <circle cx="55" cy="18" r="1" fill="currentColor" opacity=".6"/>
         <circle cx="48" cy="20" r="1" fill="currentColor" opacity=".6"/>
+      </svg>
+    ),
+    food: (
+      <svg viewBox="0 0 64 40" fill="none">
+        <ellipse cx="32" cy="26" rx="18" ry="8" fill="currentColor" opacity=".2"/>
+        <rect x="24" y="10" width="16" height="18" rx="8" fill="currentColor" opacity=".7"/>
+        <rect x="30" y="6" width="4" height="6" rx="2" fill="currentColor"/>
+        <line x1="14" y1="12" x2="14" y2="30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="50" y1="12" x2="50" y2="30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M11 12 Q14 18 17 12" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+      </svg>
+    ),
+    textile: (
+      <svg viewBox="0 0 64 40" fill="none">
+        <path d="M8 30 Q16 18 24 30 Q32 18 40 30 Q48 18 56 30" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M8 22 Q16 10 24 22 Q32 10 40 22 Q48 10 56 22" stroke="currentColor" strokeWidth="1.5" fill="none" opacity=".4" strokeLinecap="round"/>
+      </svg>
+    ),
+    chemical: (
+      <svg viewBox="0 0 64 40" fill="none">
+        <path d="M22 8 L22 22 L12 34 L52 34 L42 22 L42 8 Z" fill="currentColor" opacity=".15" stroke="currentColor" strokeWidth="1.5"/>
+        <rect x="22" y="6" width="20" height="4" rx="2" fill="currentColor" opacity=".5"/>
+        <circle cx="24" cy="28" r="3" fill="currentColor" opacity=".6"/>
+        <circle cx="35" cy="30" r="2" fill="currentColor" opacity=".4"/>
+        <circle cx="44" cy="27" r="2.5" fill="currentColor" opacity=".5"/>
+      </svg>
+    ),
+    electronics: (
+      <svg viewBox="0 0 64 40" fill="none">
+        <rect x="16" y="10" width="32" height="20" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+        <rect x="22" y="16" width="6" height="8" rx="1" fill="currentColor" opacity=".4"/>
+        <rect x="36" y="16" width="6" height="8" rx="1" fill="currentColor" opacity=".4"/>
+        <line x1="28" y1="20" x2="36" y2="20" stroke="currentColor" strokeWidth="1" opacity=".6"/>
+        <line x1="20" y1="14" x2="20" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="44" y1="14" x2="44" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="20" y1="26" x2="20" y2="32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="44" y1="26" x2="44" y2="32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ),
+    machine: (
+      <svg viewBox="0 0 64 40" fill="none">
+        <circle cx="32" cy="20" r="12" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+        <circle cx="32" cy="20" r="5" fill="currentColor" opacity=".4"/>
+        <rect x="30" y="6" width="4" height="5" rx="1" fill="currentColor"/>
+        <rect x="30" y="29" width="4" height="5" rx="1" fill="currentColor"/>
+        <rect x="6" y="18" width="5" height="4" rx="1" fill="currentColor"/>
+        <rect x="53" y="18" width="5" height="4" rx="1" fill="currentColor"/>
       </svg>
     ),
   };
@@ -1709,7 +1807,7 @@ function scoreFactory(factory, searchTerms) {
   return score;
 }
 
-function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [] }) {
+function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [], onSearch }) {
   const [query, setQuery] = useStateSX('음료자판기');
   const [smart, setSmart] = useStateSX(true);
   const [activeKw, setActiveKw] = useStateSX(null);
@@ -1977,7 +2075,7 @@ function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [] }) {
 
             <div className="sx-rec-grid">
               {rec3.map((r, i) => (
-                <button key={r.id || i} className="sx-rec">
+                <button key={r.id || i} className="sx-rec" onClick={() => onSearch && onSearch(r.tags?.[0] || r.title)}>
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
                     <SXGlyph kind={r.glyph}/>

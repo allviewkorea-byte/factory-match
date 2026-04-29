@@ -37,6 +37,10 @@ function App() {
   const [searchQ, setSearchQ] = useState('');
 
   useEffect(() => {
+    if (route === 'list') setRfqIds([]);
+  }, [route]);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
   }, [tweaks.density]);
 
@@ -177,6 +181,7 @@ function App() {
           onOpenFactory={(id) => openFactory(id, 'search')}
           onAddRFQ={addRFQ}
           rfqIds={rfqIds}
+          onSearch={handleSearch}
         />
       )}
       {route === 'chat' && (
