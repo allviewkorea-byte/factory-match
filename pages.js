@@ -2986,8 +2986,8 @@ const ChatPage = ({ initialFactoryId, onBack, onOpenFactory }) => {
                   {active.f.name.slice(0, 1)}
                 </div>
               )}
-              <div className="chat-msg-bubble">
-                <div className="chat-msg-text">{m.text}</div>
+              <div className="chat-msg-body">
+                <div className="chat-msg-bubble">{m.text}</div>
                 <div className="chat-msg-time">{m.t}</div>
               </div>
             </div>
