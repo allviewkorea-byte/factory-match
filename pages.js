@@ -146,6 +146,27 @@ const Chip = ({ active, onClick, children, count }) => (
 // ──────────────────────────────────────────────────────────
 // Manufacturer card (used in list, recommended, RFQ)
 // ──────────────────────────────────────────────────────────
+const INDUSTRY_BG = {
+  food:        '#2a7d50',
+  machine:     '#1a5fa3',
+  electronics: '#5236a0',
+  chemical:    '#b85c0f',
+  textile:     '#a02d4a',
+};
+function getCardBg(f) {
+  const ind = (f.industries || [])[0];
+  return INDUSTRY_BG[ind] || '#3a5882';
+}
+function getCardKeywords(f) {
+  const kws = [];
+  if (f.products?.length) kws.push(...f.products.slice(0, 3));
+  if (kws.length === 0 && f.processes?.length) {
+    const { PROCESSES } = window.MFG_DATA;
+    kws.push(...f.processes.slice(0, 3).map(p => PROCESSES.find(x => x.id === p)?.label || p));
+  }
+  return kws.slice(0, 3).join(' · ') || f.name.slice(0, 12);
+}
+
 const ManufacturerCard = ({ f, onOpen, onSelect, selected, density, compact = false }) => {
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
@@ -153,9 +174,8 @@ const ManufacturerCard = ({ f, onOpen, onSelect, selected, density, compact = fa
 
   return (
     <article className={`mcard ${selected ? 'is-selected' : ''} ${isCompact ? 'is-compact' : ''}`}>
-      <div className="mcard-img" style={{ background: f.image }}>
-        <div className="mcard-img-stripes"/>
-        <div className="mcard-img-label">FACTORY · {f.en.toUpperCase()}</div>
+      <div className="mcard-img" style={{ background: getCardBg(f) }}>
+        <div className="mcard-kw-text">{getCardKeywords(f)}</div>
         {onSelect && (
           <button
             className={`mcard-select ${selected ? 'is-on' : ''}`}
@@ -774,6 +794,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [sort, setSort] = useStateP('match');
   const [hovered, setHovered] = useStateP(null);
   const [selected, setSelected] = useStateP('f1');
+  const [page, setPage] = useStateP(1);
+  const PAGE_SIZE = 20;
 
   useEffectP(() => {
     if (!window._sb) { setDbLoading(false); return; }
@@ -820,6 +842,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return arr;
   }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
 
+  useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
+
+  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const selectedFactory = filtered.find(f => f.id === selected) || filtered[0];
 
   return (
@@ -948,8 +974,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             <div className="list-results-head">
               <div>
-                <strong>{filtered.length}</strong>개 제조사
-                <span className="results-sub">조건에 맞는 결과</span>
+                <strong>{filtered.length.toLocaleString()}</strong>개 중{' '}
+                <span className="results-range">
+                  {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
+                </span>
               </div>
               <div className="list-results-sort">
                 <span>정렬</span>
@@ -962,7 +990,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               </div>
             </div>
             <div className="list-results-grid">
-              {filtered.map(f => (
+              {paginated.map(f => (
                 <div
                   key={f.id}
                   onMouseEnter={() => setHovered(f.id)}
@@ -981,6 +1009,31 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 </div>
               ))}
             </div>
+            {pageCount > 1 && (
+              <div className="list-pagination">
+                <button className="pg-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                  <Icon name="arrow_left" size={14} stroke={2}/>
+                  이전
+                </button>
+                <div className="pg-nums">
+                  {Array.from({ length: Math.min(pageCount, 7) }, (_, i) => {
+                    const n = pageCount <= 7 ? i + 1
+                      : page <= 4 ? i + 1
+                      : page >= pageCount - 3 ? pageCount - 6 + i
+                      : page - 3 + i;
+                    return (
+                      <button key={n} className={`pg-num ${page === n ? 'is-active' : ''}`} onClick={() => setPage(n)}>
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button className="pg-btn" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount}>
+                  다음
+                  <Icon name="arrow_right" size={14} stroke={2}/>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -994,15 +1047,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
           />
           {selectedFactory && (
             <div className="map-side">
-              <div className="map-side-img" style={{ background: selectedFactory.image }}>
-                <div className="mcard-img-stripes"/>
-                <button className="map-side-close" onClick={() => setSelected(null)}>
-                  <Icon name="close" size={14} stroke={2}/>
-                </button>
-              </div>
               <div className="map-side-body">
                 <div className="map-side-row">
                   <h3>{selectedFactory.name}</h3>
+                  <button className="map-side-close" onClick={() => setSelected(null)}>
+                    <Icon name="close" size={14} stroke={2}/>
+                  </button>
                   <div className="mcard-rating">
                     <Icon name="star" size={11} stroke={2}/>
                     <strong>{selectedFactory.rating}</strong>
