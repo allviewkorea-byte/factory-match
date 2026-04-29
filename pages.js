@@ -3477,75 +3477,138 @@ const AdminPage = ({ onOpenFactory }) => {
   const [data, setData] = useState(ADMIN_FACTORIES);
   const [tab, setTab] = useState('factories');
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('all');  // all / public / private
+  const [filter, setFilter] = useState('all');
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadState, setUploadState] = useState('idle'); // idle | parsing | uploading | done | error
+
+  // Upload flow phases: idle → preview → uploading → result
+  const [uploadPhase, setUploadPhase] = useState('idle');
+  const [parsedRows, setParsedRows] = useState([]);
+  const [parseErrors, setParseErrors] = useState([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
   const [uploadResult, setUploadResult] = useState(null);
   const fileInputRef = React.useRef(null);
 
-  const closeUpload = () => { setShowUpload(false); setUploadState('idle'); setUploadResult(null); };
+  const resetUpload = () => {
+    setUploadPhase('idle');
+    setParsedRows([]);
+    setParseErrors([]);
+    setUploadProgress({ done: 0, total: 0 });
+    setUploadResult(null);
+  };
+  const closeUpload = () => { setShowUpload(false); resetUpload(); };
 
   const downloadTemplate = () => {
     const hdr = 'id,name,en,city,region,coord_x,coord_y,industries,processes,products,materials,moq,moq_unit,lead_days,price_range,employees,founded,certs,oem,odm,export,rating,reviews,response_hr,deals,summary,image';
-    const ex = 'f_ex1,예시정밀,Example Precision,경기 안산시,gyeonggi,38,32,machine,cnc;cutting,auto;machine_parts,알루미늄;SUS304,100,피스,14,₩2500~₩18000,42,2008,ISO 9001;IATF 16949,true,true,false,4.5,80,3,200,자동차 정밀부품 전문입니다.,#a8b4c8';
+    const ex  = 'f_ex1,예시정밀,Example Precision,경기 안산시,gyeonggi,38,32,machine,cnc;cutting,auto;machine_parts,알루미늄;SUS304,100,피스,14,₩2500~₩18000,42,2008,ISO 9001;IATF 16949,true,true,false,4.5,80,3,200,자동차 정밀부품 전문입니다.,#a8b4c8';
     const blob = new Blob([hdr + '\n' + ex], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'factories_template.csv'; a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleFileUpload = async (file) => {
+  // Step 1: Parse CSV → set parsedRows + parseErrors → show preview
+  const parseFile = async (file) => {
     if (!file) return;
-    setUploadState('parsing');
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('.csv 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    resetUpload();
     try {
       const text = await file.text();
       const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) throw new Error('CSV에 데이터 행이 없어요.');
+      if (lines.length < 2) throw new Error('데이터 행이 없어요. 헤더 외에 최소 1행이 필요합니다.');
+
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-      const rows = lines.slice(1).map((line, i) => {
+      const rows = [];
+      const errors = [];
+
+      lines.slice(1).forEach((line, i) => {
         const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
         const obj = {};
-        headers.forEach((h, j) => { obj[h] = vals[j] || ''; });
-        return {
-          id: obj.id || ('c' + Date.now() + i),
-          name: obj.name || '',
-          en: obj.en || '',
-          city: obj.city || '',
-          region: obj.region || '',
-          coord_x: parseFloat(obj.coord_x) || 50,
-          coord_y: parseFloat(obj.coord_y) || 50,
-          industries: (obj.industries || '').split(';').filter(Boolean),
-          processes: (obj.processes || '').split(';').filter(Boolean),
-          products: (obj.products || '').split(';').filter(Boolean),
-          materials: (obj.materials || '').split(';').filter(Boolean),
-          moq: parseInt(obj.moq) || 1,
-          moq_unit: obj.moq_unit || '피스',
-          lead_days: parseInt(obj.lead_days) || 14,
+        headers.forEach((h, j) => { obj[h] = vals[j] ?? ''; });
+
+        if (!obj.name) {
+          errors.push({ rowNum: i + 2, id: obj.id || '—', msg: 'name 컬럼이 비어있음' });
+          return;
+        }
+        rows.push({
+          id:          obj.id || ('gen_' + Date.now() + '_' + i),
+          name:        obj.name,
+          en:          obj.en || '',
+          city:        obj.city || '',
+          region:      obj.region || '',
+          coord_x:     parseFloat(obj.coord_x) || 50,
+          coord_y:     parseFloat(obj.coord_y) || 50,
+          industries:  (obj.industries || '').split(';').filter(Boolean),
+          processes:   (obj.processes  || '').split(';').filter(Boolean),
+          products:    (obj.products   || '').split(';').filter(Boolean),
+          materials:   (obj.materials  || '').split(';').filter(Boolean),
+          moq:         parseInt(obj.moq) || 1,
+          moq_unit:    obj.moq_unit || '피스',
+          lead_days:   parseInt(obj.lead_days) || 14,
           price_range: obj.price_range || '',
-          employees: parseInt(obj.employees) || 0,
-          founded: parseInt(obj.founded) || 2000,
-          certs: (obj.certs || '').split(';').filter(Boolean),
-          oem: obj.oem === 'true' || obj.oem === '1',
-          odm: obj.odm === 'true' || obj.odm === '1',
-          export: obj.export === 'true' || obj.export === '1',
-          rating: parseFloat(obj.rating) || 0,
-          reviews: parseInt(obj.reviews) || 0,
+          employees:   parseInt(obj.employees) || 0,
+          founded:     parseInt(obj.founded) || 2000,
+          certs:       (obj.certs || '').split(';').filter(Boolean),
+          oem:         obj.oem === 'true' || obj.oem === '1',
+          odm:         obj.odm === 'true' || obj.odm === '1',
+          export:      obj.export === 'true' || obj.export === '1',
+          rating:      parseFloat(obj.rating) || 0,
+          reviews:     parseInt(obj.reviews) || 0,
           response_hr: parseInt(obj.response_hr) || 24,
-          deals: parseInt(obj.deals) || 0,
-          hidden: false,
-          summary: obj.summary || '',
-          image: obj.image || '#a8b4c8',
-        };
-      }).filter(r => r.name);
-      if (!rows.length) throw new Error('유효한 행이 없어요. name 열이 있는지 확인하세요.');
-      setUploadState('uploading');
-      if (!window._sb) throw new Error('Supabase 연결 실패. 페이지를 새로고침 해주세요.');
-      const { error } = await window._sb.from('factories').upsert(rows, { onConflict: 'id' });
-      if (error) throw new Error(error.message);
-      setUploadState('done');
-      setUploadResult({ count: rows.length });
+          deals:       parseInt(obj.deals) || 0,
+          hidden:      obj.hidden === 'true' || obj.hidden === '1',
+          summary:     obj.summary || '',
+          image:       obj.image || '#a8b4c8',
+        });
+      });
+
+      setParsedRows(rows);
+      setParseErrors(errors);
+      setUploadPhase('preview');
+    } catch (e) {
+      alert('파싱 오류: ' + e.message);
+    }
+  };
+
+  // Step 2: Upsert to Supabase with per-row error tracking
+  const confirmUpload = async () => {
+    if (!window._sb) {
+      alert('Supabase 연결이 없습니다. 페이지를 새로고침 해주세요.');
+      return;
+    }
+    setUploadPhase('uploading');
+    const CHUNK = 100;
+    let ok = 0, fail = 0;
+    const failedRows = [];
+    setUploadProgress({ done: 0, total: parsedRows.length });
+
+    for (let i = 0; i < parsedRows.length; i += CHUNK) {
+      const chunk = parsedRows.slice(i, i + CHUNK);
+      const { error } = await window._sb.from('factories').upsert(chunk, { onConflict: 'id' });
+      if (!error) {
+        ok += chunk.length;
+      } else {
+        // Retry individually to pinpoint which rows failed
+        for (const row of chunk) {
+          const { error: rowErr } = await window._sb.from('factories').upsert([row], { onConflict: 'id' });
+          if (rowErr) {
+            fail++;
+            failedRows.push({ id: row.id, name: row.name, msg: rowErr.message });
+          } else {
+            ok++;
+          }
+        }
+      }
+      setUploadProgress({ done: Math.min(i + CHUNK, parsedRows.length), total: parsedRows.length });
+    }
+
+    // Refresh local factory list
+    try {
       const { data: fresh } = await window._sb.from('factories').select('*');
-      if (fresh) {
+      if (fresh?.length) {
         window.MFG_DATA.FACTORIES = fresh.map(window._dbRowToFactory);
         setData(fresh.map(r => ({
           ...window._dbRowToFactory(r),
@@ -3554,10 +3617,10 @@ const AdminPage = ({ onOpenFactory }) => {
           source: 'CSV',
         })));
       }
-    } catch (err) {
-      setUploadState('error');
-      setUploadResult({ msg: err.message });
-    }
+    } catch (_) {}
+
+    setUploadResult({ ok, fail, failedRows });
+    setUploadPhase('result');
   };
 
   const togglePublic = (id) => {
@@ -3565,20 +3628,28 @@ const AdminPage = ({ onOpenFactory }) => {
   };
 
   const filtered = data.filter(f => {
-    if (filter === 'public' && !f.public) return false;
-    if (filter === 'private' && f.public) return false;
-    if (q && !(f.name.includes(q) || f.city.includes(q))) return false;
+    if (filter === 'public'  && !f.public) return false;
+    if (filter === 'private' &&  f.public) return false;
+    if (q && !(f.name.includes(q) || (f.city || '').includes(q))) return false;
     return true;
   });
 
   const stats = {
     total: data.length,
-    pub: data.filter(f => f.public).length,
-    priv: data.filter(f => !f.public).length,
-    rfq: 248,
-    chat: 89,
-    users: 1342,
+    pub:   data.filter(f => f.public).length,
+    priv:  data.filter(f => !f.public).length,
+    rfq: 248, chat: 89, users: 1342,
   };
+
+  const PREVIEW_COLS = [
+    { key: 'id',       label: 'ID' },
+    { key: 'name',     label: '업체명' },
+    { key: 'city',     label: '도시' },
+    { key: 'processes',label: '공정', render: v => (v || []).join(', ') || '—' },
+    { key: 'moq',      label: 'MOQ' },
+    { key: 'lead_days',label: '리드(일)' },
+    { key: 'rating',   label: '평점' },
+  ];
 
   return (
     <main className="page admin-page">
@@ -3589,16 +3660,16 @@ const AdminPage = ({ onOpenFactory }) => {
             FactoryMatch · 운영자 콘솔
           </div>
           <h1>제조사 데이터 관리</h1>
-          <p>엑셀로 일괄 업로드하고, 검증 완료된 제조사만 공개로 전환하세요.</p>
+          <p>CSV로 일괄 업로드하고, 검증 완료된 제조사만 공개로 전환하세요.</p>
         </div>
         <div className="admin-hero-actions">
-          <button className="btn btn-secondary">
-            <Icon name="chart" size={14} stroke={2}/>
-            통계 다운로드
+          <button className="btn btn-secondary" onClick={downloadTemplate}>
+            <Icon name="arrow_up_right" size={14} stroke={2}/>
+            템플릿 다운로드
           </button>
-          <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
+          <button className="btn btn-primary" onClick={() => { resetUpload(); setShowUpload(true); }}>
             <Icon name="upload" size={14} stroke={2}/>
-            엑셀 업로드
+            CSV 업로드
           </button>
         </div>
       </header>
@@ -3615,9 +3686,9 @@ const AdminPage = ({ onOpenFactory }) => {
       <nav className="admin-tabs">
         {[
           { id: 'factories', label: '제조사 관리' },
-          { id: 'users', label: '사용자' },
-          { id: 'rfq', label: 'RFQ 모니터링' },
-          { id: 'logs', label: '업로드 이력' },
+          { id: 'users',     label: '사용자' },
+          { id: 'rfq',       label: 'RFQ 모니터링' },
+          { id: 'logs',      label: '업로드 이력' },
         ].map(t => (
           <button
             key={t.id}
@@ -3634,23 +3705,15 @@ const AdminPage = ({ onOpenFactory }) => {
           <div className="admin-toolbar">
             <div className="admin-search">
               <Icon name="search" size={14} stroke={2}/>
-              <input
-                placeholder="제조사명, 도시로 검색"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
+              <input placeholder="제조사명, 도시로 검색" value={q} onChange={(e) => setQ(e.target.value)}/>
             </div>
             <div className="admin-segmented">
               {[
-                { id: 'all', label: '전체' },
-                { id: 'public', label: '공개' },
+                { id: 'all',     label: '전체' },
+                { id: 'public',  label: '공개' },
                 { id: 'private', label: '비공개' },
               ].map(s => (
-                <button
-                  key={s.id}
-                  className={'seg-btn ' + (filter === s.id ? 'is-active' : '')}
-                  onClick={() => setFilter(s.id)}
-                >
+                <button key={s.id} className={'seg-btn ' + (filter === s.id ? 'is-active' : '')} onClick={() => setFilter(s.id)}>
                   {s.label}
                 </button>
               ))}
@@ -3687,16 +3750,16 @@ const AdminPage = ({ onOpenFactory }) => {
                     <td>{f.city}</td>
                     <td>
                       <div className="admin-tag-row">
-                        {f.processes.slice(0, 2).map(pid => (
+                        {(f.processes || []).slice(0, 2).map(pid => (
                           <span key={pid} className="mtag mtag-sm">{PROCESSES_AC.find(p => p.id === pid)?.label || pid}</span>
                         ))}
-                        {f.processes.length > 2 && <span className="admin-more">+{f.processes.length - 2}</span>}
+                        {(f.processes || []).length > 2 && <span className="admin-more">+{f.processes.length - 2}</span>}
                       </div>
                     </td>
                     <td>
                       <div className="admin-tag-row">
-                        {f.certs.slice(0, 2).map(c => <span key={c} className="mtag mtag-sm mtag-emerald">{c}</span>)}
-                        {f.certs.length === 0 && <span className="admin-empty">—</span>}
+                        {(f.certs || []).slice(0, 2).map(c => <span key={c} className="mtag mtag-sm mtag-emerald">{c}</span>)}
+                        {(f.certs || []).length === 0 && <span className="admin-empty">—</span>}
                       </div>
                     </td>
                     <td className="mono">{f.registered}</td>
@@ -3748,115 +3811,207 @@ const AdminPage = ({ onOpenFactory }) => {
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
-                <tr>
-                  <th>일시</th>
-                  <th>업로더</th>
-                  <th>파일명</th>
-                  <th>행 수</th>
-                  <th>신규</th>
-                  <th>업데이트</th>
-                  <th>오류</th>
-                  <th>결과</th>
-                </tr>
+                <tr><th>일시</th><th>파일명</th><th>전체</th><th>성공</th><th>실패</th><th>결과</th></tr>
               </thead>
               <tbody>
-                <tr><td className="mono">2025-01-06 14:23</td><td>운영팀 김</td><td>factories_2025_01.xlsx</td><td>184</td><td>12</td><td>167</td><td>5</td><td><span className="status-pill status-진행중">검증중</span></td></tr>
-                <tr><td className="mono">2024-12-28 09:14</td><td>운영팀 박</td><td>factories_dec.xlsx</td><td>241</td><td>38</td><td>198</td><td>5</td><td><span className="status-pill status-완료">완료</span></td></tr>
-                <tr><td className="mono">2024-12-15 16:42</td><td>운영팀 김</td><td>cnc_extra.xlsx</td><td>72</td><td>72</td><td>0</td><td>0</td><td><span className="status-pill status-완료">완료</span></td></tr>
-                <tr><td className="mono">2024-11-29 11:08</td><td>운영팀 이</td><td>busan_factories.xlsx</td><td>56</td><td>54</td><td>2</td><td>0</td><td><span className="status-pill status-완료">완료</span></td></tr>
+                <tr><td className="mono">2025-01-06 14:23</td><td>factories_2025_01.csv</td><td>184</td><td>179</td><td>5</td><td><span className="status-pill status-진행중">검증중</span></td></tr>
+                <tr><td className="mono">2024-12-28 09:14</td><td>factories_dec.csv</td><td>241</td><td>241</td><td>0</td><td><span className="status-pill status-완료">완료</span></td></tr>
+                <tr><td className="mono">2024-12-15 16:42</td><td>cnc_extra.csv</td><td>72</td><td>72</td><td>0</td><td><span className="status-pill status-완료">완료</span></td></tr>
+                <tr><td className="mono">2024-11-29 11:08</td><td>busan_factories.csv</td><td>56</td><td>54</td><td>2</td><td><span className="status-pill status-완료">완료</span></td></tr>
               </tbody>
             </table>
           </div>
         </section>
       )}
 
+      {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
         <div className="modal-veil" onClick={closeUpload}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card upload-modal" onClick={(e) => e.stopPropagation()}>
             <header className="modal-head">
-              <h3>CSV 일괄 업로드</h3>
+              <h3>
+                {uploadPhase === 'idle'      && 'CSV 일괄 업로드'}
+                {uploadPhase === 'preview'   && `미리보기 · ${parsedRows.length}개 행`}
+                {uploadPhase === 'uploading' && '업로드 중…'}
+                {uploadPhase === 'result'    && '업로드 완료'}
+              </h3>
               <button className="modal-close" onClick={closeUpload}>
                 <Icon name="close" size={16} stroke={2}/>
               </button>
             </header>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              style={{ display: 'none' }}
-              onChange={(e) => { const f = e.target.files[0]; if (f) handleFileUpload(f); e.target.value = ''; }}
-            />
+            {/* Phase: idle — drop zone */}
+            {uploadPhase === 'idle' && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { const f = e.target.files[0]; if (f) parseFile(f); e.target.value = ''; }}
+                />
+                <div
+                  className={'upload-drop' + (dragOver ? ' is-drag' : '')}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) parseFile(f); }}
+                >
+                  <Icon name="upload" size={32} stroke={1.4}/>
+                  <strong>CSV 파일을 끌어다 놓으세요</strong>
+                  <span>.csv · 최대 10MB · 한 번에 1,000개까지</span>
+                  <button className="btn btn-primary btn-sm" onClick={() => fileInputRef.current?.click()}>
+                    <Icon name="plus" size={12} stroke={2.2}/>
+                    파일 선택
+                  </button>
+                </div>
 
-            <div
-              className="upload-drop"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileUpload(f); }}
-            >
-              {uploadState === 'idle' && (<>
-                <Icon name="upload" size={28} stroke={1.4}/>
-                <strong>CSV 파일을 끌어다 놓으세요</strong>
-                <span>.csv · 최대 10MB · 한 번에 1,000개까지</span>
-                <button className="btn btn-primary btn-sm" onClick={() => fileInputRef.current?.click()}>
-                  <Icon name="plus" size={12} stroke={2.2}/>
-                  파일 선택
-                </button>
-              </>)}
-              {(uploadState === 'parsing' || uploadState === 'uploading') && (<>
+                <div className="upload-template">
+                  <Icon name="info" size={13} stroke={2}/>
+                  <div>
+                    <strong>27개 필드</strong>
+                    <span>id, name, city, region, processes(;구분), certs(;구분), moq, lead_days, rating 등. 배열은 세미콜론(;)으로 구분.</span>
+                  </div>
+                  <button className="link-btn" onClick={downloadTemplate}>템플릿 다운로드</button>
+                </div>
+
+                <div className="upload-rules">
+                  <h4>업로드 규칙</h4>
+                  <ul>
+                    <li><Icon name="check" size={11} stroke={2.4}/> id 중복 시 upsert (덮어쓰기)</li>
+                    <li><Icon name="check" size={11} stroke={2.4}/> processes / certs / materials 등 배열은 세미콜론(;) 구분</li>
+                    <li><Icon name="check" size={11} stroke={2.4}/> oem / odm / export → true 또는 false</li>
+                    <li><Icon name="check" size={11} stroke={2.4}/> name이 없는 행은 자동으로 건너뜀</li>
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {/* Phase: preview — table of first 10 rows */}
+            {uploadPhase === 'preview' && (
+              <>
+                <div className="upload-preview-summary">
+                  <div className="upload-preview-stat upload-stat-ok">
+                    <Icon name="check" size={14} stroke={2.4}/>
+                    유효 <strong>{parsedRows.length}행</strong>
+                  </div>
+                  {parseErrors.length > 0 && (
+                    <div className="upload-preview-stat upload-stat-fail">
+                      <Icon name="info" size={14} stroke={2}/>
+                      건너뜀 <strong>{parseErrors.length}행</strong>
+                    </div>
+                  )}
+                  <span className="upload-preview-hint">처음 10행 미리보기</span>
+                </div>
+
+                <div className="admin-table-wrap upload-preview-table">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        {PREVIEW_COLS.map(c => <th key={c.key}>{c.label}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedRows.slice(0, 10).map((row, i) => (
+                        <tr key={i}>
+                          {PREVIEW_COLS.map(c => (
+                            <td key={c.key} className={c.key === 'id' ? 'mono' : ''}>
+                              {c.render ? c.render(row[c.key]) : (row[c.key] ?? '—')}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {parsedRows.length > 10 && (
+                    <div className="upload-preview-more">… 외 {parsedRows.length - 10}행</div>
+                  )}
+                </div>
+
+                {parseErrors.length > 0 && (
+                  <div className="upload-parse-errors">
+                    <strong>건너뛴 행 ({parseErrors.length}개)</strong>
+                    <ul>
+                      {parseErrors.slice(0, 5).map((e, i) => (
+                        <li key={i}>{e.rowNum}행 · id:{e.id} · {e.msg}</li>
+                      ))}
+                      {parseErrors.length > 5 && <li>… 외 {parseErrors.length - 5}건</li>}
+                    </ul>
+                  </div>
+                )}
+
+                <footer className="modal-foot">
+                  <button className="btn btn-secondary" onClick={resetUpload}>다시 선택</button>
+                  <button className="btn btn-primary" onClick={confirmUpload} disabled={parsedRows.length === 0}>
+                    <Icon name="upload" size={13} stroke={2.2}/>
+                    {parsedRows.length}개 업로드 시작
+                  </button>
+                </footer>
+              </>
+            )}
+
+            {/* Phase: uploading — progress bar */}
+            {uploadPhase === 'uploading' && (
+              <div className="upload-progress-wrap">
                 <div className="upload-spinner"/>
-                <strong>{uploadState === 'parsing' ? 'CSV 분석 중…' : 'Supabase에 업로드 중…'}</strong>
-              </>)}
-              {uploadState === 'done' && (<>
-                <Icon name="check" size={32} stroke={2}/>
-                <strong style={{ color: 'var(--emerald)' }}>업로드 완료!</strong>
-                <span>{uploadResult?.count}개 제조사가 Supabase에 등록됐어요.</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => setUploadState('idle')}>다른 파일 업로드</button>
-              </>)}
-              {uploadState === 'error' && (<>
-                <Icon name="info" size={32} stroke={1.5}/>
-                <strong style={{ color: 'var(--amber)' }}>업로드 실패</strong>
-                <span>{uploadResult?.msg}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => setUploadState('idle')}>다시 시도</button>
-              </>)}
-            </div>
-
-            <div className="upload-template">
-              <Icon name="info" size={13} stroke={2}/>
-              <div>
-                <strong>CSV 템플릿 형식</strong>
-                <span>id, name, city, region, processes(;구분), certs(;구분), moq, lead_days, rating 등 27개 필드. 배열은 세미콜론(;)으로 구분.</span>
+                <strong>Supabase에 저장하는 중…</strong>
+                <div className="upload-progress-bar-wrap">
+                  <div
+                    className="upload-progress-bar-fill"
+                    style={{ width: uploadProgress.total > 0 ? `${Math.round(uploadProgress.done / uploadProgress.total * 100)}%` : '0%' }}
+                  />
+                </div>
+                <span className="upload-progress-label">
+                  {uploadProgress.done} / {uploadProgress.total}행
+                  {uploadProgress.total > 0 && ` (${Math.round(uploadProgress.done / uploadProgress.total * 100)}%)`}
+                </span>
               </div>
-              <button className="link-btn" onClick={downloadTemplate}>템플릿 다운로드</button>
-            </div>
+            )}
 
-            <div className="upload-rules">
-              <h4>업로드 규칙</h4>
-              <ul>
-                <li><Icon name="check" size={11} stroke={2.4}/> id 중복 시 upsert(덮어쓰기)</li>
-                <li><Icon name="check" size={11} stroke={2.4}/> processes/certs/materials 등 배열 필드는 세미콜론(;)으로 구분</li>
-                <li><Icon name="check" size={11} stroke={2.4}/> oem/odm/export 필드는 true 또는 false</li>
-                <li><Icon name="check" size={11} stroke={2.4}/> hidden=false로 등록 후 운영자가 공개 전환</li>
-              </ul>
-            </div>
+            {/* Phase: result — success/fail counts */}
+            {uploadPhase === 'result' && uploadResult && (
+              <>
+                <div className="upload-result-summary">
+                  <div className="upload-result-stat upload-stat-ok">
+                    <Icon name="check" size={20} stroke={2.4}/>
+                    <span className="upload-result-n">{uploadResult.ok}</span>
+                    <span className="upload-result-label">성공</span>
+                  </div>
+                  {uploadResult.fail > 0 && (
+                    <div className="upload-result-stat upload-stat-fail">
+                      <Icon name="info" size={20} stroke={1.8}/>
+                      <span className="upload-result-n">{uploadResult.fail}</span>
+                      <span className="upload-result-label">실패</span>
+                    </div>
+                  )}
+                </div>
 
-            <footer className="modal-foot">
-              <button className="btn btn-secondary" onClick={closeUpload}>닫기</button>
-              <button
-                className="btn btn-primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadState === 'parsing' || uploadState === 'uploading'}
-              >
-                <Icon name="upload" size={13} stroke={2.2}/>
-                {uploadState === 'parsing' || uploadState === 'uploading' ? '처리 중…' : '파일 선택 후 업로드'}
-              </button>
-            </footer>
+                {uploadResult.failedRows.length > 0 && (
+                  <div className="upload-parse-errors">
+                    <strong>실패한 행</strong>
+                    <ul>
+                      {uploadResult.failedRows.slice(0, 8).map((e, i) => (
+                        <li key={i}>id:{e.id} · {e.name || '이름없음'} · {e.msg}</li>
+                      ))}
+                      {uploadResult.failedRows.length > 8 && <li>… 외 {uploadResult.failedRows.length - 8}건</li>}
+                    </ul>
+                  </div>
+                )}
+
+                <footer className="modal-foot">
+                  <button className="btn btn-secondary" onClick={resetUpload}>
+                    <Icon name="upload" size={13} stroke={2}/>
+                    다른 파일 업로드
+                  </button>
+                  <button className="btn btn-primary" onClick={closeUpload}>닫기</button>
+                </footer>
+              </>
+            )}
           </div>
         </div>
       )}
     </main>
   );
 };
-
 Object.assign(window, { ChatPage, MyPage, AdminPage });
 
 
