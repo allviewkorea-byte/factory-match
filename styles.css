@@ -4926,6 +4926,7 @@ a { color: inherit; text-decoration: none; }
 .mapping-table {
   display: flex; flex-direction: column; gap: 6px;
   margin-bottom: 16px;
+  padding: 0 18px;
 }
 .mapping-row {
   display: grid;

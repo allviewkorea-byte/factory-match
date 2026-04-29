@@ -3646,6 +3646,7 @@ function extractRegion(addr) {
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
   const [data, setData] = useState(ADMIN_FACTORIES);
+  const [totalCount, setTotalCount] = useState(null);
   const [tab, setTab] = useState('factories');
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
@@ -3797,6 +3798,10 @@ const AdminPage = ({ onOpenFactory }) => {
     }
     setUploadResult({ ok, fail, failedRows });
     setUploadPhase('result');
+    try {
+      const { count } = await window._sb.from('factories').select('*', { count: 'exact', head: true });
+      if (count != null) setTotalCount(count);
+    } catch (_) {}
   };
 
   const togglePublic = (id) => {
@@ -3811,7 +3816,7 @@ const AdminPage = ({ onOpenFactory }) => {
   });
 
   const stats = {
-    total: data.length,
+    total: totalCount ?? data.length,
     pub:   data.filter(f => f.public).length,
     priv:  data.filter(f => !f.public).length,
     rfq: 248, chat: 89, users: 1342,
@@ -4149,7 +4154,7 @@ const AdminPage = ({ onOpenFactory }) => {
                 )}
 
                 <footer className="modal-foot">
-                  <button className="btn btn-secondary" onClick={resetUpload}>다시 선택</button>
+                  <button className="btn btn-secondary" onClick={() => setUploadPhase('mapping')}>다시 선택</button>
                   <button className="btn btn-primary" onClick={confirmUpload} disabled={parsedRows.length === 0}>
                     <Icon name="upload" size={13} stroke={2.2}/>
                     {parsedRows.length.toLocaleString()}개 업로드 시작
