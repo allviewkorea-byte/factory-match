@@ -777,7 +777,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
   useEffectP(() => {
     if (!window._sb) { setDbLoading(false); return; }
-    window._sb.from('factories').select('*').order('rating', { ascending: false })
+    window._sb.from('factories').select('*').eq('hidden', false).order('rating', { ascending: false })
       .then(({ data, error }) => {
         if (error) { setDbError(error.message); }
         else if (data && data.length > 0) { setFactories(data.map(window._dbRowToFactory)); }
@@ -787,6 +787,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
   const filtered = useMemoP(() => {
     let arr = factories.filter(f => {
+      if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
       if (activeRegion !== 'all' && f.region !== activeRegion) return false;
       if (f.moq > moqMax) return false;
@@ -1694,7 +1695,7 @@ function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [] }) {
       let allFactories = [];
       if (window._sb) {
         try {
-          const { data: rows } = await window._sb.from('factories').select('*');
+          const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
           if (rows && rows.length) allFactories = rows;
         } catch (_) {}
       }
@@ -3766,7 +3767,7 @@ const AdminPage = ({ onOpenFactory }) => {
         reviews:     0,
         response_hr: 24,
         deals:       0,
-        hidden:      true,
+        hidden:      false,
         summary:     get(vals, colMap.summary),
         image:       '#a8b4c8',
       });
