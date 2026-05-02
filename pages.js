@@ -3842,17 +3842,17 @@ const AdminPage = ({ onOpenFactory }) => {
     { field: 'industries', label: '업종명',   required: false },
   ];
   const FIELD_KEYWORDS = {
-    name:       ['회사명', '사업체명', '업체명', '공장명', '상호', '법인명', '회사', '기업명', '업체', '기업', 'name'],
-    city:       ['공장주소', '주소', '본사소재지', '소재지', '주소지', '사업장주소', '도로명주소', '지번주소', '위치', 'address'],
-    products:   ['생산품', '주생산품', '제품', '생산제품', '품목', '주요생산품', '생산물', '취급품목', '생산', 'product'],
-    id_src:     ['연번', '순번', '번호', 'id', 'no'],
-    summary:    ['단지명', '산업단지명', '단지', '지구', '구역', 'summary'],
-    industries: ['업종명', '업종', '업태', '산업분류', '업종코드', '산업', 'industry'],
+    name:       ['회사명', '사업체명', '업체명', '공장명', '상호', '법인명', '회사', '기업명', '업체', '사업자명', '공장', '업체'],
+    city:       ['공장주소', '주소', '본사소재지', '소재지', '주소지', '사업장주소', '도로명주소', '지번주소', '위치', '공장대표주소', '사업장소재지', 'address'],
+    products:   ['생산품', '주생산품', '제품', '생산제품', '품목', '주요생산품', '생산물', '취급품목', '주력제품', '생산품목'],
+    id_src:     ['연번', '순번', '번호', 'id', 'no', '일련번호'],
+    summary:    ['단지명', '산업단지명', '단지', '지구', '구역', '입주단지'],
+    industries: ['업종명', '업종', '업태', '산업분류', '업종코드', '주업종', '제조업종'],
   };
   const autoMap = (headers) => {
     const result = { name: -1, city: -1, products: -1, id_src: -1, summary: -1, industries: -1 };
     headers.forEach((h, i) => {
-      const norm = h.replace(/\s/g, '').toLowerCase();
+      const norm = h.replace(/[\s\(\)\/·\-_]/g, '').toLowerCase();
       for (const [field, kws] of Object.entries(FIELD_KEYWORDS)) {
         if (result[field] === -1 && kws.some(kw => norm.includes(kw.toLowerCase()))) result[field] = i;
       }
