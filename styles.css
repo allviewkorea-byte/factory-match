@@ -3844,7 +3844,8 @@ a { color: inherit; text-decoration: none; }
   grid-template-columns: 320px 1fr;
   gap: 0;
   height: calc(100vh - 64px);
-  max-width: none;
+  max-width: 1280px;
+  margin: 0 auto;
   padding: 0;
   background: var(--surface-2);
 }
