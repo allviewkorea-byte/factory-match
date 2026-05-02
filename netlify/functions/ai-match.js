@@ -21,7 +21,7 @@ const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사
       "glyph": "metal|electronic|assembly|plastic|cooling|sheet|display|payment|paint",
       "count": 150,
       "avgLead": "14일",
-      "avgPrice": "₩5k~"
+      "avgPrice": "W5k~"
     }
   ],
   "searchTerms": {
@@ -35,16 +35,14 @@ const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사
 searchTerms 규칙:
 - industries: 반드시 이 목록에서만 선택 → machine, electronics, chemical, food, textile
 - processes: 반드시 이 목록에서만 선택 → cnc, injection, press, mold, cutting, welding, painting, assembly
-- materials: 한국어 재료명 (예: 알루미늄, ABS, PP, SUS304, 냉연강판, FR-4)
+- materials: 한국어 재료명
 - keywords: 제품·부품·특성 관련 한국어 키워드 3~8개
-- 공급망 각 단계마다 관련 industries/processes 포함
 
 topCategories 규칙:
 - 정확히 3개, match는 65~98 사이, 내림차순 정렬
 - glyph는 반드시 위 목록 중 하나 선택
-- count는 해당 카테고리 예상 제조사 수 (10~500 사이 정수)
-- supplyChain은 3~5단계
-- 한국 제조업 실정에 맞는 구체적 내용으로 채울 것`;
+- count는 10~500 사이 정수
+- supplyChain은 3~5단계`;
 
 function scoreFactory(factory, st) {
   let score = 0;
@@ -63,21 +61,17 @@ function scoreFactory(factory, st) {
   return score;
 }
 
-// Query Supabase for factories matching any of the given keywords in name/products/summary
 async function fetchFactoriesByKeywords(keywords) {
   if (!keywords || keywords.length === 0) return [];
-
-  // Build OR filter: name.ilike.*kw*, summary.ilike.*kw* for each keyword
   const orParts = keywords.flatMap(kw => {
-    const enc = encodeURIComponent(`%${kw}%`);
-    return [`name.ilike.${enc}`, `summary.ilike.${enc}`];
+    const enc = encodeURIComponent('%' + kw + '%');
+    return ['name.ilike.' + enc, 'summary.ilike.' + enc];
   }).join(',');
-
-  const url = `${SUPABASE_URL}/rest/v1/factories?hidden=eq.false&select=id,name,city,industries,processes,materials,products,summary&or=(${orParts})&limit=200`;
+  const url = SUPABASE_URL + '/rest/v1/factories?hidden=eq.false&select=id,name,city,industries,processes,materials,products,summary&or=(' + orParts + ')&limit=200';
   const resp = await fetch(url, {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
     },
   });
   if (!resp.ok) return [];
@@ -114,20 +108,17 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'API 키가 설정되지 않았습니다' }) };
   }
 
-  // Step 1: Call Claude to get search terms
   const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-7',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
-      thinking: { type: 'adaptive' },
-      system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+      system: SYSTEM,
       messages: [{ role: 'user', content: query }],
     }),
   });
@@ -137,7 +128,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 502,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: `Anthropic API 오류: ${claudeResp.status}`, detail: err }),
+      body: JSON.stringify({ error: 'Anthropic API 오류: ' + claudeResp.status, detail: err }),
     };
   }
 
@@ -159,22 +150,15 @@ exports.handler = async (event) => {
     };
   }
 
-  // Step 2: Query Supabase using Claude's keywords to find matching factories by name/summary
   const st = result.searchTerms || {};
   const searchKeywords = [
     ...(st.keywords || []),
     ...(st.materials || []),
-    // Also split the original query into individual words for name matching
     ...query.split(/[\s,·]+/).filter(w => w.length >= 2),
   ];
 
-  const [byKeyword] = await Promise.all([
-    fetchFactoriesByKeywords([...new Set(searchKeywords)]).catch(() => []),
-  ]);
+  const factories = await fetchFactoriesByKeywords([...new Set(searchKeywords)]).catch(() => []);
 
-  const factories = byKeyword;
-
-  // Step 3: Score and rank
   if (factories.length > 0) {
     const bestPossible =
       (st.industries || []).length * 30 +
@@ -208,3 +192,6 @@ exports.handler = async (event) => {
     body: JSON.stringify(result),
   };
 };
+---
+
+완료 후 GitHub push까지 해줘.
