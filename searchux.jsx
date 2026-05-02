@@ -60,7 +60,7 @@ const SXGlyph = ({ kind }) => {
   return map[kind] || map.metal;
 };
 
-const SX_RELATED_KEYWORDS = ['자판기', '냉장기기', '전자제어', '금속가공', '컨베이어', '컵디스펜서'];
+const SX_RELATED_KEYWORDS = ['제조문의', 'OEM', 'ODM', '샘플제작', '소량생산', '견적요청'];
 
 function SearchUXPage() {
   const [query, setQuery] = useStateSX('음료자판기');
@@ -70,6 +70,7 @@ function SearchUXPage() {
   const [sort, setSort] = useStateSX('rel');
   const [loading, setLoading] = useStateSX(false);
   const [aiResults, setAiResults] = useStateSX(null);
+  const [consulting, setConsulting] = useStateSX(null);
   const [relatedKws, setRelatedKws] = useStateSX(SX_RELATED_KEYWORDS);
 
   const handleSearch = async () => {
@@ -84,6 +85,7 @@ function SearchUXPage() {
       if (!resp.ok) throw new Error('API 오류');
       const data = await resp.json();
       setAiResults(data);
+      if (data.consulting) setConsulting(data.consulting);
       const kws = [
         ...(data.searchTerms?.keywords || []),
         ...(data.topCategories || []).flatMap(c => c.tags || []),
@@ -123,7 +125,7 @@ function SearchUXPage() {
           <Icon name="search" size={18} stroke={2}/>
           <input
             className="sx-input"
-            placeholder="제품·키워드 입력 (예: 음료자판기)"
+            placeholder="예) 고추장 500개 만들고 싶어요, 플라스틱 케이스 OEM 찾아요"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -172,47 +174,47 @@ function SearchUXPage() {
         ))}
       </div>
 
-      {aiResults?.consulting && (
+      {consulting && (
         <div className="sx-consulting">
           <div className="sx-consulting-head">
             <Icon name="sparkle" size={14} stroke={2.4}/>
             AI 사전 컨설팅
           </div>
           <div className="sx-consulting-grid">
-            {aiResults.consulting.unitCost && (
+            {consulting.unitCost && (
               <div className="sx-consulting-item">
                 <span className="sx-consulting-label">예상 단가</span>
-                <span className="sx-consulting-val">{aiResults.consulting.unitCost}</span>
+                <span className="sx-consulting-val">{consulting.unitCost}</span>
               </div>
             )}
-            {aiResults.consulting.moqGuide && (
+            {consulting.moqGuide && (
               <div className="sx-consulting-item">
                 <span className="sx-consulting-label">최소 발주량</span>
-                <span className="sx-consulting-val">{aiResults.consulting.moqGuide}</span>
+                <span className="sx-consulting-val">{consulting.moqGuide}</span>
               </div>
             )}
-            {aiResults.consulting.leadTime && (
+            {consulting.leadTime && (
               <div className="sx-consulting-item">
                 <span className="sx-consulting-label">리드타임</span>
-                <span className="sx-consulting-val">{aiResults.consulting.leadTime}</span>
+                <span className="sx-consulting-val">{consulting.leadTime}</span>
               </div>
             )}
-            {aiResults.consulting.budgetRange && (
+            {consulting.budgetRange && (
               <div className="sx-consulting-item">
                 <span className="sx-consulting-label">예산 범위</span>
-                <span className="sx-consulting-val">{aiResults.consulting.budgetRange}</span>
+                <span className="sx-consulting-val">{consulting.budgetRange}</span>
               </div>
             )}
-            {(aiResults.consulting.certRequired || []).length > 0 && (
+            {(consulting.certRequired || []).length > 0 && (
               <div className="sx-consulting-item">
                 <span className="sx-consulting-label">필요 인증</span>
-                <span className="sx-consulting-val">{aiResults.consulting.certRequired.join(' · ')}</span>
+                <span className="sx-consulting-val">{consulting.certRequired.join(' · ')}</span>
               </div>
             )}
-            {aiResults.consulting.caution && (
+            {consulting.caution && (
               <div className="sx-consulting-item sx-consulting-caution">
                 <span className="sx-consulting-label">주의사항</span>
-                <span className="sx-consulting-val">{aiResults.consulting.caution}</span>
+                <span className="sx-consulting-val">{consulting.caution}</span>
               </div>
             )}
           </div>
