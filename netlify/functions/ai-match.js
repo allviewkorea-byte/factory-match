@@ -29,6 +29,14 @@ const SYSTEM = `당신은 한국 B2B 제조업 공급망 전문가입니다. 사
     "processes": ["cnc", "assembly"],
     "materials": ["알루미늄"],
     "keywords": ["선풍기", "모터"]
+  },
+  "consulting": {
+    "unitCost": "예상 제조 단가 (예: 병당 800~1,200원)",
+    "moqGuide": "일반적인 최소 발주량 안내 (예: 최소 500개~)",
+    "certRequired": ["필요한 인증 목록 (예: HACCP, ISO 9001)"],
+    "leadTime": "예상 리드타임 (예: 4~6주)",
+    "caution": "주의사항 한 문장 (예: 식품 제조업 허가 필요)",
+    "budgetRange": "전체 예산 범위 (예: 샘플 50만원~, 양산 500만원~)"
   }
 }
 
@@ -42,7 +50,13 @@ topCategories 규칙:
 - 정확히 3개, match는 65~98 사이, 내림차순 정렬
 - glyph는 반드시 위 목록 중 하나 선택
 - count는 10~500 사이 정수
-- supplyChain은 3~5단계`;
+- supplyChain은 3~5단계
+
+consulting 규칙:
+- 한국 제조업 기준으로 현실적인 수치 제공
+- 모르면 추정 범위로 작성 (예: 협의 필요)
+- 각 항목 30자 이내
+- certRequired는 해당 제품에 실제로 필요한 인증만 포함`;
 
 function scoreFactory(factory, st) {
   let score = 0;
