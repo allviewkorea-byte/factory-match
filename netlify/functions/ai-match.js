@@ -54,9 +54,9 @@ function scoreFactory(factory, st) {
   });
   (st.keywords || []).forEach(kw => {
     const k = kw.toLowerCase();
-    if ((factory.name || '').toLowerCase().includes(k)) score += 10;
-    if ((factory.summary || '').toLowerCase().includes(k)) score += 8;
-    if ((factory.products || []).some(p => (p || '').toLowerCase().includes(k))) score += 10;
+    if ((factory.name || '').toLowerCase().includes(k)) score += 25;
+    if ((factory.summary || '').toLowerCase().includes(k)) score += 20;
+    if ((factory.products || []).some(p => (p || '').toLowerCase().includes(k))) score += 25;
   });
   return score;
 }
