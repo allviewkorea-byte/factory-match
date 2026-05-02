@@ -68,6 +68,31 @@ function SearchUXPage() {
   const [activeKw, setActiveKw] = useStateSX(null);
   const [focused, setFocused] = useStateSX(false);
   const [sort, setSort] = useStateSX('rel');
+  const [loading, setLoading] = useStateSX(false);
+  const [aiResults, setAiResults] = useStateSX(null);
+  const [relatedKws, setRelatedKws] = useStateSX(SX_RELATED_KEYWORDS);
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    setLoading(true);
+    try {
+      const resp = await fetch('/.netlify/functions/ai-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (!resp.ok) throw new Error('API 오류');
+      const data = await resp.json();
+      setAiResults(data);
+      if (data.searchTerms?.keywords?.length) {
+        setRelatedKws(data.searchTerms.keywords.slice(0, 6));
+      }
+    } catch {
+      // 오류 시 기존 결과 유지
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];
@@ -101,6 +126,7 @@ function SearchUXPage() {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           {query && (
             <button className="sx-input-clear" onClick={() => setQuery('')} aria-label="지우기">
@@ -119,9 +145,12 @@ function SearchUXPage() {
             <span className="sx-toggle-hint">{smart ? 'AI가 3개만 추출' : '전체 리스트 탐색'}</span>
           </span>
         </label>
-        <button className="sx-search-btn">
-          <Icon name="search" size={15} stroke={2.4}/>
-          검색
+        <button className="sx-search-btn" onClick={handleSearch} disabled={loading}>
+          {loading
+            ? <span className="sx-search-spinner"/>
+            : <Icon name="search" size={15} stroke={2.4}/>
+          }
+          {loading ? '분석 중…' : '검색'}
         </button>
       </div>
 
@@ -130,7 +159,7 @@ function SearchUXPage() {
           <Icon name="sparkle" size={11} stroke={2.2}/>
           연관 키워드:
         </span>
-        {SX_RELATED_KEYWORDS.map(kw => (
+        {relatedKws.map(kw => (
           <button
             key={kw}
             className={`sx-related-chip ${activeKw === kw ? 'is-active' : ''}`}
@@ -173,7 +202,7 @@ function SearchUXPage() {
             </div>
 
             <div className="sx-rec-grid">
-              {SX_RECOMMEND_3.map((r, i) => (
+              {(aiResults?.topCategories || SX_RECOMMEND_3).map((r, i) => (
                 <button key={r.id} className="sx-rec">
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
