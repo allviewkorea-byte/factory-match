@@ -3904,15 +3904,16 @@ const AdminPage = ({ onOpenFactory }) => {
   // Step 2: Apply column mapping → generate parsedRows → show preview
   const applyMapping = () => {
     const get = (vals, idx) => (idx >= 0 && idx < vals.length ? (vals[idx] || '').trim() : '');
+    const ts = Date.now();
     const rows = [], errors = [];
     rawLines.forEach((vals, i) => {
       const name = get(vals, colMap.name);
       if (!name) { errors.push({ rowNum: i + 2, msg: '회사명 없음' }); return; }
       const seqRaw = get(vals, colMap.id_src);
-      const seq = parseInt(seqRaw) || (i + 1);
+      const id = seqRaw || ('upload_' + ts + '_' + (i + 1));
       const city = get(vals, colMap.city);
       rows.push({
-        id:          'pub_' + seq,
+        id,
         name,
         en:          '',
         city,
