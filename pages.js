@@ -1777,7 +1777,7 @@ const SXGlyph = ({ kind }) => {
   return map[kind] || map.metal;
 };
 
-const SX_RELATED_KEYWORDS = ['자판기', '냉장기기', '전자제어', '금속가공', '컨베이어', '컵디스펜서'];
+const SX_RELATED_KEYWORDS = [];
 
 function scoreFactory(factory, searchTerms) {
   const st = searchTerms || {};
