@@ -3834,26 +3834,27 @@ const AdminPage = ({ onOpenFactory }) => {
   const fileInputRef = React.useRef(null);
 
   const MAPPING_FIELDS = [
-    { field: 'id_src',   label: 'ID 번호', required: false },
-    { field: 'name',     label: '회사명',   required: true  },
-    { field: 'city',     label: '주소',     required: false },
-    { field: 'products', label: '생산품',   required: false },
-    { field: 'summary',  label: '단지명',   required: false },
+    { field: 'id_src',     label: 'ID 번호', required: false },
+    { field: 'name',       label: '회사명',   required: true  },
+    { field: 'city',       label: '주소',     required: false },
+    { field: 'products',   label: '생산품',   required: false },
+    { field: 'summary',    label: '단지명',   required: false },
+    { field: 'industries', label: '업종명',   required: false },
   ];
   const FIELD_KEYWORDS = {
-    name:     ['회사명', '사업체명', '업체명', '공장명', '상호', '법인명', '회사', '기업명', '업체'],
-    city:     ['공장주소', '주소', '본사소재지', '소재지', '주소지', '사업장주소', '도로명주소', '지번주소', '위치', 'address'],
-    products: ['생산품', '주생산품', '제품', '생산제품', '품목', '주요생산품', '생산물', '취급품목'],
-    id_src:   ['연번', '순번', '번호', 'id', 'no'],
-    summary:  ['단지명', '산업단지명', '단지', '지구', '구역'],
-    industries: ['업종명', '업종', '업태', '산업분류', '업종코드'],
+    name:       ['회사명', '사업체명', '업체명', '공장명', '상호', '법인명', '회사', '기업명', '업체', '기업', 'name'],
+    city:       ['공장주소', '주소', '본사소재지', '소재지', '주소지', '사업장주소', '도로명주소', '지번주소', '위치', 'address'],
+    products:   ['생산품', '주생산품', '제품', '생산제품', '품목', '주요생산품', '생산물', '취급품목', '생산', 'product'],
+    id_src:     ['연번', '순번', '번호', 'id', 'no'],
+    summary:    ['단지명', '산업단지명', '단지', '지구', '구역', 'summary'],
+    industries: ['업종명', '업종', '업태', '산업분류', '업종코드', '산업', 'industry'],
   };
   const autoMap = (headers) => {
-    const result = { name: -1, city: -1, products: -1, id_src: -1, summary: -1 };
+    const result = { name: -1, city: -1, products: -1, id_src: -1, summary: -1, industries: -1 };
     headers.forEach((h, i) => {
-      const norm = h.replace(/\s/g, '');
+      const norm = h.replace(/\s/g, '').toLowerCase();
       for (const [field, kws] of Object.entries(FIELD_KEYWORDS)) {
-        if (result[field] === -1 && kws.some(kw => norm.includes(kw))) result[field] = i;
+        if (result[field] === -1 && kws.some(kw => norm.includes(kw.toLowerCase()))) result[field] = i;
       }
     });
     return result;
@@ -3918,7 +3919,7 @@ const AdminPage = ({ onOpenFactory }) => {
         region:      extractRegion(city),
         coord_x:     50,
         coord_y:     50,
-        industries:  [],
+        industries:  get(vals, colMap.industries).split(/[,;／、]/).map(s => s.trim()).filter(Boolean),
         processes:   [],
         products:    get(vals, colMap.products).split(/[,;／、]/).map(s => s.trim()).filter(Boolean),
         materials:   [],
