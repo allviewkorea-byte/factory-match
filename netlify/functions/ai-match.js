@@ -192,6 +192,3 @@ exports.handler = async (event) => {
     body: JSON.stringify(result),
   };
 };
----
-
-완료 후 GitHub push까지 해줘.
