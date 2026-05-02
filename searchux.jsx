@@ -84,9 +84,11 @@ function SearchUXPage() {
       if (!resp.ok) throw new Error('API 오류');
       const data = await resp.json();
       setAiResults(data);
-      if (data.searchTerms?.keywords?.length) {
-        setRelatedKws(data.searchTerms.keywords.slice(0, 6));
-      }
+      const kws = [
+        ...(data.searchTerms?.keywords || []),
+        ...(data.topCategories || []).flatMap(c => c.tags || []),
+      ].filter((v, i, a) => typeof v === 'string' && v.length > 0 && a.indexOf(v) === i);
+      if (kws.length) setRelatedKws(kws.slice(0, 6));
     } catch {
       // 오류 시 기존 결과 유지
     } finally {
