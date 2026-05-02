@@ -1796,7 +1796,7 @@ function scoreFactory(factory, searchTerms) {
   return score;
 }
 
-function SearchUXPage({ onOpenFactory, onAddRFQ, rfqIds = [], onSearch }) {
+function SearchUXPage({ onOpenFactory, onSearch }) {
   const [query, setQuery] = useStateSX('음료자판기');
   const [smart, setSmart] = useStateSX(true);
   const [activeKw, setActiveKw] = useStateSX(null);

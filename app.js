@@ -179,8 +179,6 @@ function App() {
       {route === 'search' && (
         <SearchUXPage
           onOpenFactory={(id) => openFactory(id, 'search')}
-          onAddRFQ={addRFQ}
-          rfqIds={rfqIds}
           onSearch={handleSearch}
         />
       )}
