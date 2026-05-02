@@ -254,7 +254,7 @@ function SearchUXPage() {
 
             <div className="sx-rec-grid">
               {(aiResults?.topCategories || SX_RECOMMEND_3).map((r, i) => (
-                <button key={r.id} className="sx-rec">
+                <button key={r.id} className="sx-rec" onClick={() => { window.location.href = '/list?q=' + encodeURIComponent(query) + '&category=' + r.id; }}>
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
                     <SXGlyph kind={r.glyph}/>
