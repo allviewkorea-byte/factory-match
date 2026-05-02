@@ -171,11 +171,10 @@ exports.handler = async (event) => {
   const factories = await fetchFactoriesByKeywords([...new Set(searchKeywords)]).catch(() => []);
 
   if (factories.length > 0) {
-    const bestPossible =
-      (st.industries || []).length * 30 +
-      (st.processes || []).length * 25 +
-      (st.materials || []).length * 15 +
-      (st.keywords || []).length * 18;
+    const actualMax = factories
+      .map(f => scoreFactory(f, st))
+      .reduce((a, b) => Math.max(a, b), 1);
+    const bestPossible = actualMax;
 
     const scored = factories
       .map(f => ({ id: f.id, _score: scoreFactory(f, st) }))

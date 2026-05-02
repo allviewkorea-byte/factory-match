@@ -87,8 +87,8 @@ function SearchUXPage() {
       const kws = [
         ...(data.searchTerms?.keywords || []),
         ...(data.topCategories || []).flatMap(c => c.tags || []),
-      ].filter((v, i, a) => typeof v === 'string' && v.length > 0 && a.indexOf(v) === i);
-      if (kws.length) setRelatedKws(kws.slice(0, 6));
+      ].filter((v, i, a) => typeof v === 'string' && v.length > 0 && a.indexOf(v) === i).slice(0, 8);
+      if (kws.length > 0) setRelatedKws(kws);
     } catch {
       // 오류 시 기존 결과 유지
     } finally {
