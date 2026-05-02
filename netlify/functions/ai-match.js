@@ -54,9 +54,12 @@ function scoreFactory(factory, st) {
   });
   (st.keywords || []).forEach(kw => {
     const k = kw.toLowerCase();
-    if ((factory.name || '').toLowerCase().includes(k)) score += 25;
+    const nameMatch = (factory.name || '').toLowerCase().includes(k);
+    const productsMatch = (factory.products || []).some(p => (p || '').toLowerCase().includes(k));
+    if (nameMatch) score += 25;
     if ((factory.summary || '').toLowerCase().includes(k)) score += 20;
-    if ((factory.products || []).some(p => (p || '').toLowerCase().includes(k))) score += 25;
+    if (productsMatch) score += 25;
+    if (nameMatch || productsMatch) score += 30;
   });
   return score;
 }
@@ -148,6 +151,14 @@ exports.handler = async (event) => {
       statusCode: 502,
       body: JSON.stringify({ error: 'JSON 파싱 실패', raw: textBlock.text }),
     };
+  }
+
+  if (!result.searchTerms) result.searchTerms = {};
+  if (!Array.isArray(result.searchTerms.keywords) || result.searchTerms.keywords.length === 0) {
+    result.searchTerms.keywords = (result.topCategories || [])
+      .flatMap(c => c.tags || [])
+      .filter((v, i, a) => typeof v === 'string' && a.indexOf(v) === i)
+      .slice(0, 8);
   }
 
   const st = result.searchTerms || {};
