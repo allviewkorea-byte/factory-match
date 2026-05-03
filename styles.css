@@ -2249,6 +2249,43 @@ a { color: inherit; text-decoration: none; }
 .sx-tip svg { color: var(--brand); flex-shrink: 0; margin-top: 2px; }
 .sx-tip strong { color: var(--ink-1); font-weight: 700; }
 
+/* ── AI 사전 컨설팅 카드 ── */
+.sx-consulting {
+  margin: 16px 0;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8f0ff 100%);
+  border: 1px solid #d6e0ff;
+  border-radius: 14px;
+}
+.sx-consulting-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--brand);
+  margin-bottom: 12px;
+}
+.sx-consulting-head svg { color: var(--brand); }
+.sx-consulting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.sx-consulting-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 8px;
+  border: 1px solid rgba(99,102,241,0.12);
+}
+.sx-consulting-label {
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.sx-consulting-val {
+  font-size: 13px; font-weight: 500; color: var(--ink-1);
+  line-height: 1.4;
+}
+.sx-consulting-caution .sx-consulting-label { color: #c45c00; }
+.sx-consulting-caution .sx-consulting-val { color: #7a3800; }
+
 
 
 /* ═══ Auth & Onboarding ════════════════════════════════════ */

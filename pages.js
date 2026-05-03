@@ -178,7 +178,7 @@ function getCardKeywords(f) {
 
 const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
   const { PROCESSES } = window.MFG_DATA;
-  const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
+  const procLabels = (f.processes || []).map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
   const isCompact = compact || density === 'compact';
 
   return (
@@ -191,7 +191,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
           <div className="mcard-titles">
             <h3 className="mcard-name">
               {f.name}
-              {f.certs.includes('IATF 16949') && (
+              {(f.certs || []).includes('IATF 16949') && (
                 <span className="mcard-verified" title="인증 제조사">
                   <Icon name="badge_check" size={14} stroke={2}/>
                 </span>
@@ -928,7 +928,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       if (exportOnly && !f.export) return false;
       if (query) {
         const q = query.toLowerCase();
-        const hay = (f.name + f.en + f.city + f.summary + f.materials.join(' ')).toLowerCase();
+        const hay = ((f.name || '') + (f.en || '') + (f.city || '') + (f.summary || '') + (f.materials || []).join(' ')).toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
