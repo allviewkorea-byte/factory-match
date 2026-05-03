@@ -1505,7 +1505,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
   const [sentSnapshot, setSentSnapshot] = useStateP(null);
 
   const totalEstResp = selected.length === 0 ? 0 : Math.max(...selected.map(s => s.responseHr));
-  const dispCount = sendResult?.ok ? sentSnapshot?.count : selected.length;
+  const dispCount = sendResult?.ok ? sendResult?.count : selected.length;
   const dispResp  = sendResult?.ok ? sentSnapshot?.totalResp : totalEstResp;
   const dispRating = sendResult?.ok
     ? sentSnapshot?.avgRating
@@ -1733,11 +1733,11 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                       이전
                     </button>
                     <button className="btn btn-sent" disabled>
-                      <Icon name="check" size={14} stroke={2.4}/> {sentSnapshot?.count}개사에 발송
+                      <Icon name="check" size={14} stroke={2.4}/> {sendResult?.count}개사에 발송
                     </button>
                   </div>
                   <div className="rfq-success-msg">
-                    {sentSnapshot?.count}개사에 견적 요청을 발송했습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
+                    {sendResult?.count}개사에 견적 요청을 발송했습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
                   </div>
                 </>
               ) : (
@@ -1781,9 +1781,9 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                             }),
                           });
                           if (resp.ok) {
-                            const data = await resp.json();
+                            await resp.json();
                             setSentSnapshot(snap);
-                            setSendResult({ ok: true, sent: data.sent ?? snap.count });
+                            setSendResult({ ok: true, count: snap.count });
                             setRfqIds([]);
                           } else {
                             setSendResult({ ok: false });
