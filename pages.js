@@ -1076,7 +1076,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             <div className="list-results-head">
               <div>
-                <strong>{filtered.length.toLocaleString()}</strong>개 중{' '}
+                <strong>{dbLoading ? '…' : filtered.length.toLocaleString()}</strong>개 중{' '}
                 <span className="results-range">
                   {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
                 </span>

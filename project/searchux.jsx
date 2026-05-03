@@ -174,54 +174,54 @@ function SearchUXPage() {
         ))}
       </div>
 
-      {consulting && (
-        <div className="sx-consulting">
-          <div className="sx-consulting-head">
-            <Icon name="sparkle" size={14} stroke={2.4}/>
-            AI 사전 컨설팅
-          </div>
-          <div className="sx-consulting-grid">
-            {consulting.unitCost && (
-              <div className="sx-consulting-item">
-                <span className="sx-consulting-label">예상 단가</span>
-                <span className="sx-consulting-val">{consulting.unitCost}</span>
-              </div>
-            )}
-            {consulting.moqGuide && (
-              <div className="sx-consulting-item">
-                <span className="sx-consulting-label">최소 발주량</span>
-                <span className="sx-consulting-val">{consulting.moqGuide}</span>
-              </div>
-            )}
-            {consulting.leadTime && (
-              <div className="sx-consulting-item">
-                <span className="sx-consulting-label">리드타임</span>
-                <span className="sx-consulting-val">{consulting.leadTime}</span>
-              </div>
-            )}
-            {consulting.budgetRange && (
-              <div className="sx-consulting-item">
-                <span className="sx-consulting-label">예산 범위</span>
-                <span className="sx-consulting-val">{consulting.budgetRange}</span>
-              </div>
-            )}
-            {(consulting.certRequired || []).length > 0 && (
-              <div className="sx-consulting-item">
-                <span className="sx-consulting-label">필요 인증</span>
-                <span className="sx-consulting-val">{consulting.certRequired.join(' · ')}</span>
-              </div>
-            )}
-            {consulting.caution && (
-              <div className="sx-consulting-item sx-consulting-caution">
-                <span className="sx-consulting-label">주의사항</span>
-                <span className="sx-consulting-val">{consulting.caution}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="sx-results">
+        {consulting && (() => { console.log('[consulting]', consulting); return null; })()}
+        {consulting && (
+          <div className="sx-consulting">
+            <div className="sx-consulting-head">
+              <Icon name="sparkle" size={14} stroke={2.4}/>
+              AI 사전 컨설팅
+            </div>
+            <div className="sx-consulting-grid">
+              {consulting.unitCost && (
+                <div className="sx-consulting-item">
+                  <span className="sx-consulting-label">예상 단가</span>
+                  <span className="sx-consulting-val">{consulting.unitCost}</span>
+                </div>
+              )}
+              {consulting.moqGuide && (
+                <div className="sx-consulting-item">
+                  <span className="sx-consulting-label">최소 발주량</span>
+                  <span className="sx-consulting-val">{consulting.moqGuide}</span>
+                </div>
+              )}
+              {consulting.leadTime && (
+                <div className="sx-consulting-item">
+                  <span className="sx-consulting-label">리드타임</span>
+                  <span className="sx-consulting-val">{consulting.leadTime}</span>
+                </div>
+              )}
+              {consulting.budgetRange && (
+                <div className="sx-consulting-item">
+                  <span className="sx-consulting-label">예산 범위</span>
+                  <span className="sx-consulting-val">{consulting.budgetRange}</span>
+                </div>
+              )}
+              {(consulting.certRequired || []).length > 0 && (
+                <div className="sx-consulting-item">
+                  <span className="sx-consulting-label">필요 인증</span>
+                  <span className="sx-consulting-val">{consulting.certRequired.join(' · ')}</span>
+                </div>
+              )}
+              {consulting.caution && (
+                <div className="sx-consulting-item sx-consulting-caution">
+                  <span className="sx-consulting-label">주의사항</span>
+                  <span className="sx-consulting-val">{consulting.caution}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {smart ? (
           <>
             <div className="sx-mode-banner is-on">
