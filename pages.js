@@ -1756,13 +1756,14 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                         }),
                       });
                       if (resp.ok) {
-                        setSendResult('success');
+                        const data = await resp.json();
+                        setSendResult({ ok: true, sent: data.sent ?? rfqIds.length, factories: data.factories ?? [] });
                         setRfqIds([]);
                       } else {
-                        setSendResult('error');
+                        setSendResult({ ok: false });
                       }
                     } catch {
-                      setSendResult('error');
+                      setSendResult({ ok: false });
                     } finally {
                       setSending(false);
                     }
@@ -1774,12 +1775,18 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   }
                 </button>
               )}
-              {sendResult === 'success' && (
+              {sendResult?.ok && (
                 <div className="rfq-send-result rfq-send-ok">
-                  견적 요청이 완료되었습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
+                  <div className="rfq-send-ok-icon">
+                    <Icon name="check" size={18} stroke={2.8}/>
+                  </div>
+                  <div className="rfq-send-ok-body">
+                    <strong>{sendResult.sent}개사</strong>에 견적 요청을 발송했습니다.
+                    <span className="rfq-send-ok-sub">영업일 기준 1~2일 내 답변을 받으실 수 있습니다.</span>
+                  </div>
                 </div>
               )}
-              {sendResult === 'error' && (
+              {sendResult?.ok === false && (
                 <div className="rfq-send-result rfq-send-err">
                   발송 중 오류가 발생했습니다. 다시 시도해주세요.
                 </div>
