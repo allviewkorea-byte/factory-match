@@ -160,6 +160,7 @@ exports.handler = async (event) => {
     const raw = textBlock.text.trim();
     const jsonStr = raw.startsWith('```') ? raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '') : raw;
     result = JSON.parse(jsonStr);
+    console.log('AI 응답:', JSON.stringify(result, null, 2));
   } catch {
     return {
       statusCode: 502,
