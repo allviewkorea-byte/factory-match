@@ -1115,10 +1115,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 <p className="list-empty-msg">
                   {query ? `'${query}'에 해당하는 제조사가 없습니다.` : '조건에 맞는 제조사가 없습니다.'}
                 </p>
-                <p className="list-empty-sub">다른 키워드로 검색해보세요.</p>
-                {query && (
-                  <button className="btn btn-ghost" onClick={() => setQuery('')}>검색어 초기화</button>
-                )}
+                <p className="list-empty-sub">찾으시는 제조사가 없으신가요? 견적 요청을 남겨주시면 전문 매칭팀이 직접 찾아드립니다.</p>
+                <div className="list-empty-actions">
+                  <button className="btn btn-primary" onClick={() => { window.location.hash = 'rfq'; }}>견적 요청하기</button>
+                  {query && (
+                    <button className="btn btn-ghost" onClick={() => setQuery('')}>검색어 초기화</button>
+                  )}
+                </div>
               </div>
             )}
             {pageCount > 1 && (
