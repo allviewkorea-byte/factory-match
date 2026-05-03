@@ -1109,6 +1109,18 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 </div>
               ))}
             </div>
+            {!dbLoading && filtered.length === 0 && (
+              <div className="list-empty">
+                <Icon name="search" size={36} stroke={1.4}/>
+                <p className="list-empty-msg">
+                  {query ? `'${query}'에 해당하는 제조사가 없습니다.` : '조건에 맞는 제조사가 없습니다.'}
+                </p>
+                <p className="list-empty-sub">다른 키워드로 검색해보세요.</p>
+                {query && (
+                  <button className="btn btn-ghost" onClick={() => setQuery('')}>검색어 초기화</button>
+                )}
+              </div>
+            )}
             {pageCount > 1 && (
               <div className="list-pagination">
                 <button className="pg-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
@@ -1201,7 +1213,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
   return (
     <div className="page page-detail">
       <div className="detail-bar">
-        <button className="back-btn" onClick={onBack}>
+        <button className="back-btn" onClick={() => { if (window.history.length > 1) window.history.back(); else onBack?.(); }}>
           <Icon name="chevron_right" size={14} stroke={2} className="back-arrow"/>
           {backLabel || '제조사 목록으로'}
         </button>
@@ -2127,7 +2139,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
 
             <div className="sx-rec-grid">
               {rec3.map((r, i) => (
-                <button key={r.id || i} className="sx-rec" onClick={() => onSearch && onSearch(r.tags?.[0] || r.title)}>
+                <button key={r.id || i} className="sx-rec" onClick={() => onSearch && onSearch(query || r.tags?.[0] || r.title)}>
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
                     <SXGlyph kind={r.glyph}/>

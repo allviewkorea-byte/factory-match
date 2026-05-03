@@ -57,6 +57,16 @@ function App() {
     return () => window.removeEventListener('auth-nav', h);
   }, []);
 
+  useEffect(() => {
+    const onHashChange = () => {
+      const h = (window.location.hash || '').replace('#', '');
+      const r = h || 'home';
+      if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const nav = (r) => {
     setRoute(r);
     window.scrollTo({ top: 0, behavior: 'smooth' });
