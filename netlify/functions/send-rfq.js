@@ -127,11 +127,12 @@ exports.handler = async (event) => {
 
   // Supabase에서 공장 이메일 및 이름 조회
   const ids = factoryIds.map(id => `"${id}"`).join(',');
-  const factoryRes = await sbFetch(`/rest/v1/factories?id=in.(${ids})&select=id,name,email&hidden=eq.false`);
+  const factoryRes = await sbFetch(`/rest/v1/factories?id=in.(${ids})&select=id,name,email`);
   if (!factoryRes.ok) {
     return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'Supabase 조회 실패' }) };
   }
   const factories = await factoryRes.json();
+  console.log('[Supabase] 조회 결과:', JSON.stringify(factories));
 
   if (!factories.length) {
     return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '해당 공장을 찾을 수 없습니다' }) };
