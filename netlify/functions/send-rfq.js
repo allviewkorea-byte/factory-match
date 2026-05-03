@@ -33,29 +33,33 @@ async function sendEmail(resendKey, { to, subject, html }) {
   console.log('[Resend] 요청 payload:', JSON.stringify({ ...payload, html: '(생략)' }));
   console.log('RESEND_KEY:', process.env.RESEND_API_KEY ? '있음' : '없음');
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + resendKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + resendKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-  const statusCode = res.status;
-  let resBody;
-  try { resBody = await res.json(); } catch { resBody = await res.text(); }
+    const statusCode = res.status;
+    let resBody;
+    try { resBody = await res.json(); } catch { resBody = await res.text(); }
 
-  console.log('[Resend] 응답 status:', statusCode);
-  console.log('[Resend] 응답 body:', JSON.stringify(resBody));
+    console.log('[Resend] 응답 status:', statusCode);
+    console.log('[Resend] 응답 body:', JSON.stringify(resBody));
 
-  if (!res.ok) {
-    console.error('[Resend] 발송 실패 — status:', statusCode, '| body:', JSON.stringify(resBody), '| 원래 수신자:', to);
-  } else {
+    if (!res.ok) {
+      console.error('[Resend] 발송 실패 — status:', statusCode, '| body:', JSON.stringify(resBody), '| 원래 수신자:', to);
+      return { ok: false, status: statusCode, error: resBody };
+    }
     console.log('[Resend] 발송 성공 — id:', resBody.id, '| 원래 수신자:', to);
+    return { ok: true, id: resBody.id };
+  } catch (e) {
+    console.error('[Resend] fetch 예외 발생:', e.message);
+    return { ok: false, error: e.message };
   }
-
-  return res.ok;
 }
 
 function factoryEmailHtml({ factoryName, buyerEmail, productName, quantity, deadline, message }) {
@@ -91,6 +95,7 @@ function buyerConfirmHtml({ buyerEmail, productName, quantity, deadline, message
 }
 
 exports.handler = async (event) => {
+  console.log('ENV CHECK:', !!process.env.RESEND_API_KEY);
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }
@@ -154,7 +159,14 @@ exports.handler = async (event) => {
     })
   );
 
-  await Promise.allSettled(emailPromises);
+  const emailResults = await Promise.allSettled(emailPromises);
+  const emailSummary = emailResults.map((r, i) => ({
+    index: i,
+    status: r.status,
+    value: r.status === 'fulfilled' ? r.value : undefined,
+    reason: r.status === 'rejected' ? String(r.reason) : undefined,
+  }));
+  console.log('[이메일 발송 결과]', JSON.stringify(emailSummary));
 
   // Supabase rfq_requests 테이블에 저장
   const insertRes = await sbFetch('/rest/v1/rfq_requests', {
@@ -185,6 +197,7 @@ exports.handler = async (event) => {
       sent: factories.filter(f => f.email).length,
       factories: factoryNames,
       saved,
+      emailResults: emailSummary,
     }),
   };
 };
