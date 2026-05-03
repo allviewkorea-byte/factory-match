@@ -1826,7 +1826,11 @@ Object.assign(window, { HomePage, ListPage, DetailPage, RfqPage });
 // ──────────────────────────────────────────────────────────
 // 검색 UX · 자동추천 ON/OFF 토글 페이지
 // ──────────────────────────────────────────────────────────
-const { useState: useStateSX, useMemo: useMemoSX } = React;
+const { useState: useStateSX, useMemo: useMemoSX, useEffect: useEffectSX } = React;
+
+function _loadSXState() {
+  try { return JSON.parse(sessionStorage.getItem('sx-state') || 'null') || {}; } catch { return {}; }
+}
 
 const SX_RECOMMEND_3 = [
   {
@@ -1905,17 +1909,22 @@ function scoreFactory(factory, searchTerms) {
 }
 
 function SearchUXPage({ onOpenFactory, onSearch }) {
-  const [query, setQuery] = useStateSX('');
-  const [smart, setSmart] = useStateSX(true);
-  const [activeKw, setActiveKw] = useStateSX(null);
+  const [query, setQuery] = useStateSX(() => _loadSXState().query || '');
+  const [smart, setSmart] = useStateSX(() => { const s = _loadSXState(); return 'smart' in s ? s.smart : true; });
+  const [activeKw, setActiveKw] = useStateSX(() => _loadSXState().activeKw || null);
   const [focused, setFocused] = useStateSX(false);
-  const [sort, setSort] = useStateSX('rel');
-
-  const [aiResult, setAiResult] = useStateSX(null);
-  const [consulting, setConsulting] = useStateSX(null);
+  const [sort, setSort] = useStateSX(() => _loadSXState().sort || 'rel');
+  const [aiResult, setAiResult] = useStateSX(() => _loadSXState().aiResult || null);
+  const [consulting, setConsulting] = useStateSX(() => _loadSXState().consulting || null);
   const [loading, setLoading] = useStateSX(false);
   const [aiError, setAiError] = useStateSX(null);
-  const [matchedFactories, setMatchedFactories] = useStateSX([]);
+  const [matchedFactories, setMatchedFactories] = useStateSX(() => _loadSXState().matchedFactories || []);
+
+  useEffectSX(() => {
+    try {
+      sessionStorage.setItem('sx-state', JSON.stringify({ query, smart, activeKw, sort, aiResult, consulting, matchedFactories }));
+    } catch {}
+  }, [query, smart, activeKw, sort, aiResult, consulting, matchedFactories]);
 
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];
