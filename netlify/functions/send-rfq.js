@@ -129,7 +129,9 @@ exports.handler = async (event) => {
   const ids = factoryIds.map(id => `"${id}"`).join(',');
   const factoryRes = await sbFetch(`/rest/v1/factories?id=in.(${ids})&select=id,name,email`);
   if (!factoryRes.ok) {
-    return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'Supabase 조회 실패' }) };
+    const errText = await factoryRes.text();
+    console.error('[Supabase] 조회 실패 — status:', factoryRes.status, '| body:', errText);
+    return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: 'Supabase 조회 실패', status: factoryRes.status, detail: errText }) };
   }
   const factories = await factoryRes.json();
   console.log('[Supabase] 조회 결과:', JSON.stringify(factories));
