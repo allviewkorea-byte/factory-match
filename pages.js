@@ -1726,80 +1726,87 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
             </div>
             <div className="rfq-side-divider"/>
             <div className="rfq-side-actions">
-              {step > 1 && (
-                <button className="btn btn-secondary" onClick={() => setStep(step - 1)}>
-                  이전
-                </button>
-              )}
-              {step < 3 ? (
-                <button
-                  className="btn btn-primary"
-                  disabled={selected.length === 0}
-                  onClick={() => setStep(step + 1)}
-                >
-                  다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
-                </button>
+              {sendResult?.ok ? (
+                <>
+                  <div className="rfq-success-row">
+                    <button className="btn btn-secondary" onClick={() => { setStep(step - 1); setSendResult(null); }}>
+                      이전
+                    </button>
+                    <button className="btn btn-sent" disabled>
+                      <Icon name="check" size={14} stroke={2.4}/> {sentSnapshot?.count}개사에 발송
+                    </button>
+                  </div>
+                  <div className="rfq-success-msg">
+                    {sentSnapshot?.count}개사에 견적 요청을 발송했습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
+                  </div>
+                </>
               ) : (
-                <button
-                  className="btn btn-primary btn-send"
-                  disabled={sending}
-                  onClick={async () => {
-                    const snap = {
-                      count: selected.length,
-                      totalResp: totalEstResp,
-                      avgRating: selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-',
-                    };
-                    setSending(true);
-                    setSendResult(null);
-                    try {
-                      const resp = await fetch('/.netlify/functions/send-rfq', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          factoryIds: rfqIds,
-                          buyerEmail: form.email,
-                          productName: form.title,
-                          quantity: form.qty + ' 피스',
-                          deadline: form.deadline,
-                          message: form.notes,
-                        }),
-                      });
-                      if (resp.ok) {
-                        const data = await resp.json();
-                        setSentSnapshot(snap);
-                        setSendResult({ ok: true, sent: data.sent ?? snap.count });
-                        setRfqIds([]);
-                      } else {
-                        setSendResult({ ok: false });
+                <>
+                  {step > 1 && (
+                    <button className="btn btn-secondary" onClick={() => setStep(step - 1)}>
+                      이전
+                    </button>
+                  )}
+                  {step < 3 ? (
+                    <button
+                      className="btn btn-primary"
+                      disabled={selected.length === 0}
+                      onClick={() => setStep(step + 1)}
+                    >
+                      다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-send"
+                      disabled={sending}
+                      onClick={async () => {
+                        const snap = {
+                          count: selected.length,
+                          totalResp: totalEstResp,
+                          avgRating: selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-',
+                        };
+                        setSending(true);
+                        setSendResult(null);
+                        try {
+                          const resp = await fetch('/.netlify/functions/send-rfq', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              factoryIds: rfqIds,
+                              buyerEmail: form.email,
+                              productName: form.title,
+                              quantity: form.qty + ' 피스',
+                              deadline: form.deadline,
+                              message: form.notes,
+                            }),
+                          });
+                          if (resp.ok) {
+                            const data = await resp.json();
+                            setSentSnapshot(snap);
+                            setSendResult({ ok: true, sent: data.sent ?? snap.count });
+                            setRfqIds([]);
+                          } else {
+                            setSendResult({ ok: false });
+                          }
+                        } catch {
+                          setSendResult({ ok: false });
+                        } finally {
+                          setSending(false);
+                        }
+                      }}
+                    >
+                      {sending
+                        ? <><span className="rfq-sending-spinner"/>발송 중…</>
+                        : <><Icon name="check" size={14} stroke={2.4}/> {dispCount}개사에 발송</>
                       }
-                    } catch {
-                      setSendResult({ ok: false });
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                >
-                  {sending
-                    ? <><span className="rfq-sending-spinner"/>발송 중…</>
-                    : <><Icon name="check" size={14} stroke={2.4}/> {dispCount}개사에 발송</>
-                  }
-                </button>
-              )}
-              {sendResult?.ok && (
-                <div className="rfq-send-result rfq-send-ok">
-                  <div className="rfq-send-ok-icon">
-                    <Icon name="check" size={18} stroke={2.8}/>
-                  </div>
-                  <div className="rfq-send-ok-body">
-                    <strong>{sendResult.sent}개사</strong>에 견적 요청을 발송했습니다.
-                    <span className="rfq-send-ok-sub">영업일 기준 1~2일 내 답변을 받으실 수 있습니다.</span>
-                  </div>
-                </div>
-              )}
-              {sendResult?.ok === false && (
-                <div className="rfq-send-result rfq-send-err">
-                  발송 중 오류가 발생했습니다. 다시 시도해주세요.
-                </div>
+                    </button>
+                  )}
+                  {sendResult?.ok === false && (
+                    <div className="rfq-send-result rfq-send-err">
+                      발송 중 오류가 발생했습니다. 다시 시도해주세요.
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div className="rfq-side-tip">
