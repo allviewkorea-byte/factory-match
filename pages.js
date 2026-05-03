@@ -1498,7 +1498,10 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
     budget: '₩8,000,000 — ₩12,000,000',
     notes: '도면 첨부 / 색상 RAL7016 무광 / 후처리 무도장 / OEM 거래 가능',
     file: 'product_case_v3.step (4.2 MB)',
+    email: '',
   });
+  const [sending, setSending] = useStateP(false);
+  const [sendResult, setSendResult] = useStateP(null);
 
   const totalEstResp = selected.length === 0 ? 0 : Math.max(...selected.map(s => s.responseHr));
 
@@ -1606,6 +1609,15 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   <input
                     value={form.title}
                     onChange={e => setForm({ ...form, title: e.target.value })}
+                  />
+                </div>
+                <div className="rfq-field rfq-field-full">
+                  <label>답변 받을 이메일</label>
+                  <input
+                    type="email"
+                    placeholder="company@example.com"
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
                 <div className="rfq-field">
@@ -1724,9 +1736,53 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
                 </button>
               ) : (
-                <button className="btn btn-primary btn-send" onClick={() => { setRfqIds([]); onNav('home'); }}>
-                  <Icon name="check" size={14} stroke={2.4}/> {selected.length}개사에 발송
+                <button
+                  className="btn btn-primary btn-send"
+                  disabled={sending}
+                  onClick={async () => {
+                    setSending(true);
+                    setSendResult(null);
+                    try {
+                      const resp = await fetch('/.netlify/functions/send-rfq', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          factoryIds: rfqIds,
+                          buyerEmail: form.email,
+                          productName: form.title,
+                          quantity: form.qty + ' 피스',
+                          deadline: form.deadline,
+                          message: form.notes,
+                        }),
+                      });
+                      if (resp.ok) {
+                        setSendResult('success');
+                        setRfqIds([]);
+                      } else {
+                        setSendResult('error');
+                      }
+                    } catch {
+                      setSendResult('error');
+                    } finally {
+                      setSending(false);
+                    }
+                  }}
+                >
+                  {sending
+                    ? <><span className="rfq-sending-spinner"/>발송 중…</>
+                    : <><Icon name="check" size={14} stroke={2.4}/> {selected.length}개사에 발송</>
+                  }
                 </button>
+              )}
+              {sendResult === 'success' && (
+                <div className="rfq-send-result rfq-send-ok">
+                  견적 요청이 완료되었습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
+                </div>
+              )}
+              {sendResult === 'error' && (
+                <div className="rfq-send-result rfq-send-err">
+                  발송 중 오류가 발생했습니다. 다시 시도해주세요.
+                </div>
               )}
             </div>
             <div className="rfq-side-tip">
