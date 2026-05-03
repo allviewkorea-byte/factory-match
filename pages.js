@@ -56,12 +56,12 @@ const Icon = ({ name, size = 16, className = '', stroke = 1.6 }) => {
 // ──────────────────────────────────────────────────────────
 // Header
 // ──────────────────────────────────────────────────────────
-const Header = ({ route, onNav, density, onLogout, authed }) => {
+const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
   const navItems = [
     { id: 'home', label: '홈' },
     { id: 'list', label: '제조사 탐색' },
     { id: 'search', label: '검색 UX' },
-    { id: 'rfq', label: '견적 요청', badge: 2 },
+    { id: 'rfq', label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
     { id: 'chat', label: '채팅' },
   ];
   const isCompact = density === 'compact';

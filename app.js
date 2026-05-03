@@ -145,7 +145,7 @@ function App() {
 
   return (
     <>
-      <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed}/>
+      <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed} rfqCount={rfqIds.length}/>
       {route === 'home' && (
         <HomePage
           onNav={nav}
