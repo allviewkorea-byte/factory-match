@@ -153,9 +153,22 @@ function getCardBg(f) {
   const ind = (f.industries || [])[0];
   return INDUSTRY_BG[ind] || '#3a5882';
 }
+const INDUSTRY_LABEL_MAP = {
+  machine:      '기계/금속',
+  electronics:  '전자/전기',
+  chemical:     '화학/소재',
+  food:         '식품/음료',
+  textile:      '섬유/의류',
+  auto:         '자동차부품',
+  pcb:          'PCB/전자기판',
+  assembly:     '조립/가공',
+  machine_parts:'기계부품',
+  case:         '케이스/외장',
+};
 function getCardKeywords(f) {
   const kws = [];
-  if (f.products?.length) kws.push(...f.products.slice(0, 3));
+  if (f.products?.length) kws.push(...f.products.slice(0, 3).map(p => INDUSTRY_LABEL_MAP[p] || p));
+  if (kws.length === 0 && f.industries?.length) kws.push(...f.industries.slice(0, 3).map(p => INDUSTRY_LABEL_MAP[p] || p));
   if (kws.length === 0 && f.processes?.length) {
     const { PROCESSES } = window.MFG_DATA;
     kws.push(...f.processes.slice(0, 3).map(p => PROCESSES.find(x => x.id === p)?.label || p));
