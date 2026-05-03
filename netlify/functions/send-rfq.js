@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
-const FROM = 'allviewkorea@naver.com';
+const FROM = 'onboarding@resend.dev';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -21,7 +21,7 @@ async function sbFetch(path, opts = {}) {
   return res;
 }
 
-const TEST_TO = 'allviewkorea@naver.com'; // [TEST] 모든 이메일을 이 주소로 강제 발송
+const TEST_TO = 'jh1129@hotmail.com'; // [TEST] 모든 이메일을 이 주소로 강제 발송
 
 async function sendEmail(resendKey, { to, subject, html }) {
   const payload = {
