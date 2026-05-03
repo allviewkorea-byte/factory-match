@@ -1810,7 +1810,7 @@ function scoreFactory(factory, searchTerms) {
 }
 
 function SearchUXPage({ onOpenFactory, onSearch }) {
-  const [query, setQuery] = useStateSX('음료자판기');
+  const [query, setQuery] = useStateSX('');
   const [smart, setSmart] = useStateSX(true);
   const [activeKw, setActiveKw] = useStateSX(null);
   const [focused, setFocused] = useStateSX(false);
@@ -1932,7 +1932,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
           <Icon name="search" size={18} stroke={2}/>
           <input
             className="sx-input"
-            placeholder="제품·키워드 입력 (예: 음료자판기)"
+            placeholder="예) 고추장 500개 만들고 싶어요, 플라스틱 케이스 OEM 찾아요"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
