@@ -21,19 +21,39 @@ async function sbFetch(path, opts = {}) {
   return res;
 }
 
+const TEST_TO = 'allviewkorea@naver.com'; // [TEST] 모든 이메일을 이 주소로 강제 발송
+
 async function sendEmail(resendKey, { to, subject, html }) {
+  const payload = {
+    from: FROM,
+    to: [TEST_TO], // [TEST] factoryIds 무관하게 하드코딩
+    subject,
+    html,
+  };
+  console.log('[Resend] 요청 payload:', JSON.stringify({ ...payload, html: '(생략)' }));
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + resendKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from: FROM, to: Array.isArray(to) ? to : [to], subject, html }),
+    body: JSON.stringify(payload),
   });
+
+  const statusCode = res.status;
+  let resBody;
+  try { resBody = await res.json(); } catch { resBody = await res.text(); }
+
+  console.log('[Resend] 응답 status:', statusCode);
+  console.log('[Resend] 응답 body:', JSON.stringify(resBody));
+
   if (!res.ok) {
-    const err = await res.text();
-    console.error('Resend 오류:', res.status, err);
+    console.error('[Resend] 발송 실패 — status:', statusCode, '| body:', JSON.stringify(resBody), '| 원래 수신자:', to);
+  } else {
+    console.log('[Resend] 발송 성공 — id:', resBody.id, '| 원래 수신자:', to);
   }
+
   return res.ok;
 }
 
