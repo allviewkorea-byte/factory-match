@@ -31,6 +31,7 @@ async function sendEmail(resendKey, { to, subject, html }) {
     html,
   };
   console.log('[Resend] 요청 payload:', JSON.stringify({ ...payload, html: '(생략)' }));
+  console.log('RESEND_KEY:', process.env.RESEND_API_KEY ? '있음' : '없음');
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
