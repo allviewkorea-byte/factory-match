@@ -21,12 +21,11 @@ async function sbFetch(path, opts = {}) {
   return res;
 }
 
-const TEST_TO = 'allviewkorea@naver.com'; // [TEST] 모든 이메일을 이 주소로 강제 발송
 
 async function sendEmail(resendKey, { to, subject, html }) {
   const payload = {
     from: FROM,
-    to: [TEST_TO], // [TEST] factoryIds 무관하게 하드코딩
+    to: Array.isArray(to) ? to : [to],
     subject,
     html,
   };
