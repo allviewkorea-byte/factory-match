@@ -1502,8 +1502,14 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
   });
   const [sending, setSending] = useStateP(false);
   const [sendResult, setSendResult] = useStateP(null);
+  const [sentSnapshot, setSentSnapshot] = useStateP(null);
 
   const totalEstResp = selected.length === 0 ? 0 : Math.max(...selected.map(s => s.responseHr));
+  const dispCount = sendResult?.ok ? sentSnapshot?.count : selected.length;
+  const dispResp  = sendResult?.ok ? sentSnapshot?.totalResp : totalEstResp;
+  const dispRating = sendResult?.ok
+    ? sentSnapshot?.avgRating
+    : (selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-');
 
   return (
     <div className="page page-rfq">
@@ -1708,17 +1714,15 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
             <h4>요청 요약</h4>
             <div className="rfq-side-stat">
               <span>선택 제조사</span>
-              <strong>{selected.length}곳</strong>
+              <strong>{dispCount}곳</strong>
             </div>
             <div className="rfq-side-stat">
               <span>예상 응답</span>
-              <strong>{totalEstResp}h 내</strong>
+              <strong>{dispResp}h 내</strong>
             </div>
             <div className="rfq-side-stat">
               <span>평균 평점</span>
-              <strong>
-                {selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-'}
-              </strong>
+              <strong>{dispRating}</strong>
             </div>
             <div className="rfq-side-divider"/>
             <div className="rfq-side-actions">
@@ -1740,6 +1744,11 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   className="btn btn-primary btn-send"
                   disabled={sending}
                   onClick={async () => {
+                    const snap = {
+                      count: selected.length,
+                      totalResp: totalEstResp,
+                      avgRating: selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-',
+                    };
                     setSending(true);
                     setSendResult(null);
                     try {
@@ -1757,7 +1766,8 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                       });
                       if (resp.ok) {
                         const data = await resp.json();
-                        setSendResult({ ok: true, sent: data.sent ?? rfqIds.length, factories: data.factories ?? [] });
+                        setSentSnapshot(snap);
+                        setSendResult({ ok: true, sent: data.sent ?? snap.count });
                         setRfqIds([]);
                       } else {
                         setSendResult({ ok: false });
@@ -1771,7 +1781,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                 >
                   {sending
                     ? <><span className="rfq-sending-spinner"/>발송 중…</>
-                    : <><Icon name="check" size={14} stroke={2.4}/> {selected.length}개사에 발송</>
+                    : <><Icon name="check" size={14} stroke={2.4}/> {dispCount}개사에 발송</>
                   }
                 </button>
               )}
