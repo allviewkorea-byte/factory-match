@@ -127,7 +127,7 @@ exports.handler = async (event) => {
 
   // Supabase에서 공장 이메일 및 이름 조회
   const ids = factoryIds.map(id => `"${id}"`).join(',');
-  const factoryRes = await sbFetch(`/rest/v1/factories?id=in.(${ids})&select=id,name,email`);
+  const factoryRes = await sbFetch(`/rest/v1/factories?id=in.(${ids})&select=*`);
   if (!factoryRes.ok) {
     const errText = await factoryRes.text();
     console.error('[Supabase] 조회 실패 — status:', factoryRes.status, '| body:', errText);
