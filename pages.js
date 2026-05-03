@@ -1790,7 +1790,7 @@ const SXGlyph = ({ kind }) => {
   return map[kind] || map.metal;
 };
 
-const SX_RELATED_KEYWORDS = [];
+const SX_RELATED_KEYWORDS = ['제조문의', 'OEM', 'ODM', '샘플제작', '소량생산', '견적요청'];
 
 function scoreFactory(factory, searchTerms) {
   const st = searchTerms || {};
@@ -1817,6 +1817,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
   const [sort, setSort] = useStateSX('rel');
 
   const [aiResult, setAiResult] = useStateSX(null);
+  const [consulting, setConsulting] = useStateSX(null);
   const [loading, setLoading] = useStateSX(false);
   const [aiError, setAiError] = useStateSX(null);
   const [matchedFactories, setMatchedFactories] = useStateSX([]);
@@ -1834,6 +1835,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
     setLoading(true);
     setAiError(null);
     setAiResult(null);
+    setConsulting(null);
     setMatchedFactories([]);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
@@ -1850,6 +1852,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
         ...c, id: c.id || `ai-${i}`,
       }));
       setAiResult(data);
+      if (data.consulting) { console.log('[consulting]', data.consulting); setConsulting(data.consulting); }
 
       // Use server-matched factories from Netlify function if available
       if (data.matchedFactories && data.matchedFactories.length > 0) {
@@ -2043,6 +2046,55 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
       </div>
 
       <div className="sx-results">
+        {(() => {
+          const displayConsulting = consulting || { unitCost: 'AI 분석 중...', moqGuide: '검색 후 표시', leadTime: '-', budgetRange: '-', certRequired: [], caution: '검색어를 입력해주세요' };
+          return (
+            <div className="sx-consulting">
+              <div className="sx-consulting-head">
+                <Icon name="sparkle" size={14} stroke={2.4}/>
+                AI 사전 컨설팅
+              </div>
+              <div className="sx-consulting-grid">
+                {displayConsulting.unitCost && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">예상 단가</span>
+                    <span className="sx-consulting-val">{displayConsulting.unitCost}</span>
+                  </div>
+                )}
+                {displayConsulting.moqGuide && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">최소 발주량</span>
+                    <span className="sx-consulting-val">{displayConsulting.moqGuide}</span>
+                  </div>
+                )}
+                {displayConsulting.leadTime && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">리드타임</span>
+                    <span className="sx-consulting-val">{displayConsulting.leadTime}</span>
+                  </div>
+                )}
+                {displayConsulting.budgetRange && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">예산 범위</span>
+                    <span className="sx-consulting-val">{displayConsulting.budgetRange}</span>
+                  </div>
+                )}
+                {(displayConsulting.certRequired || []).length > 0 && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">필요 인증</span>
+                    <span className="sx-consulting-val">{displayConsulting.certRequired.join(' · ')}</span>
+                  </div>
+                )}
+                {displayConsulting.caution && (
+                  <div className="sx-consulting-item sx-consulting-caution">
+                    <span className="sx-consulting-label">주의사항</span>
+                    <span className="sx-consulting-val">{displayConsulting.caution}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
         {smart ? (
           <>
             <div className="sx-mode-banner is-on">
