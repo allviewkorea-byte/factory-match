@@ -36,9 +36,6 @@ function App() {
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
 
-  useEffect(() => {
-    if (route === 'list') setRfqIds([]);
-  }, [route]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
