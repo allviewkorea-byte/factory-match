@@ -176,12 +176,13 @@ function getCardKeywords(f) {
   return kws.slice(0, 3).join(' · ') || f.name.slice(0, 12);
 }
 
-const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqIds = [] }) => {
+const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqIds = [], simplified = false }) => {
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = (f.processes || []).map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
   const isCompact = compact || density === 'compact';
   const hasRealStats = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
   const isInRfq = rfqIds.includes(f.id);
+  const hasTags = procLabels.length > 0 || (f.materials || []).length > 0;
 
   return (
     <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
@@ -203,7 +204,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
               <span>{f.city}</span>
             </div>
           </div>
-          {hasRealStats && (
+          {!simplified && hasRealStats && (
             <div className="mcard-rating">
               <Icon name="star" size={12} stroke={2}/>
               <strong>{f.rating}</strong>
@@ -211,57 +212,75 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
             </div>
           )}
         </div>
-        <p className="mcard-desc">{f.summary || '견적 문의 가능한 제조사입니다'}</p>
-        <div className="mcard-tags">
-          {procLabels.slice(0, 3).map(p => (
-            <span key={p} className="mtag">{p}</span>
-          ))}
-          {(f.materials || []).slice(0, 3).map(m => (
-            <span key={m} className="mtag mtag-mat">{m}</span>
-          ))}
-        </div>
-        <div className="mcard-stats">
-          <div className="stat">
-            <span className="stat-k">MOQ</span>
-            <span className="stat-v">{f.moq.toLocaleString()}<em className="stat-unit">{f.moqUnit || '피스'}</em></span>
-          </div>
-          <div className="stat-sep"/>
-          <div className="stat">
-            <span className="stat-k">리드타임</span>
-            <span className="stat-v">{f.leadDays > 0 ? f.leadDays + '일' : '−'}</span>
-          </div>
-          {f.responseHr > 0 && f.responseHr < 24 && (
-            <>
+        {simplified ? (
+          <>
+            {hasTags && (
+              <div className="mcard-tags">
+                {procLabels.slice(0, 3).map(p => (
+                  <span key={p} className="mtag">{p}</span>
+                ))}
+                {(f.materials || []).slice(0, 3).map(m => (
+                  <span key={m} className="mtag mtag-mat">{m}</span>
+                ))}
+              </div>
+            )}
+            {f.summary && <p className="mcard-desc">{f.summary}</p>}
+          </>
+        ) : (
+          <>
+            <p className="mcard-desc">{f.summary || '견적 문의 가능한 제조사입니다'}</p>
+            <div className="mcard-tags">
+              {procLabels.slice(0, 3).map(p => (
+                <span key={p} className="mtag">{p}</span>
+              ))}
+              {(f.materials || []).slice(0, 3).map(m => (
+                <span key={m} className="mtag mtag-mat">{m}</span>
+              ))}
+            </div>
+            <div className="mcard-stats">
+              <div className="stat">
+                <span className="stat-k">MOQ</span>
+                <span className="stat-v">{f.moq.toLocaleString()}<em className="stat-unit">{f.moqUnit || '피스'}</em></span>
+              </div>
               <div className="stat-sep"/>
               <div className="stat">
-                <span className="stat-k">응답</span>
-                <span className="stat-v">{f.responseHr}h</span>
+                <span className="stat-k">리드타임</span>
+                <span className="stat-v">{f.leadDays > 0 ? f.leadDays + '일' : '−'}</span>
               </div>
-            </>
-          )}
-          {f.deals > 0 && (
-            <>
-              <div className="stat-sep"/>
-              <div className="stat">
-                <span className="stat-k">거래</span>
-                <span className="stat-v">{f.deals}건</span>
+              {f.responseHr > 0 && f.responseHr < 24 && (
+                <>
+                  <div className="stat-sep"/>
+                  <div className="stat">
+                    <span className="stat-k">응답</span>
+                    <span className="stat-v">{f.responseHr}h</span>
+                  </div>
+                </>
+              )}
+              {f.deals > 0 && (
+                <>
+                  <div className="stat-sep"/>
+                  <div className="stat">
+                    <span className="stat-k">거래</span>
+                    <span className="stat-v">{f.deals}건</span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="mcard-foot">
+              <div className="mcard-cert">
+                {f.certs.slice(0, 3).map(c => (
+                  <span key={c} className="cert">{c}</span>
+                ))}
+                {f.certs.length > 3 && <span className="cert cert-more">+{f.certs.length - 3}</span>}
               </div>
-            </>
-          )}
-        </div>
-        <div className="mcard-foot">
-          <div className="mcard-cert">
-            {f.certs.slice(0, 3).map(c => (
-              <span key={c} className="cert">{c}</span>
-            ))}
-            {f.certs.length > 3 && <span className="cert cert-more">+{f.certs.length - 3}</span>}
-          </div>
-          <div className="mcard-flags">
-            {f.oem && <span className="flag">OEM</span>}
-            {f.odm && <span className="flag">ODM</span>}
-            {f.export && <span className="flag flag-export">수출</span>}
-          </div>
-        </div>
+              <div className="mcard-flags">
+                {f.oem && <span className="flag">OEM</span>}
+                {f.odm && <span className="flag">ODM</span>}
+                {f.export && <span className="flag flag-export">수출</span>}
+              </div>
+            </div>
+          </>
+        )}
       </button>
       {onAddRFQ && (
         <div className="mcard-rfq-row">
@@ -271,7 +290,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
           >
             {isInRfq
               ? <><Icon name="check" size={12} stroke={2.4}/> 견적 추가됨</>
-              : '견적 요청하기'}
+              : simplified ? '견적 요청' : '견적 요청하기'}
           </button>
         </div>
       )}
@@ -1132,6 +1151,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                     }}
                     density={density}
                     compact
+                    simplified
                     onAddRFQ={onAddRFQ}
                     rfqIds={rfqIds}
                   />
