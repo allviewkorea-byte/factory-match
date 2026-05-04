@@ -1826,11 +1826,10 @@ Object.assign(window, { HomePage, ListPage, DetailPage, RfqPage });
 // ──────────────────────────────────────────────────────────
 // 검색 UX · 자동추천 ON/OFF 토글 페이지
 // ──────────────────────────────────────────────────────────
-const { useState: useStateSX, useMemo: useMemoSX, useEffect: useEffectSX } = React;
+const { useState: useStateSX, useMemo: useMemoSX, useEffect: useEffectSX, useRef: useRefSX } = React;
 
-function _loadSXState() {
-  try { return JSON.parse(sessionStorage.getItem('sx-state') || 'null') || {}; } catch { return {}; }
-}
+// Module-level cache: persists across unmount/remount within the same page session
+let _sxStateCache = null;
 
 const SX_RECOMMEND_3 = [
   {
@@ -1908,23 +1907,26 @@ function scoreFactory(factory, searchTerms) {
   return score;
 }
 
-function SearchUXPage({ onOpenFactory, onSearch }) {
-  const [query, setQuery] = useStateSX(() => _loadSXState().query || '');
-  const [smart, setSmart] = useStateSX(() => { const s = _loadSXState(); return 'smart' in s ? s.smart : true; });
-  const [activeKw, setActiveKw] = useStateSX(() => _loadSXState().activeKw || null);
+function SearchUXPage({ onOpenFactory, onSearch, onNav }) {
+  const [query, setQuery] = useStateSX(() => _sxStateCache?.query ?? '');
+  const [smart, setSmart] = useStateSX(() => _sxStateCache ? (_sxStateCache.smart ?? true) : true);
+  const [activeKw, setActiveKw] = useStateSX(() => _sxStateCache?.activeKw ?? null);
   const [focused, setFocused] = useStateSX(false);
-  const [sort, setSort] = useStateSX(() => _loadSXState().sort || 'rel');
-  const [aiResult, setAiResult] = useStateSX(() => _loadSXState().aiResult || null);
-  const [consulting, setConsulting] = useStateSX(() => _loadSXState().consulting || null);
+  const [sort, setSort] = useStateSX(() => _sxStateCache?.sort ?? 'rel');
+  const [aiResult, setAiResult] = useStateSX(() => _sxStateCache?.aiResult ?? null);
+  const [consulting, setConsulting] = useStateSX(() => _sxStateCache?.consulting ?? null);
   const [loading, setLoading] = useStateSX(false);
   const [aiError, setAiError] = useStateSX(null);
-  const [matchedFactories, setMatchedFactories] = useStateSX(() => _loadSXState().matchedFactories || []);
+  const [matchedFactories, setMatchedFactories] = useStateSX(() => _sxStateCache?.matchedFactories ?? []);
 
+  // Track latest state in a ref so the unmount cleanup can save it reliably
+  const _snapRef = useRefSX({});
   useEffectSX(() => {
-    try {
-      sessionStorage.setItem('sx-state', JSON.stringify({ query, smart, activeKw, sort, aiResult, consulting, matchedFactories }));
-    } catch {}
+    _snapRef.current = { query, smart, activeKw, sort, aiResult, consulting, matchedFactories };
   }, [query, smart, activeKw, sort, aiResult, consulting, matchedFactories]);
+
+  // On unmount: save snapshot to module-level cache for next mount
+  useEffectSX(() => () => { _sxStateCache = _snapRef.current; }, []);
 
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];
@@ -2231,7 +2233,7 @@ function SearchUXPage({ onOpenFactory, onSearch }) {
 
             <div className="sx-rec-grid">
               {rec3.map((r, i) => (
-                <button key={r.id || i} className="sx-rec" onClick={() => onSearch && onSearch(query || r.tags?.[0] || r.title)}>
+                <button key={r.id || i} className="sx-rec" onClick={() => onNav && onNav('list')}>
                   <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
                   <div className="sx-rec-glyph">
                     <SXGlyph kind={r.glyph}/>

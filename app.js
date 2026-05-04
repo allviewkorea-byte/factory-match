@@ -168,6 +168,7 @@ function App() {
           backLabel={
             detailFrom === 'rfq' ? '견적 요청서로 돌아가기'
             : detailFrom === 'home' ? '홈으로 돌아가기'
+            : detailFrom === 'search' ? '검색 결과로 돌아가기'
             : '제조사 목록으로'
           }
           onAddRFQ={addRFQ}
@@ -187,6 +188,7 @@ function App() {
         <SearchUXPage
           onOpenFactory={(id) => openFactory(id, 'search')}
           onSearch={handleSearch}
+          onNav={nav}
         />
       )}
       {route === 'chat' && (
