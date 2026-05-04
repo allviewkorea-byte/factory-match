@@ -1203,6 +1203,46 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 // ══════════════════════════════════════════════════════════
 // FACTORY DETAIL
 // ══════════════════════════════════════════════════════════
+
+// Module-level Maps key cache (fetched once per page session)
+let _mapsKey = null;
+let _mapsKeyFetch = null;
+
+function useMapsKey() {
+  const [key, setKey] = React.useState(_mapsKey);
+  React.useEffect(() => {
+    if (_mapsKey !== null) { setKey(_mapsKey); return; }
+    if (!_mapsKeyFetch) {
+      _mapsKeyFetch = fetch('/.netlify/functions/get-maps-key')
+        .then(r => r.json())
+        .then(d => { _mapsKey = d.key || ''; return _mapsKey; })
+        .catch(() => { _mapsKey = ''; return ''; });
+    }
+    _mapsKeyFetch.then(k => setKey(k));
+  }, []);
+  return key;
+}
+
+function FactoryMap({ city, name }) {
+  const key = useMapsKey();
+  if (key === null) {
+    return <div className="factory-map-placeholder"><Icon name="pin" size={16} stroke={1.6}/> 지도 로딩 중…</div>;
+  }
+  if (!key) return null;
+  const q = encodeURIComponent(`${name} ${city}`);
+  return (
+    <div className="factory-map">
+      <iframe
+        src={`https://www.google.com/maps/embed/v1/place?key=${key}&q=${q}&language=ko`}
+        className="factory-map-iframe"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        title={`${name} 위치`}
+      />
+    </div>
+  );
+}
+
 const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
   const f = FACTORIES.find(x => x.id === factoryId) || FACTORIES[0];
@@ -1365,6 +1405,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
                   {f.export && <span className="flag flag-export">수출</span>}
                 </dd>
               </dl>
+              <FactoryMap city={f.city} name={f.name} />
             </div>
           </div>
         </section>
