@@ -1856,21 +1856,6 @@ const SX_ALL_CATEGORIES = [
   { id: 'paint', title: '도장·코팅', en: 'Painting & Coating', desc: '분체도장, 우레탄 코팅, 실내·옥외용 자판기 외관 마감.', count: 88, rel: 58, popular: false, glyph: 'paint', tags: ['분체도장', '우레탄', '옥외용'] },
 ];
 
-const SXGlyph = ({ kind }) => {
-  const map = {
-    metal: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19h16"/><path d="M5 19V9l3-2 3 2v10"/><path d="M13 19v-7l3-2 3 2v7"/><path d="M8 13h2M16 14h2"/></svg>,
-    electronic: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.5"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><path d="M6 14h6M14 14h4"/></svg>,
-    assembly: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>,
-    plastic: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8h6l4 4-4 4H5z"/><path d="M15 12h5"/><path d="M11 8V5M11 19v-3"/></svg>,
-    cooling: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18M5 7l14 10M5 17l14-10"/><path d="M9 5l3-2 3 2M9 19l3 2 3-2"/></svg>,
-    sheet: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="M4 10h16M10 6v12"/></svg>,
-    display: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="14" rx="1.5"/><path d="M9 21h6M12 18v3"/></svg>,
-    payment: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 10h18M7 15h3"/></svg>,
-    paint: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 14h10v6H5z"/><path d="M15 17l5-2v-4l-5-2"/><circle cx="18" cy="6" r="0.5" fill="currentColor"/><circle cx="20" cy="9" r="0.5" fill="currentColor"/></svg>,
-  };
-  return map[kind] || map.metal;
-};
-
 const SX_RELATED_KEYWORDS = ['제조문의', 'OEM', 'ODM', '샘플제작', '소량생산', '견적요청'];
 
 function scoreFactory(factory, searchTerms) {
