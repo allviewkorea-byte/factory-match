@@ -50,13 +50,18 @@ topCategories 규칙:
 - 정확히 3개, match는 65~98 사이, 내림차순 정렬
 - glyph는 반드시 위 목록 중 하나 선택
 - count는 10~500 사이 정수
-- supplyChain은 3~5단계
+- supplyChain은 제품 복잡도에 맞게 자유롭게 (단순 제품 2~3단계, 복잡한 제품 7~10단계, 인위적 제한 없음)
 
 consulting 규칙:
 - 한국 제조업 기준으로 현실적인 수치 제공
 - 모르면 추정 범위로 작성 (예: 협의 필요)
 - 각 항목 30자 이내
 - certRequired는 해당 제품에 실제로 필요한 인증만 포함`;
+
+const RESPONSE_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
 
 function scoreFactory(factory, st) {
   let score = 0;
@@ -95,6 +100,100 @@ async function fetchFactoriesByKeywords(keywords) {
   return resp.json();
 }
 
+// Single Claude API call with explicit timeout via AbortController
+async function callClaude(apiKey, query, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let claudeResp;
+  try {
+    claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: query }],
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!claudeResp.ok) {
+    const errText = await claudeResp.text();
+    const isAuth = claudeResp.status === 401 || claudeResp.status === 403;
+    const err = new Error(isAuth ? 'AUTH_FAILED' : 'API_ERROR');
+    err.code = isAuth ? 'AUTH_FAILED' : 'API_ERROR';
+    err.status = claudeResp.status;
+    err.detail = errText;
+    throw err;
+  }
+
+  const responseData = await claudeResp.json();
+  const textBlock = responseData.content.find((b) => b.type === 'text');
+  if (!textBlock) {
+    const err = new Error('NO_TEXT_BLOCK');
+    err.code = 'NO_TEXT_BLOCK';
+    throw err;
+  }
+
+  const raw = textBlock.text.trim();
+  const jsonStr = raw.startsWith('```') ? raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '') : raw;
+
+  let result;
+  try {
+    result = JSON.parse(jsonStr);
+  } catch {
+    const err = new Error('JSON_PARSE_FAILED');
+    err.code = 'JSON_PARSE_FAILED';
+    err.raw = raw;
+    throw err;
+  }
+
+  if (!result.consulting || !result.topCategories) {
+    const err = new Error('MISSING_REQUIRED_FIELDS');
+    err.code = 'MISSING_REQUIRED_FIELDS';
+    throw err;
+  }
+
+  return result;
+}
+
+// Retry wrapper: up to 2 total attempts, 10s timeout each, 500ms backoff
+// Auth errors and config errors are NOT retried.
+async function callClaudeWithRetry(apiKey, query) {
+  const MAX_RETRIES = 1; // 2 total attempts: fits within Netlify 26s limit (10 + 0.5 + 10 = 20.5s)
+  let lastError;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 500 * attempt));
+      console.log(`Claude retry attempt ${attempt + 1}`);
+    }
+
+    try {
+      return await callClaude(apiKey, query, 10000);
+    } catch (e) {
+      lastError = e;
+      console.log(`Claude attempt ${attempt + 1} failed: ${e.code || e.message}`);
+
+      // Do not retry auth or config errors
+      if (e.code === 'AUTH_FAILED') throw e;
+
+      if (attempt === MAX_RETRIES) throw e;
+    }
+  }
+
+  throw lastError;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -124,7 +223,7 @@ exports.handler = async (event) => {
   if (!apiKey) {
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: RESPONSE_HEADERS,
       body: JSON.stringify({
         error: 'CONFIG_MISSING',
         message: 'ANTHROPIC_API_KEY 환경변수가 Netlify에 설정되지 않았습니다.',
@@ -133,62 +232,24 @@ exports.handler = async (event) => {
     };
   }
 
-  let claudeResp;
-  try {
-    claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
-        system: SYSTEM,
-        messages: [{ role: 'user', content: query }],
-      }),
-    });
-  } catch (e) {
-    return {
-      statusCode: 502,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'NETWORK_ERROR', message: 'Anthropic API 연결 실패: ' + e.message }),
-    };
-  }
-
-  if (!claudeResp.ok) {
-    const errText = await claudeResp.text();
-    const isAuth = claudeResp.status === 401 || claudeResp.status === 403;
-    return {
-      statusCode: 502,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: isAuth ? 'AUTH_FAILED' : 'API_ERROR',
-        message: isAuth
-          ? 'ANTHROPIC_API_KEY 값이 잘못되었거나 만료되었습니다.'
-          : 'Anthropic API 오류: ' + claudeResp.status,
-        detail: errText,
-      }),
-    };
-  }
-
-  const data = await claudeResp.json();
-  const textBlock = data.content.find((b) => b.type === 'text');
-  if (!textBlock) {
-    return { statusCode: 502, body: JSON.stringify({ error: '응답 텍스트가 없습니다' }) };
-  }
-
   let result;
   try {
-    const raw = textBlock.text.trim();
-    const jsonStr = raw.startsWith('```') ? raw.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '') : raw;
-    result = JSON.parse(jsonStr);
+    result = await callClaudeWithRetry(apiKey, query);
     console.log('AI 응답:', JSON.stringify(result, null, 2));
-  } catch {
+  } catch (e) {
+    const code = e.code || 'INTERNAL_ERROR';
+    const isAuth = code === 'AUTH_FAILED';
     return {
       statusCode: 502,
-      body: JSON.stringify({ error: 'JSON 파싱 실패', raw: textBlock.text }),
+      headers: RESPONSE_HEADERS,
+      body: JSON.stringify({
+        error: isAuth ? 'AUTH_FAILED' : code,
+        message: isAuth
+          ? 'ANTHROPIC_API_KEY 값이 잘못되었거나 만료되었습니다.'
+          : e.message || '알 수 없는 오류',
+        ...(e.detail ? { detail: e.detail } : {}),
+        ...(e.raw ? { raw: e.raw } : {}),
+      }),
     };
   }
 
@@ -213,7 +274,6 @@ exports.handler = async (event) => {
     const actualMax = factories
       .map(f => scoreFactory(f, st))
       .reduce((a, b) => Math.max(a, b), 1);
-    const bestPossible = actualMax;
 
     const scored = factories
       .map(f => ({ id: f.id, _score: scoreFactory(f, st) }))
@@ -222,8 +282,8 @@ exports.handler = async (event) => {
       .slice(0, 6)
       .map(f => ({
         id: f.id,
-        matchPct: bestPossible > 0
-          ? Math.min(98, Math.max(38, Math.round((f._score / bestPossible) * 100)))
+        matchPct: actualMax > 0
+          ? Math.min(98, Math.max(38, Math.round((f._score / actualMax) * 100)))
           : 60,
       }));
 
@@ -234,10 +294,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers: RESPONSE_HEADERS,
     body: JSON.stringify(result),
   };
 };
