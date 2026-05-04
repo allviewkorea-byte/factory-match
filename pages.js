@@ -523,11 +523,30 @@ const PLACEHOLDER_EXAMPLES = [
   "예: 판금 알루미늄 시제품",
 ];
 
+const SXGlyph = ({ kind }) => {
+  const map = {
+    metal: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19h16"/><path d="M5 19V9l3-2 3 2v10"/><path d="M13 19v-7l3-2 3 2v7"/><path d="M8 13h2M16 14h2"/></svg>,
+    electronic: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.5"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="10" r="1"/><circle cx="16" cy="10" r="1"/><path d="M6 14h6M14 14h4"/></svg>,
+    assembly: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>,
+    plastic: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8h6l4 4-4 4H5z"/><path d="M15 12h5"/><path d="M11 8V5M11 19v-3"/></svg>,
+    cooling: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18M5 7l14 10M5 17l14-10"/><path d="M9 5l3-2 3 2M9 19l3 2 3-2"/></svg>,
+    sheet: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="6" width="16" height="12" rx="1"/><path d="M4 10h16M10 6v12"/></svg>,
+    display: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="14" rx="1.5"/><path d="M9 21h6M12 18v3"/></svg>,
+    payment: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 10h18M7 15h3"/></svg>,
+    paint: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 14h10v6H5z"/><path d="M15 17l5-2v-4l-5-2"/><circle cx="18" cy="6" r="0.5" fill="currentColor"/><circle cx="20" cy="9" r="0.5" fill="currentColor"/></svg>,
+  };
+  return map[kind] || map.metal;
+};
+
 const HomePage = ({ onSearch }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
   const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
+  const [loading, setLoading] = useStateP(false);
+  const [aiResults, setAiResults] = useStateP(null);
+  const [consulting, setConsulting] = useStateP(null);
 
+  // Placeholder rotation — pauses on focus or while typing
   useEffectP(() => {
     if (isFocused || q.length > 0) return;
     const interval = setInterval(() => {
@@ -536,16 +555,41 @@ const HomePage = ({ onSearch }) => {
     return () => clearInterval(interval);
   }, [isFocused, q]);
 
-  const handleSearch = () => {
+  // Reset results when query is cleared
+  useEffectP(() => {
+    if (!q.trim()) {
+      setAiResults(null);
+      setConsulting(null);
+    }
+  }, [q]);
+
+  const handleAiSearch = async () => {
     if (!q.trim()) return;
-    onSearch?.(q);
+    setLoading(true);
+    try {
+      const resp = await fetch('/.netlify/functions/ai-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      });
+      if (!resp.ok) throw new Error('API 오류');
+      const data = await resp.json();
+      setAiResults(data);
+      if (data.consulting) setConsulting(data.consulting);
+    } catch (e) {
+      console.error('AI match failed:', e);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const hasResults = !!(consulting || aiResults?.topCategories);
 
   return (
     <div className="page page-home">
-      <div className="home-hero">
-        <h1 className="home-headline">{HOME_HEADLINE}</h1>
-        <p className="home-subline">{HOME_SUBLINE}</p>
+      <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
+        {!hasResults && <h1 className="home-headline">{HOME_HEADLINE}</h1>}
+        {!hasResults && <p className="home-subline">{HOME_SUBLINE}</p>}
         <div className="home-search-wrapper">
           <input
             type="text"
@@ -554,14 +598,149 @@ const HomePage = ({ onSearch }) => {
             onChange={(e) => setQ(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAiSearch(); }}
             placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
           />
-          <button className="home-search-btn" onClick={handleSearch}>
-            <Icon name="search" size={20} stroke={2.2}/>
+          {q && (
+            <button className="home-search-clear" onClick={() => setQ('')} aria-label="지우기">
+              <Icon name="close" size={12} stroke={2.4}/>
+            </button>
+          )}
+          <button className="home-search-btn" onClick={handleAiSearch} disabled={loading}>
+            {loading
+              ? <span className="home-search-spinner"/>
+              : <Icon name="search" size={20} stroke={2.2}/>
+            }
           </button>
         </div>
       </div>
+
+      {(loading || hasResults) && (
+        <div className="home-results">
+          {loading && (
+            <div className="home-loading">
+              <span className="home-loading-spinner"/>
+              <span>AI가 분석 중…</span>
+            </div>
+          )}
+
+          {!loading && consulting && (
+            <div className="sx-consulting">
+              <div className="sx-consulting-head">
+                <Icon name="sparkle" size={14} stroke={2.4}/>
+                AI 사전 컨설팅
+              </div>
+              <div className="sx-consulting-grid">
+                {consulting.unitCost && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">예상 단가</span>
+                    <span className="sx-consulting-val">{consulting.unitCost}</span>
+                  </div>
+                )}
+                {consulting.moqGuide && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">최소 발주량</span>
+                    <span className="sx-consulting-val">{consulting.moqGuide}</span>
+                  </div>
+                )}
+                {consulting.leadTime && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">리드타임</span>
+                    <span className="sx-consulting-val">{consulting.leadTime}</span>
+                  </div>
+                )}
+                {consulting.budgetRange && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">예산 범위</span>
+                    <span className="sx-consulting-val">{consulting.budgetRange}</span>
+                  </div>
+                )}
+                {(consulting.certRequired || []).length > 0 && (
+                  <div className="sx-consulting-item">
+                    <span className="sx-consulting-label">필요 인증</span>
+                    <span className="sx-consulting-val">{consulting.certRequired.join(' · ')}</span>
+                  </div>
+                )}
+                {consulting.caution && (
+                  <div className="sx-consulting-item sx-consulting-caution">
+                    <span className="sx-consulting-label">주의사항</span>
+                    <span className="sx-consulting-val">{consulting.caution}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!loading && aiResults?.topCategories && (
+            <>
+              <div className="sx-mode-banner is-on">
+                <div className="sx-mode-banner-icon">
+                  <Icon name="sparkle" size={16} stroke={2.4}/>
+                </div>
+                <div>
+                  <strong>"{q}"</strong>에 가장 적합한 <strong>3개 카테고리</strong>를 추출했습니다 · 매칭률·거래량·리드타임 종합 분석
+                </div>
+                <div className="sx-mode-banner-meta">
+                  <span className="sx-mode-pulse"/>
+                  AI 분석 완료
+                </div>
+              </div>
+
+              <div className="sx-rec-h">
+                <h2>
+                  <Icon name="sparkle" size={16} stroke={2.2}/>
+                  추천 카테고리
+                </h2>
+              </div>
+
+              <div className="sx-rec-grid">
+                {aiResults.topCategories.map((r, i) => (
+                  <button key={r.id || i} className="sx-rec" onClick={() => onSearch?.(r.title)}>
+                    <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
+                    <div className="sx-rec-glyph"><SXGlyph kind={r.glyph}/></div>
+                    <div>
+                      <div className="sx-rec-title-row">
+                        <h3>{r.title}</h3>
+                        <span className="sx-rec-match">
+                          <Icon name="sparkle" size={9} stroke={2.6}/>
+                          매칭 {r.match}%
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-4)', fontFamily: 'var(--font-num)', marginTop: 2, fontWeight: 500 }}>{r.en}</div>
+                    </div>
+                    <p className="sx-rec-desc">{r.desc}</p>
+                    <div className="sx-rec-tags">
+                      {(r.tags || []).map(t => <span key={t} className="sx-rec-tag">{t}</span>)}
+                    </div>
+                    <div className="sx-rec-stats">
+                      <div className="sx-rec-count">
+                        <span className="sx-rec-count-n">{r.count}</span>
+                        <span className="sx-rec-count-l">개사</span>
+                      </div>
+                      <div className="sx-rec-stats-meta">
+                        {r.avgLead && <span>평균 리드 <strong>{r.avgLead}</strong></span>}
+                        {r.avgPrice && <span>단가 <strong>{r.avgPrice}</strong></span>}
+                      </div>
+                    </div>
+                    <div className="sx-rec-cta">
+                      <span>제조사 더 보기</span>
+                      <Icon name="arrow_right" size={15} stroke={2.4} className="sx-rec-cta-arrow"/>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="sx-tip">
+                <Icon name="sparkle" size={14} stroke={2.2}/>
+                <div>
+                  <strong>왜 3개만?</strong> 선택지가 많을수록 의사결정 시간이 길어집니다.
+                  자동추천은 매칭률 88% 이상의 카테고리만 추출해 평균 <strong>탐색 시간을 73% 단축</strong>합니다.
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

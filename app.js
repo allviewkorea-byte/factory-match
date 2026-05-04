@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'search', 'mypage', 'admin'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 function App() {
@@ -181,13 +181,6 @@ function App() {
           rfqIds={rfqIds}
           setRfqIds={setRfqIds}
           onOpenFactory={(id) => openFactory(id, 'rfq')}
-          onNav={nav}
-        />
-      )}
-      {route === 'search' && (
-        <SearchUXPage
-          onOpenFactory={(id) => openFactory(id, 'search')}
-          onSearch={handleSearch}
           onNav={nav}
         />
       )}

@@ -60,7 +60,6 @@ const Header = ({ route, onNav, density, onLogout, authed }) => {
   const navItems = [
     { id: 'home', label: '홈' },
     { id: 'list', label: '제조사 탐색' },
-    { id: 'search', label: '검색 UX' },
     { id: 'rfq', label: '견적 요청', badge: 2 },
     { id: 'chat', label: '채팅' },
   ];
