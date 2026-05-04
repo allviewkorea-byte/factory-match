@@ -1,5 +1,5 @@
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
@@ -32,6 +32,7 @@ function App() {
       return localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing';
     } catch { return 'landing'; }
   });
+  const initialMount = useRef(true);
   const [factoryId, setFactoryId] = useState(null);
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
@@ -42,9 +43,17 @@ function App() {
   }, [tweaks.density]);
 
   useEffect(() => {
-    const target = route === 'home' ? '' : route;
-    if ((window.location.hash || '').replace('#', '') !== target) {
-      window.location.hash = target;
+    const hash = route === 'home' ? '' : route;
+    const url = hash ? `#${hash}` : (window.location.pathname + window.location.search);
+    const currentHash = (window.location.hash || '').replace('#', '');
+    const currentRoute = currentHash || 'home';
+    if (initialMount.current) {
+      // Initial load: replace so we don't add a history entry
+      history.replaceState({ route }, '', url);
+      initialMount.current = false;
+    } else if (currentRoute !== route) {
+      // Only push when URL actually needs to change (prevents double-push on popstate)
+      history.pushState({ route }, '', url);
     }
   }, [route]);
 
@@ -55,13 +64,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const onHashChange = () => {
-      const h = (window.location.hash || '').replace('#', '');
-      const r = h || 'home';
+    // popstate fires on browser back/forward — only setRoute, never pushState
+    const onPopState = (e) => {
+      const r = e.state?.route || (window.location.hash || '').replace('#', '') || 'home';
       if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
+      else setRoute('home');
     };
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const nav = (r) => {

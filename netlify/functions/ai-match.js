@@ -169,17 +169,17 @@ async function callClaude(apiKey, query, timeoutMs) {
 // Retry wrapper: up to 2 total attempts, 10s timeout each, 500ms backoff
 // Auth errors and config errors are NOT retried.
 async function callClaudeWithRetry(apiKey, query) {
-  const MAX_RETRIES = 1; // 2 total attempts: fits within Netlify 26s limit (10 + 0.5 + 10 = 20.5s)
+  const MAX_RETRIES = 1; // 2 total attempts: 12s + 0.8s + 12s = 24.8s (within Netlify 26s limit)
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, 500 * attempt));
+      await new Promise(r => setTimeout(r, 800 * attempt));
       console.log(`Claude retry attempt ${attempt + 1}`);
     }
 
     try {
-      return await callClaude(apiKey, query, 10000);
+      return await callClaude(apiKey, query, 12000);
     } catch (e) {
       lastError = e;
       console.log(`Claude attempt ${attempt + 1} failed: ${e.code || e.message}`);
