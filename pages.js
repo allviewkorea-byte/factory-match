@@ -180,7 +180,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = (f.processes || []).map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
   const isCompact = compact || density === 'compact';
-  const hasRealStats = f.rating > 0;
+  const hasRealStats = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
   const isInRfq = rfqIds.includes(f.id);
 
   return (
@@ -1125,7 +1125,11 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 >
                   <ManufacturerCard
                     f={f}
-                    onOpen={onOpenFactory}
+                    onOpen={(id) => {
+                      if (!window._factoryCache) window._factoryCache = {};
+                      window._factoryCache[id] = f;
+                      onOpenFactory(id);
+                    }}
                     density={density}
                     compact
                     onAddRFQ={onAddRFQ}
@@ -1210,7 +1214,11 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   )}
                 </div>
                 <div className="map-side-actions">
-                  <button className="btn btn-secondary" onClick={() => onOpenFactory(selectedFactory.id)}>
+                  <button className="btn btn-secondary" onClick={() => {
+                    if (!window._factoryCache) window._factoryCache = {};
+                    window._factoryCache[selectedFactory.id] = selectedFactory;
+                    onOpenFactory(selectedFactory.id);
+                  }}>
                     상세 보기
                   </button>
                   <button
@@ -1274,7 +1282,9 @@ function FactoryMap({ city, name }) {
 
 const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
-  const f = FACTORIES.find(x => x.id === factoryId) || FACTORIES[0];
+  const f = (window._factoryCache?.[factoryId])
+    || FACTORIES.find(x => x.id === factoryId)
+    || FACTORIES[0];
   const [tab, setTab] = useStateP('overview');
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
@@ -2239,7 +2249,11 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav }) {
                 </div>
                 <ManufacturerCard
                   f={f}
-                  onOpen={onOpenFactory}
+                  onOpen={(id) => {
+                    if (!window._factoryCache) window._factoryCache = {};
+                    window._factoryCache[id] = f;
+                    onOpenFactory(id);
+                  }}
                   compact
                 />
               </div>
