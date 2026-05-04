@@ -572,8 +572,28 @@ const HomePage = ({ onSearch }) => {
     return () => window.removeEventListener('home-reset', handleReset);
   }, []);
 
+  // Browser back button: close search results when returning to pre-search state
+  useEffectP(() => {
+    const handlePopState = (e) => {
+      if (!e.state?.searched) {
+        setQ('');
+        setAiResults(null);
+        setConsulting(null);
+        setErrorMsg(null);
+        setLastSearchedQuery('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleAiSearch = async () => {
     if (!q.trim()) return;
+    // First search: push history entry so back button closes results
+    if (!aiResults && !consulting) {
+      history.pushState({ searched: true }, '', window.location.href);
+    }
     setLoading(true);
     setErrorMsg(null);
     // Old results stay visible (dimmed via is-loading) until new data arrives
