@@ -1843,19 +1843,23 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
             <div className="rfq-side-divider"/>
             <div className="rfq-side-actions">
               {sendResult?.ok ? (
-                <>
-                  <div className="rfq-success-row">
-                    <button className="btn btn-secondary" onClick={() => { setStep(step - 1); setSendResult(null); }}>
-                      이전
-                    </button>
-                    <button className="btn btn-sent" disabled>
-                      <Icon name="check" size={14} stroke={2.4}/> {sendResult?.count}개사에 발송
-                    </button>
+                <div className="rfq-success-card">
+                  <div className="rfq-success-icon">
+                    <Icon name="check" size={22} stroke={2.6}/>
                   </div>
-                  <div className="rfq-success-msg">
-                    {sendResult?.count}개사에 견적 요청을 발송했습니다. 영업일 기준 1~2일 내 답변을 받으실 수 있습니다.
+                  <div className="rfq-success-title">
+                    {sendResult?.count}개사에 견적 요청 완료!
                   </div>
-                </>
+                  <div className="rfq-success-desc">
+                    영업일 기준 1~2일 내 답변을 받으실 수 있습니다
+                  </div>
+                  <button
+                    className="rfq-success-back"
+                    onClick={() => { setStep(step - 1); setSendResult(null); }}
+                  >
+                    이전으로
+                  </button>
+                </div>
               ) : (
                 <>
                   {step > 1 && (
