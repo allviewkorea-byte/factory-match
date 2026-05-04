@@ -60,7 +60,6 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
   const navItems = [
     { id: 'home', label: '홈' },
     { id: 'list', label: '제조사 탐색' },
-    { id: 'search', label: '검색 UX' },
     { id: 'rfq', label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
     { id: 'chat', label: '채팅' },
   ];
@@ -566,6 +565,8 @@ const HomePage = ({ onSearch }) => {
   const handleAiSearch = async () => {
     if (!q.trim()) return;
     setLoading(true);
+    setAiResults(null);
+    setConsulting(null);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
         method: 'POST',
@@ -1032,7 +1033,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         {/* Right: map */}
         <div className="list-map">
           <KoreaMap
-            factories={filtered}
+            factories={Array.from(new Map(filtered.map(f => [f.id, f])).values())}
             selectedId={selected}
             hoveredId={hovered}
             onPin={(id) => setSelected(id)}
