@@ -1276,9 +1276,10 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
   const f = FACTORIES.find(x => x.id === factoryId) || FACTORIES[0];
   const [tab, setTab] = useStateP('overview');
+  const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
   useEffect(() => {
-    if (tab === 'reviews' && f.reviews === 0) setTab('overview');
+    if (tab === 'reviews' && !isSample) setTab('overview');
   }, [factoryId]);
 
   const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label);
@@ -1337,7 +1338,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             <span className="dot">·</span>
             <span><Icon name="globe" size={13} stroke={2}/> {f.export ? '수출 가능' : '국내 거래'}</span>
           </div>
-          {f.rating > 0 && (
+          {isSample && (
             <div className="detail-rating">
               <div className="detail-rating-big">
                 <Icon name="star" size={16} stroke={2.4}/>
@@ -1345,11 +1346,11 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
                 <span>/ 5.0</span>
               </div>
               <div className="detail-rating-meta">
-                {f.reviews > 0 && <span>리뷰 {f.reviews}건</span>}
-                {f.reviews > 0 && f.deals > 0 && <span className="dot">·</span>}
-                {f.deals > 0 && <span>거래 {f.deals}건</span>}
-                {(f.reviews > 0 || f.deals > 0) && f.responseHr > 0 && f.responseHr < 24 && <span className="dot">·</span>}
-                {f.responseHr > 0 && f.responseHr < 24 && <span>응답 평균 {f.responseHr}시간</span>}
+                <span>리뷰 {f.reviews}건</span>
+                <span className="dot">·</span>
+                <span>거래 {f.deals}건</span>
+                <span className="dot">·</span>
+                <span>응답 평균 {f.responseHr}시간</span>
               </div>
             </div>
           )}
@@ -1399,7 +1400,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
           { id: 'overview', label: '회사 개요' },
           { id: 'capability', label: '제조 역량' },
           { id: 'certs', label: '인증·신뢰도' },
-          ...(f.reviews > 0 ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
+          ...(isSample ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
         ].map(t => (
           <button
             key={t.id}
@@ -1501,34 +1502,31 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             </div>
             <div className="trust-card">
               <h3>응답·거래 지표</h3>
-              {f.responseHr > 0 && f.responseHr < 24 && (
-                <div className="trust-stat">
-                  <div className="trust-stat-k">평균 응답 시간</div>
-                  <div className="trust-stat-bar">
-                    <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
+              {isSample ? (
+                <>
+                  <div className="trust-stat">
+                    <div className="trust-stat-k">평균 응답 시간</div>
+                    <div className="trust-stat-bar">
+                      <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
+                    </div>
+                    <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
                   </div>
-                  <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
-                </div>
-              )}
-              {f.deals > 0 && (
-                <div className="trust-stat">
-                  <div className="trust-stat-k">누적 거래</div>
-                  <div className="trust-stat-bar">
-                    <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
+                  <div className="trust-stat">
+                    <div className="trust-stat-k">누적 거래</div>
+                    <div className="trust-stat-bar">
+                      <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
+                    </div>
+                    <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
                   </div>
-                  <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
-                </div>
-              )}
-              {f.rating > 0 && (
-                <div className="trust-stat">
-                  <div className="trust-stat-k">리뷰 평점</div>
-                  <div className="trust-stat-bar">
-                    <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
+                  <div className="trust-stat">
+                    <div className="trust-stat-k">리뷰 평점</div>
+                    <div className="trust-stat-bar">
+                      <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
+                    </div>
+                    <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
                   </div>
-                  <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
-                </div>
-              )}
-              {!f.rating && !f.deals && !(f.responseHr > 0 && f.responseHr < 24) && (
+                </>
+              ) : (
                 <p className="trust-no-data">거래 이력 데이터가 아직 없습니다.</p>
               )}
             </div>
@@ -1538,7 +1536,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
 
       {tab === 'reviews' && (
         <section className="detail-section">
-          {f.reviews > 0 ? (
+          {isSample ? (
             <div className="reviews">
               {[
                 { name: '김○○ (전자부품 바이어)', date: '2026.03.18', rating: 5, body: '리드타임 정확하게 지켜주시고, 도면 수정 요청에도 빠르게 대응해주셨습니다. 단가도 합리적이고 다음 발주 예정.', deal: '5,000pcs · ₩12,400,000' },
@@ -1843,23 +1841,9 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
             <div className="rfq-side-divider"/>
             <div className="rfq-side-actions">
               {sendResult?.ok ? (
-                <div className="rfq-success-card">
-                  <div className="rfq-success-icon">
-                    <Icon name="check" size={22} stroke={2.6}/>
-                  </div>
-                  <div className="rfq-success-title">
-                    {sendResult?.count}개사에 견적 요청 완료!
-                  </div>
-                  <div className="rfq-success-desc">
-                    영업일 기준 1~2일 내 답변을 받으실 수 있습니다
-                  </div>
-                  <button
-                    className="rfq-success-back"
-                    onClick={() => { setStep(step - 1); setSendResult(null); }}
-                  >
-                    이전으로
-                  </button>
-                </div>
+                <button className="btn btn-sent" disabled>
+                  <Icon name="check" size={14} stroke={2.4}/> {sendResult?.count}개사 발송완료
+                </button>
               ) : (
                 <>
                   {step > 1 && (
@@ -1930,8 +1914,17 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
               )}
             </div>
             <div className="rfq-side-tip">
-              <Icon name="sparkle" size={11} stroke={2}/>
-              <span>3개사 이상에 동시 요청 시 평균 단가 <strong>12% 절감</strong></span>
+              {sendResult?.ok ? (
+                <>
+                  <Icon name="clock" size={11} stroke={2}/>
+                  <span>영업일 기준 1~2일 내 답변을 받으실 수 있습니다</span>
+                </>
+              ) : (
+                <>
+                  <Icon name="sparkle" size={11} stroke={2}/>
+                  <span>3개사 이상에 동시 요청 시 평균 단가 <strong>12% 절감</strong></span>
+                </>
+              )}
             </div>
           </div>
         </aside>
