@@ -1280,22 +1280,28 @@ function useMapsKey() {
   return key;
 }
 
+const MAPS_ENABLED = false; // Set to true when Maps API is authorized
+
 function FactoryMap({ city, name }) {
   const key = useMapsKey();
-  if (key === null) {
-    return <div className="factory-map-placeholder"><Icon name="pin" size={16} stroke={1.6}/> 지도 로딩 중…</div>;
+  if (MAPS_ENABLED && key) {
+    const q = encodeURIComponent(`${name} ${city}`);
+    return (
+      <div className="factory-map">
+        <iframe
+          src={`https://www.google.com/maps/embed/v1/place?key=${key}&q=${q}&language=ko`}
+          className="factory-map-iframe"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`${name} 위치`}
+        />
+      </div>
+    );
   }
-  if (!key) return null;
-  const q = encodeURIComponent(`${name} ${city}`);
   return (
-    <div className="factory-map">
-      <iframe
-        src={`https://www.google.com/maps/embed/v1/place?key=${key}&q=${q}&language=ko`}
-        className="factory-map-iframe"
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        title={`${name} 위치`}
-      />
+    <div className="factory-map-placeholder">
+      <Icon name="pin" size={16} stroke={1.6}/>
+      <span>지도 준비 중</span>
     </div>
   );
 }
@@ -1308,14 +1314,16 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
   const [tab, setTab] = useStateP('overview');
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
+  const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
+  const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
+  const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label).filter(Boolean);
+  const inRfq = rfqIds.includes(f.id);
+
   useEffect(() => {
     if (tab === 'reviews' && !isSample) setTab('overview');
+    if (tab === 'certs' && f.certs.length === 0 && !isSample) setTab('overview');
+    if (tab === 'capability' && procLabels.length === 0 && (f.materials || []).length === 0 && prodLabels.length === 0) setTab('overview');
   }, [factoryId]);
-
-  const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label);
-  const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label);
-  const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label);
-  const inRfq = rfqIds.includes(f.id);
 
   return (
     <div className="page page-detail">
@@ -1340,18 +1348,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
       <section className="detail-hero">
         <div className="detail-hero-img" style={{ background: f.image }}>
           <div className="mcard-img-stripes"/>
-          <div className="detail-hero-img-label">FACTORY PHOTO · {f.en.toUpperCase()}</div>
-          <div className="detail-hero-thumbs">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="detail-thumb" style={{ background: f.image, opacity: 0.6 + i * 0.1 }}>
-                <div className="mcard-img-stripes"/>
-              </div>
-            ))}
-          </div>
         </div>
         <div className="detail-hero-info">
           <div className="detail-hero-head">
-            <Badge tone="emerald" icon="badge_check">검증 제조사</Badge>
             {f.certs.includes('IATF 16949') && (
               <Badge tone="indigo" icon="badge_check">자동차 인증</Badge>
             )}
@@ -1360,13 +1359,15 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             )}
           </div>
           <h1 className="detail-name">{f.name}</h1>
-          <div className="detail-name-en">{f.en}</div>
+          {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
             <span><Icon name="pin" size={13} stroke={2}/> {f.city}</span>
-            <span className="dot">·</span>
-            <span>{f.founded}년 설립 · 직원 {f.employees}명</span>
-            <span className="dot">·</span>
-            <span><Icon name="globe" size={13} stroke={2}/> {f.export ? '수출 가능' : '국내 거래'}</span>
+            {isSample && f.founded > 0 && (
+              <>
+                <span className="dot">·</span>
+                <span>{f.founded}년 설립 · 직원 {f.employees}명</span>
+              </>
+            )}
           </div>
           {isSample && (
             <div className="detail-rating">
@@ -1385,29 +1386,33 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             </div>
           )}
 
-          <div className="detail-stats">
-            <div className="dstat">
-              <Icon name="box" size={14} stroke={2}/>
-              <div>
-                <div className="dstat-k">MOQ</div>
-                <div className="dstat-v">{f.moq.toLocaleString()} {f.moqUnit || '피스'}</div>
+          {isSample && (
+            <div className="detail-stats">
+              <div className="dstat">
+                <Icon name="box" size={14} stroke={2}/>
+                <div>
+                  <div className="dstat-k">MOQ</div>
+                  <div className="dstat-v">{f.moq.toLocaleString()} {f.moqUnit || '피스'}</div>
+                </div>
               </div>
-            </div>
-            <div className="dstat">
-              <Icon name="clock" size={14} stroke={2}/>
-              <div>
-                <div className="dstat-k">리드타임</div>
-                <div className="dstat-v">{f.leadDays}일</div>
+              <div className="dstat">
+                <Icon name="clock" size={14} stroke={2}/>
+                <div>
+                  <div className="dstat-k">리드타임</div>
+                  <div className="dstat-v">{f.leadDays}일</div>
+                </div>
               </div>
+              {f.priceRange && (
+                <div className="dstat">
+                  <Icon name="won" size={14} stroke={2}/>
+                  <div>
+                    <div className="dstat-k">단가 범위</div>
+                    <div className="dstat-v">{f.priceRange}</div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="dstat">
-              <Icon name="won" size={14} stroke={2}/>
-              <div>
-                <div className="dstat-k">단가 범위</div>
-                <div className="dstat-v">{f.priceRange}</div>
-              </div>
-            </div>
-          </div>
+          )}
 
           <div className="detail-cta">
             <button
@@ -1428,8 +1433,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
       <div className="detail-tabs">
         {[
           { id: 'overview', label: '회사 개요' },
-          { id: 'capability', label: '제조 역량' },
-          { id: 'certs', label: '인증·신뢰도' },
+          ...(procLabels.length > 0 || (f.materials || []).length > 0 || prodLabels.length > 0
+            ? [{ id: 'capability', label: '제조 역량' }] : []),
+          ...(f.certs.length > 0 || isSample ? [{ id: 'certs', label: '인증·신뢰도' }] : []),
           ...(isSample ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
         ].map(t => (
           <button
@@ -1445,31 +1451,31 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
       {/* Tab content */}
       {tab === 'overview' && (
         <section className="detail-section">
-          <div className="detail-grid">
-            <div>
-              <h3>회사 소개</h3>
-              <p className="detail-desc">{f.summary}</p>
-              <p className="detail-desc">
-                {f.name}은(는) {f.founded}년 설립 이래 {2026 - f.founded}년간
-                {indLabels.join(', ')} 분야에서 제조 역량을 축적해왔습니다.
-                {f.city} 산업단지 내 자체 공장 보유, 직원 {f.employees}명이 24시간 2교대로 운영합니다.
-                주요 거래처로는 국내 대기업 1차 벤더 다수가 있으며,
-                {f.export && '글로벌 수출 실적 또한 보유하고 있습니다.'}
-              </p>
-            </div>
+          <div className={f.summary ? 'detail-grid' : ''}>
+            {f.summary && (
+              <div>
+                <h3>회사 소개</h3>
+                <p className="detail-desc">{f.summary}</p>
+              </div>
+            )}
             <div className="detail-side">
               <h4>기본 정보</h4>
               <dl className="detail-dl">
-                <dt>산업군</dt><dd>{indLabels.join(', ')}</dd>
-                <dt>주소</dt><dd>{f.city} 산업단지로 ○○○</dd>
-                <dt>설립</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd>
-                <dt>직원수</dt><dd>{f.employees}명</dd>
-                <dt>거래 형태</dt>
-                <dd>
-                  {f.oem && <span className="flag">OEM</span>}
-                  {f.odm && <span className="flag">ODM</span>}
-                  {f.export && <span className="flag flag-export">수출</span>}
-                </dd>
+                {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
+                {isSample && f.founded > 0 && (
+                  <><dt>설립</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>
+                )}
+                {isSample && f.employees > 0 && (
+                  <><dt>직원수</dt><dd>{f.employees}명</dd></>
+                )}
+                {(f.oem || f.odm || f.export) && (
+                  <><dt>거래 형태</dt>
+                  <dd>
+                    {f.oem && <span className="flag">OEM</span>}
+                    {f.odm && <span className="flag">ODM</span>}
+                    {f.export && <span className="flag flag-export">수출</span>}
+                  </dd></>
+                )}
               </dl>
               <FactoryMap city={f.city} name={f.name} />
             </div>
@@ -1480,35 +1486,43 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
       {tab === 'capability' && (
         <section className="detail-section">
           <div className="cap-grid">
-            <div className="cap-block">
-              <h3>가공 방식</h3>
-              <div className="cap-tags">
-                {procLabels.map(p => <span key={p} className="cap-tag cap-tag-blue">{p}</span>)}
+            {procLabels.length > 0 && (
+              <div className="cap-block">
+                <h3>가공 방식</h3>
+                <div className="cap-tags">
+                  {procLabels.map(p => <span key={p} className="cap-tag cap-tag-blue">{p}</span>)}
+                </div>
               </div>
-            </div>
-            <div className="cap-block">
-              <h3>소재</h3>
-              <div className="cap-tags">
-                {f.materials.map(m => <span key={m} className="cap-tag">{m}</span>)}
+            )}
+            {(f.materials || []).length > 0 && (
+              <div className="cap-block">
+                <h3>소재</h3>
+                <div className="cap-tags">
+                  {f.materials.map(m => <span key={m} className="cap-tag">{m}</span>)}
+                </div>
               </div>
-            </div>
-            <div className="cap-block">
-              <h3>생산 가능 제품</h3>
-              <div className="cap-tags">
-                {prodLabels.map(p => <span key={p} className="cap-tag cap-tag-amber">{p}</span>)}
+            )}
+            {prodLabels.length > 0 && (
+              <div className="cap-block">
+                <h3>생산 가능 제품</h3>
+                <div className="cap-tags">
+                  {prodLabels.map(p => <span key={p} className="cap-tag cap-tag-amber">{p}</span>)}
+                </div>
               </div>
-            </div>
-            <div className="cap-block">
-              <h3>주요 생산 조건</h3>
-              <table className="cap-table">
-                <tbody>
-                  <tr><th>최소 주문 (MOQ)</th><td>{f.moq.toLocaleString()} {f.moqUnit || '피스'}</td></tr>
-                  <tr><th>리드타임</th><td>{f.leadDays}일 (시제품 별도)</td></tr>
-                  <tr><th>단가 범위</th><td>{f.priceRange}</td></tr>
-                  <tr><th>샘플</th><td>유료 / 3~5일</td></tr>
-                </tbody>
-              </table>
-            </div>
+            )}
+            {isSample && (
+              <div className="cap-block">
+                <h3>주요 생산 조건</h3>
+                <table className="cap-table">
+                  <tbody>
+                    <tr><th>최소 주문 (MOQ)</th><td>{f.moq.toLocaleString()} {f.moqUnit || '피스'}</td></tr>
+                    <tr><th>리드타임</th><td>{f.leadDays}일 (시제품 별도)</td></tr>
+                    {f.priceRange && <tr><th>단가 범위</th><td>{f.priceRange}</td></tr>}
+                    <tr><th>샘플</th><td>유료 / 3~5일</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -1516,50 +1530,48 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
       {tab === 'certs' && (
         <section className="detail-section">
           <div className="trust-grid">
-            <div className="trust-card">
-              <h3>보유 인증</h3>
-              <div className="cert-list">
-                {f.certs.map(c => (
-                  <div key={c} className="cert-item">
-                    <Icon name="badge_check" size={16} stroke={2}/>
-                    <div>
-                      <div className="cert-item-k">{c}</div>
-                      <div className="cert-item-v">유효 · 2027.12 갱신 예정</div>
+            {f.certs.length > 0 && (
+              <div className="trust-card">
+                <h3>보유 인증</h3>
+                <div className="cert-list">
+                  {f.certs.map(c => (
+                    <div key={c} className="cert-item">
+                      <Icon name="badge_check" size={16} stroke={2}/>
+                      <div>
+                        <div className="cert-item-k">{c}</div>
+                        <div className="cert-item-v">유효 · 2027.12 갱신 예정</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="trust-card">
-              <h3>응답·거래 지표</h3>
-              {isSample ? (
-                <>
-                  <div className="trust-stat">
-                    <div className="trust-stat-k">평균 응답 시간</div>
-                    <div className="trust-stat-bar">
-                      <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
-                    </div>
-                    <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
+            )}
+            {isSample && (
+              <div className="trust-card">
+                <h3>응답·거래 지표</h3>
+                <div className="trust-stat">
+                  <div className="trust-stat-k">평균 응답 시간</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
                   </div>
-                  <div className="trust-stat">
-                    <div className="trust-stat-k">누적 거래</div>
-                    <div className="trust-stat-bar">
-                      <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
-                    </div>
-                    <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
+                  <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
+                </div>
+                <div className="trust-stat">
+                  <div className="trust-stat-k">누적 거래</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
                   </div>
-                  <div className="trust-stat">
-                    <div className="trust-stat-k">리뷰 평점</div>
-                    <div className="trust-stat-bar">
-                      <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
-                    </div>
-                    <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
+                  <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
+                </div>
+                <div className="trust-stat">
+                  <div className="trust-stat-k">리뷰 평점</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
                   </div>
-                </>
-              ) : (
-                <p className="trust-no-data">거래 이력 데이터가 아직 없습니다.</p>
-              )}
-            </div>
+                  <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
