@@ -548,6 +548,7 @@ const HomePage = ({ onSearch }) => {
   const [aiResults, setAiResults] = useStateP(null);
   const [consulting, setConsulting] = useStateP(null);
   const [errorMsg, setErrorMsg] = useStateP(null);
+  const [lastSearchedQuery, setLastSearchedQuery] = useStateP('');
 
   // Placeholder rotation — pauses on focus or while typing
   useEffectP(() => {
@@ -574,9 +575,8 @@ const HomePage = ({ onSearch }) => {
   const handleAiSearch = async () => {
     if (!q.trim()) return;
     setLoading(true);
-    setAiResults(null);
-    setConsulting(null);
     setErrorMsg(null);
+    // Old results stay visible (dimmed via is-loading) until new data arrives
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
         method: 'POST',
@@ -586,16 +586,22 @@ const HomePage = ({ onSearch }) => {
       const data = await resp.json();
       if (!resp.ok) {
         const code = data?.error;
+        setAiResults(null);
+        setConsulting(null);
         if (code === 'CONFIG_MISSING') setErrorMsg('서비스 설정에 문제가 있습니다. 관리자에게 문의하세요.');
         else if (code === 'AUTH_FAILED') setErrorMsg('AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.');
         else setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
         console.error('AI match error:', code, data?.message);
         return;
       }
+      // Key change + data update in same batch → remount triggers fresh animation
+      setLastSearchedQuery(q);
       setAiResults(data);
-      if (data.consulting) setConsulting(data.consulting);
+      setConsulting(data.consulting || null);
     } catch (e) {
       console.error('AI match failed:', e);
+      setAiResults(null);
+      setConsulting(null);
       setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
@@ -647,7 +653,7 @@ const HomePage = ({ onSearch }) => {
       </div>
 
       {hasResults && (
-        <div className="home-results">
+        <div className={`home-results${loading ? ' is-loading' : ''}`} key={lastSearchedQuery}>
           {consulting && (
             <div className="sx-consulting">
               <div className="sx-consulting-head">

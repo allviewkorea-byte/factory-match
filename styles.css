@@ -5272,6 +5272,13 @@ a { color: inherit; text-decoration: none; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Dim old results while a new search is loading */
+.home-results.is-loading {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
 /* Staggered entry for consulting and category cards */
 .sx-consulting {
   animation: fadeSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
