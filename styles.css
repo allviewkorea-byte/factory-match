@@ -5264,24 +5264,37 @@ a { color: inherit; text-decoration: none; }
   max-width: 960px;
   margin: 0 auto;
   padding: 0 24px 80px;
-  animation: fadeIn 0.3s ease;
+  animation: fadeSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-.home-loading {
+/* Staggered entry for consulting and category cards */
+.sx-consulting {
+  animation: fadeSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sx-rec-grid {
+  animation: fadeSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+/* Loading indicator below search bar */
+.home-search-loading {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 32px;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
   color: var(--ink-3);
   font-size: 14px;
-  justify-content: center;
+  animation: fadeSlideIn 0.2s ease;
 }
 
 .home-loading-spinner {
-  width: 20px; height: 20px;
-  border: 2.5px solid var(--line);
+  width: 16px; height: 16px;
+  border: 2px solid var(--line);
   border-top-color: var(--brand);
   border-radius: 50%;
   animation: _spin 0.7s linear infinite;

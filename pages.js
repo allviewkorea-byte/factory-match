@@ -68,7 +68,10 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
     <header className="hdr" style={{ height: isCompact ? 56 : 64 }}>
       <div className="hdr-inner">
         <div className="hdr-left">
-          <button className="logo" onClick={() => onNav('home')}>
+          <button className="logo" onClick={() => {
+            if (route === 'home') window.dispatchEvent(new CustomEvent('home-reset'));
+            else onNav('home');
+          }}>
             <span className="logo-mark">
               <span className="logo-mark-inner"/>
             </span>
@@ -555,14 +558,18 @@ const HomePage = ({ onSearch }) => {
     return () => clearInterval(interval);
   }, [isFocused, q]);
 
-  // Reset results when query is cleared
+  // Home-reset: dispatched by logo click when already on home
   useEffectP(() => {
-    if (!q.trim()) {
+    const handleReset = () => {
+      setQ('');
       setAiResults(null);
       setConsulting(null);
       setErrorMsg(null);
-    }
-  }, [q]);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('home-reset', handleReset);
+    return () => window.removeEventListener('home-reset', handleReset);
+  }, []);
 
   const handleAiSearch = async () => {
     if (!q.trim()) return;
@@ -631,18 +638,17 @@ const HomePage = ({ onSearch }) => {
             {errorMsg}
           </div>
         )}
+        {loading && (
+          <div className="home-search-loading">
+            <span className="home-loading-spinner"/>
+            <span>AI가 분석 중…</span>
+          </div>
+        )}
       </div>
 
-      {(loading || hasResults) && (
+      {hasResults && (
         <div className="home-results">
-          {loading && (
-            <div className="home-loading">
-              <span className="home-loading-spinner"/>
-              <span>AI가 분석 중…</span>
-            </div>
-          )}
-
-          {!loading && consulting && (
+          {consulting && (
             <div className="sx-consulting">
               <div className="sx-consulting-head">
                 <Icon name="sparkle" size={14} stroke={2.4}/>
@@ -689,7 +695,7 @@ const HomePage = ({ onSearch }) => {
             </div>
           )}
 
-          {!loading && aiResults?.topCategories && (
+          {aiResults?.topCategories && (
             <>
               <div className="sx-mode-banner is-on">
                 <div className="sx-mode-banner-icon">
