@@ -176,10 +176,12 @@ function getCardKeywords(f) {
   return kws.slice(0, 3).join(' · ') || f.name.slice(0, 12);
 }
 
-const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
+const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqIds = [] }) => {
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = (f.processes || []).map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
   const isCompact = compact || density === 'compact';
+  const hasRealStats = f.rating > 0;
+  const isInRfq = rfqIds.includes(f.id);
 
   return (
     <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
@@ -198,23 +200,25 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
               )}
             </h3>
             <div className="mcard-sub">
-              <span>{f.en}</span>
-              <span className="dot">·</span>
               <span>{f.city}</span>
             </div>
           </div>
-          <div className="mcard-rating">
-            <Icon name="star" size={12} stroke={2}/>
-            <strong>{f.rating}</strong>
-            <span>({f.reviews})</span>
-          </div>
+          {hasRealStats && (
+            <div className="mcard-rating">
+              <Icon name="star" size={12} stroke={2}/>
+              <strong>{f.rating}</strong>
+              <span>({f.reviews})</span>
+            </div>
+          )}
         </div>
-        {!isCompact && <p className="mcard-desc">{f.summary}</p>}
+        <p className="mcard-desc">{f.summary || '견적 문의 가능한 제조사입니다'}</p>
         <div className="mcard-tags">
-          {procLabels.slice(0, 4).map(p => (
+          {procLabels.slice(0, 3).map(p => (
             <span key={p} className="mtag">{p}</span>
           ))}
-          {procLabels.length > 4 && <span className="mtag mtag-more">+{procLabels.length - 4}</span>}
+          {(f.materials || []).slice(0, 3).map(m => (
+            <span key={m} className="mtag mtag-mat">{m}</span>
+          ))}
         </div>
         <div className="mcard-stats">
           <div className="stat">
@@ -226,16 +230,24 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
             <span className="stat-k">리드타임</span>
             <span className="stat-v">{f.leadDays > 0 ? f.leadDays + '일' : '−'}</span>
           </div>
-          <div className="stat-sep"/>
-          <div className="stat">
-            <span className="stat-k">응답</span>
-            <span className="stat-v">{f.responseHr > 0 ? f.responseHr + 'h' : '−'}</span>
-          </div>
-          <div className="stat-sep"/>
-          <div className="stat">
-            <span className="stat-k">거래</span>
-            <span className="stat-v">{f.deals}건</span>
-          </div>
+          {f.responseHr > 0 && f.responseHr < 24 && (
+            <>
+              <div className="stat-sep"/>
+              <div className="stat">
+                <span className="stat-k">응답</span>
+                <span className="stat-v">{f.responseHr}h</span>
+              </div>
+            </>
+          )}
+          {f.deals > 0 && (
+            <>
+              <div className="stat-sep"/>
+              <div className="stat">
+                <span className="stat-k">거래</span>
+                <span className="stat-v">{f.deals}건</span>
+              </div>
+            </>
+          )}
         </div>
         <div className="mcard-foot">
           <div className="mcard-cert">
@@ -251,6 +263,18 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false }) => {
           </div>
         </div>
       </button>
+      {onAddRFQ && (
+        <div className="mcard-rfq-row">
+          <button
+            className={`mcard-rfq-btn${isInRfq ? ' is-added' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onAddRFQ(f.id); }}
+          >
+            {isInRfq
+              ? <><Icon name="check" size={12} stroke={2.4}/> 견적 추가됨</>
+              : '견적 요청하기'}
+          </button>
+        </div>
+      )}
     </article>
   );
 };
@@ -533,15 +557,14 @@ const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
         <div className="hero-inner">
           <div className="hero-eyebrow">
             <span className="hero-eyebrow-dot"/>
-            <span>국내 검증 제조사 <strong>2,847</strong>곳 · 누적 거래 <strong>₩142억</strong></span>
+            <span>전국 <strong>12,138</strong>개 제조사 DB · 지금 무료로 시작하세요</span>
           </div>
           <h1 className="hero-title">
             제조 조건만 입력하세요.<br/>
             <span className="hero-title-em">맞는 공장이 먼저 찾아옵니다.</span>
           </h1>
           <p className="hero-sub">
-            가공방식 · 소재 · 제품 키워드로 검색하면 적합한 제조사가 자동 매칭됩니다.
-            여러 곳에 동시 견적 요청, 평균 응답 4시간.
+            가공방식·소재·제품을 입력하면 맞는 공장을 먼저 찾아드립니다.
           </p>
 
           {/* Search */}
@@ -1105,6 +1128,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                     onOpen={onOpenFactory}
                     density={density}
                     compact
+                    onAddRFQ={onAddRFQ}
+                    rfqIds={rfqIds}
                   />
                 </div>
               ))}
@@ -1165,20 +1190,24 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               <div className="map-side-body">
                 <div className="map-side-row">
                   <h3>{selectedFactory.name}</h3>
-                  <div className="mcard-rating">
-                    <Icon name="star" size={11} stroke={2}/>
-                    <strong>{selectedFactory.rating}</strong>
-                  </div>
+                  {selectedFactory.rating > 0 && (
+                    <div className="mcard-rating">
+                      <Icon name="star" size={11} stroke={2}/>
+                      <strong>{selectedFactory.rating}</strong>
+                    </div>
+                  )}
                 </div>
                 <p className="map-side-sub">
                   <Icon name="pin" size={11} stroke={2}/>
                   {selectedFactory.city}
                 </p>
-                <p className="map-side-desc">{selectedFactory.summary}</p>
+                <p className="map-side-desc">{selectedFactory.summary || '견적 문의 가능한 제조사입니다'}</p>
                 <div className="map-side-stats">
                   <div><span>MOQ</span><strong>{selectedFactory.moq.toLocaleString()} {selectedFactory.moqUnit || '피스'}</strong></div>
                   <div><span>리드타임</span><strong>{selectedFactory.leadDays > 0 ? selectedFactory.leadDays + '일' : '−'}</strong></div>
-                  <div><span>응답</span><strong>{selectedFactory.responseHr > 0 ? selectedFactory.responseHr + 'h' : '−'}</strong></div>
+                  {selectedFactory.responseHr > 0 && selectedFactory.responseHr < 24 && (
+                    <div><span>응답</span><strong>{selectedFactory.responseHr}h</strong></div>
+                  )}
                 </div>
                 <div className="map-side-actions">
                   <button className="btn btn-secondary" onClick={() => onOpenFactory(selectedFactory.id)}>
@@ -1531,26 +1560,23 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
   const selected = FACTORIES.filter(f => rfqIds.includes(f.id));
   const [step, setStep] = useStateP(1);
   const [form, setForm] = useStateP({
-    title: '소형 가전 ABS 케이스 사출',
-    qty: 5000,
+    title: '',
+    qty: '',
     process: 'injection',
-    material: 'ABS',
-    deadline: '2026-06-30',
-    budget: '₩8,000,000 — ₩12,000,000',
-    notes: '도면 첨부 / 색상 RAL7016 무광 / 후처리 무도장 / OEM 거래 가능',
-    file: 'product_case_v3.step (4.2 MB)',
+    material: '',
+    deadline: '',
+    budget: '',
+    notes: '',
+    file: '',
     email: '',
   });
+  const [rfqShowExtra, setRfqShowExtra] = useStateP(false);
   const [sending, setSending] = useStateP(false);
   const [sendResult, setSendResult] = useStateP(null);
   const [sentSnapshot, setSentSnapshot] = useStateP(null);
 
-  const totalEstResp = selected.length === 0 ? 0 : Math.max(...selected.map(s => s.responseHr));
   const dispCount = sendResult?.ok ? sendResult?.count : selected.length;
-  const dispResp  = sendResult?.ok ? sentSnapshot?.totalResp : totalEstResp;
-  const dispRating = sendResult?.ok
-    ? sentSnapshot?.avgRating
-    : (selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-');
+  const step2Valid = !!(form.title && form.qty && form.deadline && form.email);
 
   return (
     <div className="page page-rfq">
@@ -1558,8 +1584,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
         <div>
           <h1>견적 요청 (RFQ)</h1>
           <p className="rfq-sub">
-            선택한 제조사에 동일한 조건으로 동시 견적을 요청합니다 ·
-            예상 응답 <strong>{totalEstResp}시간 내</strong>
+            선택한 제조사에 동일한 조건으로 동시 견적을 요청합니다
           </p>
         </div>
         <div className="rfq-stepper">
@@ -1620,8 +1645,8 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                         <div className="rfq-row-stats">
                           <span>MOQ {f.moq.toLocaleString()} {f.moqUnit || '피스'}</span>
                           <span>리드 {f.leadDays}일</span>
-                          <span>응답 {f.responseHr}h</span>
-                          <span><Icon name="star" size={10} stroke={2}/> {f.rating}</span>
+                          {f.responseHr > 0 && f.responseHr < 24 && <span>응답 {f.responseHr}h</span>}
+                          {f.rating > 0 && <span><Icon name="star" size={10} stroke={2}/> {f.rating}</span>}
                         </div>
                         <div className="rfq-row-cta">
                           <Icon name="arrow_up_right" size={11} stroke={2.2}/> 상세 보기
@@ -1652,14 +1677,28 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
               </div>
               <div className="rfq-form">
                 <div className="rfq-field rfq-field-full">
-                  <label>프로젝트명</label>
+                  <label>제품명 <span className="rfq-required">*</span></label>
                   <input
+                    placeholder="예: 알루미늄 CNC 가공 브라켓"
                     value={form.title}
                     onChange={e => setForm({ ...form, title: e.target.value })}
                   />
                 </div>
+                <div className="rfq-field">
+                  <label>수량 <span className="rfq-required">*</span></label>
+                  <input
+                    type="number"
+                    placeholder="예: 1000"
+                    value={form.qty}
+                    onChange={e => setForm({ ...form, qty: e.target.value })}
+                  />
+                </div>
+                <div className="rfq-field">
+                  <label>희망 납기 <span className="rfq-required">*</span></label>
+                  <input type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })}/>
+                </div>
                 <div className="rfq-field rfq-field-full">
-                  <label>답변 받을 이메일</label>
+                  <label>답변 받을 이메일 <span className="rfq-required">*</span></label>
                   <input
                     type="email"
                     placeholder="company@example.com"
@@ -1667,47 +1706,67 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                     onChange={e => setForm({ ...form, email: e.target.value })}
                   />
                 </div>
-                <div className="rfq-field">
-                  <label>가공 방식</label>
-                  <select value={form.process} onChange={e => setForm({ ...form, process: e.target.value })}>
-                    {PROCESSES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                  </select>
-                </div>
-                <div className="rfq-field">
-                  <label>주요 소재</label>
-                  <input value={form.material} onChange={e => setForm({ ...form, material: e.target.value })}/>
-                </div>
-                <div className="rfq-field">
-                  <label>수량</label>
-                  <input type="number" value={form.qty} onChange={e => setForm({ ...form, qty: +e.target.value })}/>
-                </div>
-                <div className="rfq-field">
-                  <label>희망 납기</label>
-                  <input type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })}/>
-                </div>
                 <div className="rfq-field rfq-field-full">
-                  <label>예산 범위 <span className="hint">(선택)</span></label>
-                  <input value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })}/>
+                  <button
+                    type="button"
+                    className="rfq-optional-toggle"
+                    onClick={() => setRfqShowExtra(!rfqShowExtra)}
+                  >
+                    <Icon name={rfqShowExtra ? 'chevron_down' : 'chevron_right'} size={13} stroke={2}/>
+                    추가 정보 입력하기 (선택)
+                  </button>
                 </div>
-                <div className="rfq-field rfq-field-full">
-                  <label>요청 내용 / 도면 메모</label>
-                  <textarea
-                    rows={4}
-                    value={form.notes}
-                    onChange={e => setForm({ ...form, notes: e.target.value })}
-                  />
-                </div>
-                <div className="rfq-field rfq-field-full">
-                  <label>도면 / 시방서 첨부</label>
-                  <div className="rfq-file">
-                    <Icon name="upload" size={16} stroke={2}/>
-                    <span className="rfq-file-name">{form.file}</span>
-                    <span className="rfq-file-status">
-                      <Icon name="check" size={11} stroke={2.4}/> 업로드 완료
-                    </span>
-                    <button className="rfq-file-replace">교체</button>
-                  </div>
-                </div>
+                {rfqShowExtra && (
+                  <>
+                    <div className="rfq-field">
+                      <label>가공 방식</label>
+                      <select value={form.process} onChange={e => setForm({ ...form, process: e.target.value })}>
+                        {PROCESSES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                      </select>
+                    </div>
+                    <div className="rfq-field">
+                      <label>주요 소재</label>
+                      <input
+                        placeholder="예: 알루미늄 6061, ABS"
+                        value={form.material}
+                        onChange={e => setForm({ ...form, material: e.target.value })}
+                      />
+                    </div>
+                    <div className="rfq-field rfq-field-full">
+                      <label>예산 범위</label>
+                      <input
+                        placeholder="예: ₩5,000,000 — ₩10,000,000"
+                        value={form.budget}
+                        onChange={e => setForm({ ...form, budget: e.target.value })}
+                      />
+                    </div>
+                    <div className="rfq-field rfq-field-full">
+                      <label>요청 내용 / 도면 메모</label>
+                      <textarea
+                        rows={4}
+                        placeholder="표면 처리, 공차 요건, 기타 요청사항을 적어주세요"
+                        value={form.notes}
+                        onChange={e => setForm({ ...form, notes: e.target.value })}
+                      />
+                    </div>
+                    <div className="rfq-field rfq-field-full">
+                      <label>도면 / 시방서 첨부</label>
+                      <div className="rfq-file">
+                        <Icon name="upload" size={16} stroke={2}/>
+                        {form.file
+                          ? <>
+                              <span className="rfq-file-name">{form.file}</span>
+                              <span className="rfq-file-status">
+                                <Icon name="check" size={11} stroke={2.4}/> 업로드 완료
+                              </span>
+                              <button className="rfq-file-replace">교체</button>
+                            </>
+                          : <span className="rfq-file-name" style={{ color: 'var(--ink-4)' }}>파일 선택 (PDF, STEP, DWG)</span>
+                        }
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1721,12 +1780,12 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                 <div className="rfq-review-card">
                   <h4>요청 요약</h4>
                   <dl className="rfq-dl">
-                    <dt>프로젝트</dt><dd>{form.title}</dd>
-                    <dt>가공 / 소재</dt><dd>{PROCESSES.find(p => p.id === form.process)?.label} / {form.material}</dd>
-                    <dt>수량</dt><dd>{form.qty.toLocaleString()} 피스</dd>
+                    <dt>제품명</dt><dd>{form.title}</dd>
+                    <dt>수량</dt><dd>{form.qty} 피스</dd>
                     <dt>납기</dt><dd>{form.deadline}</dd>
-                    <dt>예산</dt><dd>{form.budget}</dd>
-                    <dt>첨부</dt><dd>{form.file}</dd>
+                    {form.material && <><dt>소재</dt><dd>{form.material}</dd></>}
+                    {form.budget && <><dt>예산</dt><dd>{form.budget}</dd></>}
+                    {form.file && <><dt>첨부</dt><dd>{form.file}</dd></>}
                   </dl>
                 </div>
                 <div className="rfq-review-card">
@@ -1735,7 +1794,9 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                     {selected.map(f => (
                       <li key={f.id}>
                         <span>{f.name}</span>
-                        <span className="hint">예상 응답 {f.responseHr}h 내</span>
+                        {f.responseHr > 0 && f.responseHr < 24 && (
+                          <span className="hint">예상 응답 {f.responseHr}h 내</span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -1756,14 +1817,6 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
             <div className="rfq-side-stat">
               <span>선택 제조사</span>
               <strong>{dispCount}곳</strong>
-            </div>
-            <div className="rfq-side-stat">
-              <span>예상 응답</span>
-              <strong>{dispResp}h 내</strong>
-            </div>
-            <div className="rfq-side-stat">
-              <span>평균 평점</span>
-              <strong>{dispRating}</strong>
             </div>
             <div className="rfq-side-divider"/>
             <div className="rfq-side-actions">
@@ -1791,7 +1844,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                   {step < 3 ? (
                     <button
                       className="btn btn-primary"
-                      disabled={selected.length === 0}
+                      disabled={step === 1 ? selected.length === 0 : !step2Valid}
                       onClick={() => setStep(step + 1)}
                     >
                       다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
@@ -1801,11 +1854,7 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                       className="btn btn-primary btn-send"
                       disabled={sending}
                       onClick={async () => {
-                        const snap = {
-                          count: selected.length,
-                          totalResp: totalEstResp,
-                          avgRating: selected.length ? (selected.reduce((s, f) => s + f.rating, 0) / selected.length).toFixed(1) : '-',
-                        };
+                        const snap = { count: selected.length };
                         setSending(true);
                         setSendResult(null);
                         try {
@@ -1816,9 +1865,13 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                               factoryIds: rfqIds,
                               buyerEmail: form.email,
                               productName: form.title,
-                              quantity: form.qty + ' 피스',
+                              quantity: form.qty ? String(form.qty) + ' 피스' : '수량 미정',
                               deadline: form.deadline,
-                              message: form.notes,
+                              message: [
+                                form.material ? '소재: ' + form.material : '',
+                                form.budget ? '예산: ' + form.budget : '',
+                                form.notes || '',
+                              ].filter(Boolean).join('\n') || undefined,
                             }),
                           });
                           if (resp.ok) {
@@ -2484,15 +2537,14 @@ function LandingPage({ onNav }) {
           <div className="landing-hero-text">
             <div className="landing-eyebrow">
               <span className="landing-eyebrow-dot"/>
-              국내 검증 제조사 <strong>2,847곳</strong> · 누적 거래 ₩142억
+              전국 <strong>12,138개</strong> 제조사 DB · 지금 무료로 시작하세요
             </div>
             <h1 className="landing-title">
               제조 조건만 입력하세요.<br/>
               <span className="landing-title-grad">맞는 공장이 먼저 찾아옵니다.</span>
             </h1>
             <p className="landing-sub">
-              가공방식·소재·제품 키워드로 검색하면 적합한 제조사가 자동 매칭됩니다.<br/>
-              여러 곳에 동시 견적 요청, 평균 응답 4시간.
+              가공방식·소재·제품을 입력하면 맞는 공장을 먼저 찾아드립니다.
             </p>
             <div className="landing-cta-row">
               <button className="btn-primary landing-cta-big" onClick={() => onNav('signup')}>
@@ -3384,18 +3436,13 @@ function WelcomePage({ data, onEnter }) {
 
           <div className="welcome-stats">
             <div className="welcome-stat">
+              <div className="welcome-stat-n">12,138</div>
+              <div className="welcome-stat-l">공장 DB</div>
+            </div>
+            <div className="welcome-stat-divider"/>
+            <div className="welcome-stat">
               <div className="welcome-stat-n">2,847</div>
               <div className="welcome-stat-l">검증 제조사</div>
-            </div>
-            <div className="welcome-stat-divider"/>
-            <div className="welcome-stat">
-              <div className="welcome-stat-n">142<em>억</em></div>
-              <div className="welcome-stat-l">누적 거래액</div>
-            </div>
-            <div className="welcome-stat-divider"/>
-            <div className="welcome-stat">
-              <div className="welcome-stat-n">4<em>시간</em></div>
-              <div className="welcome-stat-l">평균 응답</div>
             </div>
           </div>
 
