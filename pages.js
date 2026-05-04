@@ -503,418 +503,67 @@ const { useState: useStateP, useMemo: useMemoP, useEffect: useEffectP } = React;
 // ══════════════════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════════════════
-const HomePage = ({ onNav, onOpenFactory, onSearch, density, heroVariant }) => {
-  const { FACTORIES, PROCESSES, CATEGORY_CARDS, TRENDING_SEARCHES } = window.MFG_DATA;
+// 메인 카피 후보:
+// 1. "AI가 찾아주는 우리 회사에 딱 맞는 제조공장"
+// 2. "30만 제조공장에서 단 4초 만에 매칭"
+// 3. "공정과 소재만 입력하세요"
+const HOME_HEADLINE = "AI가 찾아주는 우리 회사에 딱 맞는 제조공장";
+
+// 보조 카피 후보:
+// 1. "공정과 소재만 입력하세요. 매칭부터 견적까지."
+// 2. "자연어로 검색하고, 다수 공장에 동시 견적을 받아보세요."
+// 3. "전국 12,000+ 제조공장 데이터베이스"
+const HOME_SUBLINE = "공정과 소재만 입력하세요. 매칭부터 견적까지.";
+
+const PLACEHOLDER_EXAMPLES = [
+  "예: 사출 ABS 부품 100개",
+  "예: CNC 알루미늄 가공",
+  "예: 프레스 철판 가공",
+  "예: 용접 SUS304 소량",
+  "예: 판금 알루미늄 시제품",
+];
+
+const HomePage = ({ onSearch }) => {
   const [q, setQ] = useStateP('');
-  const [showAuto, setShowAuto] = useStateP(false);
-  const [trendingSearches, setTrendingSearches] = useStateP(TRENDING_SEARCHES);
-  const [industryCounts, setIndustryCounts] = useStateP({});
+  const [isFocused, setIsFocused] = useStateP(false);
+  const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
 
   useEffectP(() => {
-    if (!window._sb) return;
-    window._sb.from('factories').select('products,industries').eq('hidden', false).limit(2000)
-      .then(({ data }) => {
-        if (!data || !data.length) return;
-        // Top products → trending keywords
-        const prodCount = {};
-        data.forEach(f => {
-          (f.products || []).forEach(p => {
-            if (p && typeof p === 'string') prodCount[p] = (prodCount[p] || 0) + 1;
-          });
-        });
-        const topKeywords = Object.entries(prodCount)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 8)
-          .map(([p]) => p);
-        if (topKeywords.length >= 3) setTrendingSearches(topKeywords);
+    if (isFocused || q.length > 0) return;
+    const interval = setInterval(() => {
+      setPlaceholderIndex(prev => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isFocused, q]);
 
-        // Industry counts for dynamic section
-        const indCount = {};
-        data.forEach(f => {
-          (f.industries || []).forEach(ind => {
-            if (ind) indCount[ind] = (indCount[ind] || 0) + 1;
-          });
-        });
-        setIndustryCounts(indCount);
-      })
-      .catch(() => {});
-  }, []);
-
-  // tier 폐지 → 평점 + 거래량 가중치로 추천
-  const recommended = FACTORIES
-    .slice()
-    .sort((a, b) => (b.rating * 100 + b.deals / 10) - (a.rating * 100 + a.deals / 10))
-    .slice(0, 4);
-  const newest = FACTORIES.slice().sort((a, b) => b.founded - a.founded).slice(0, 3);
-
-  const autoComplete = useMemoP(() => {
-    if (!q) return TRENDING_SEARCHES.slice(0, 5);
-    const ql = q.toLowerCase();
-    const matches = [];
-    PROCESSES.forEach(p => {
-      if (p.label.includes(q) || p.en.toLowerCase().includes(ql)) {
-        matches.push({ kind: 'process', label: p.label, en: p.en });
-      }
-    });
-    FACTORIES.forEach(f => {
-      if (f.name.includes(q)) {
-        matches.push({ kind: 'factory', label: f.name, en: f.en, id: f.id });
-      }
-    });
-    return matches.slice(0, 6);
-  }, [q]);
+  const handleSearch = () => {
+    if (!q.trim()) return;
+    onSearch?.(q);
+  };
 
   return (
     <div className="page page-home">
-      {/* Hero */}
-      <section className={`hero hero-${heroVariant}`}>
-        <div className="hero-bg">
-          <div className="hero-grid"/>
-          <div className="hero-orb hero-orb-1"/>
-          <div className="hero-orb hero-orb-2"/>
-        </div>
-        <div className="hero-inner">
-          <div className="hero-eyebrow">
-            <span className="hero-eyebrow-dot"/>
-            <span>전국 <strong>12,138</strong>개 제조사 DB · 지금 무료로 시작하세요</span>
-          </div>
-          <h1 className="hero-title">
-            제조 조건만 입력하세요.<br/>
-            <span className="hero-title-em">맞는 공장이 먼저 찾아옵니다.</span>
-          </h1>
-          <p className="hero-sub">
-            가공방식·소재·제품을 입력하면 맞는 공장을 먼저 찾아드립니다.
-          </p>
-
-          {/* Search */}
-          <div className={`searchbox ${showAuto ? 'is-open' : ''}`}>
-            <div className="searchbox-row">
-              <div className="searchbox-cell">
-                <span className="searchbox-k">가공방식 · 소재 · 제품</span>
-                <input
-                  className="searchbox-input"
-                  placeholder="예: CNC + 알루미늄, 사출 + 케이스"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  onFocus={() => setShowAuto(true)}
-                  onBlur={() => setTimeout(() => setShowAuto(false), 180)}
-                />
-              </div>
-              <div className="searchbox-divider"/>
-              <div className="searchbox-cell searchbox-cell-narrow">
-                <span className="searchbox-k">지역</span>
-                <select className="searchbox-input" defaultValue="">
-                  <option value="">전국</option>
-                  <option>수도권</option>
-                  <option>경상권</option>
-                  <option>충청권</option>
-                  <option>전라권</option>
-                </select>
-              </div>
-              <button className="searchbox-btn" onClick={() => onSearch?.(q)}>
-                <Icon name="search" size={18} stroke={2.2}/>
-                <span>검색</span>
-              </button>
-            </div>
-            {showAuto && (
-              <div className="searchbox-auto">
-                <div className="searchbox-auto-head">
-                  {q ? '검색 제안' : '인기 검색'}
-                  <Icon name="flame" size={11} stroke={2}/>
-                </div>
-                {autoComplete.map((a, i) => (
-                  <button
-                    key={i}
-                    className="searchbox-auto-item"
-                    onMouseDown={() => {
-                      if (a.kind === 'factory') onOpenFactory(a.id);
-                      else onSearch?.(a.label);
-                    }}
-                  >
-                    <Icon name={a.kind === 'factory' ? 'factory' : 'search'} size={13} stroke={1.8}/>
-                    <span className="auto-label">{a.label || a}</span>
-                    {a.en && <span className="auto-en">{a.en}</span>}
-                    <Icon name="arrow_up_right" size={12} stroke={1.8} className="auto-arrow"/>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="hero-trending">
-            <span className="hero-trending-k">인기:</span>
-            {trendingSearches.map(t => (
-              <button key={t} className="hero-trending-item" onClick={() => onSearch?.(t)}>
-                {t}
-              </button>
-            ))}
-          </div>
-
-          <div className="hero-actions">
-            <button className="btn-ghost-on-hero" onClick={() => onNav('rfq')}>
-              <Icon name="upload" size={14} stroke={2}/>
-              도면 업로드 매칭
-              <Badge tone="amber" size="xs">BETA</Badge>
-            </button>
-            <button className="btn-ghost-on-hero" onClick={() => onNav('list')}>
-              <Icon name="map" size={14} stroke={2}/>
-              지도에서 찾기
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="section">
-        <div className="section-head">
-          <div>
-            <h2 className="section-title">업종 · 가공 방식별 탐색</h2>
-            <p className="section-sub">Browse by industry & process</p>
-          </div>
-          <button className="link-btn" onClick={() => onNav('list')}>
-            전체 보기 <Icon name="chevron_right" size={14} stroke={2}/>
+      <div className="home-hero">
+        <h1 className="home-headline">{HOME_HEADLINE}</h1>
+        <p className="home-subline">{HOME_SUBLINE}</p>
+        <div className="home-search-wrapper">
+          <input
+            type="text"
+            className="home-search-input"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+            placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
+          />
+          <button className="home-search-btn" onClick={handleSearch}>
+            <Icon name="search" size={20} stroke={2.2}/>
           </button>
         </div>
-        <div className="cat-grid">
-          {CATEGORY_CARDS.map((c) => {
-            const proc = PROCESSES.find(p => p.id === c.process);
-            return (
-              <button key={c.process} className="cat-card" onClick={() => onSearch?.(proc.label)}>
-                <div className="cat-card-vis" data-cat={c.process}>
-                  <CatGlyph kind={c.process}/>
-                </div>
-                <div className="cat-card-body">
-                  <div className="cat-card-row">
-                    <h3 className="cat-card-title">{proc.label}</h3>
-                    {c.hot && (
-                      <span className="cat-hot">
-                        <Icon name="flame" size={10} stroke={2.2}/> HOT
-                      </span>
-                    )}
-                  </div>
-                  <div className="cat-card-meta">
-                    <span className="cat-card-en">{proc.en}</span>
-                    <span className="cat-card-count">{c.count}개사</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-          {window.MFG_DATA.INDUSTRIES
-            .filter(ind => (industryCounts[ind.id] || 0) >= 5)
-            .map(ind => (
-              <button key={ind.id} className="cat-card" onClick={() => onSearch?.(ind.label)}>
-                <div className="cat-card-vis" data-cat={ind.id}>
-                  <CatGlyph kind={ind.id}/>
-                </div>
-                <div className="cat-card-body">
-                  <div className="cat-card-row">
-                    <h3 className="cat-card-title">{ind.label}</h3>
-                  </div>
-                  <div className="cat-card-meta">
-                    <span className="cat-card-en">{ind.en}</span>
-                    <span className="cat-card-count">{industryCounts[ind.id]}개사</span>
-                  </div>
-                </div>
-              </button>
-            ))
-          }
-        </div>
-      </section>
-
-      {/* Recommended for you */}
-      <section className="section">
-        <div className="section-head">
-          <div>
-            <h2 className="section-title">
-              추천 제조사
-              <span className="section-title-tag">
-                <Icon name="sparkle" size={12} stroke={2.2}/>
-                For YD Innovations
-              </span>
-            </h2>
-            <p className="section-sub">
-              회원가입 시 입력하신 <strong>전자/전기 + 사출 + ABS · MOQ 1,000</strong> 조건 기반
-            </p>
-          </div>
-          <button className="link-btn" onClick={() => onNav('list')}>
-            더보기 <Icon name="chevron_right" size={14} stroke={2}/>
-          </button>
-        </div>
-        <div className="rec-grid">
-          {recommended.map(f => (
-            <ManufacturerCard
-              key={f.id}
-              f={f}
-              onOpen={onOpenFactory}
-              density={density}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Map preview + new */}
-      <section className="section section-split">
-        <div className="split-l">
-          <div className="section-head">
-            <div>
-              <h2 className="section-title">지도에서 탐색</h2>
-              <p className="section-sub">전국 12개사 위치 · 클릭하여 상세 보기</p>
-            </div>
-            <button className="link-btn" onClick={() => onNav('list')}>
-              전체 지도 <Icon name="arrow_up_right" size={13} stroke={2}/>
-            </button>
-          </div>
-          <div className="map-preview" onClick={() => onNav('list')}>
-            <KoreaMap factories={FACTORIES} onPin={() => onNav('list')}/>
-            <div className="map-preview-cta">
-              <Icon name="map" size={14} stroke={2}/>
-              지도 페이지로 이동
-            </div>
-          </div>
-        </div>
-        <div className="split-r">
-          <div className="section-head">
-            <div><h2 className="section-title">신규 등록</h2></div>
-          </div>
-          <div className="new-list">
-            {newest.map(f => (
-              <button key={f.id} className="new-item" onClick={() => onOpenFactory(f.id)}>
-                <div className="new-img" style={{ background: f.image }}>
-                  <div className="mcard-img-stripes"/>
-                </div>
-                <div className="new-body">
-                  <h4>{f.name}</h4>
-                  <p>{f.city} · {f.founded}년 설립</p>
-                  <div className="new-tags">
-                    {f.processes.slice(0, 2).map(pid => {
-                      const p = PROCESSES.find(x => x.id === pid);
-                      return <span key={pid} className="mtag mtag-sm">{p?.label}</span>;
-                    })}
-                  </div>
-                </div>
-                <Icon name="chevron_right" size={16} stroke={2} className="new-arrow"/>
-              </button>
-            ))}
-          </div>
-          <div className="trust-box">
-            <h3>제조사 신뢰도 지표</h3>
-            <ul>
-              <li><Icon name="badge_check" size={14} stroke={2}/> 인증 검증 · ISO·KC·IATF</li>
-              <li><Icon name="clock" size={14} stroke={2}/> 평균 응답 시간 측정</li>
-              <li><Icon name="star" size={14} stroke={2}/> 실거래 기반 리뷰</li>
-              <li><Icon name="chart" size={14} stroke={2}/> 누적 거래 이력 공개</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
-};
-
-// Mini glyphs for category cards (geometric, not iconographic)
-const CatGlyph = ({ kind }) => {
-  const maps = {
-    cnc: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="8" y="22" width="48" height="3" fill="currentColor" opacity=".25"/>
-        <rect x="20" y="8" width="3" height="20" fill="currentColor"/>
-        <rect x="14" y="6" width="15" height="4" fill="currentColor" opacity=".7"/>
-        <circle cx="44" cy="22" r="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="44" cy="22" r="2" fill="currentColor"/>
-      </svg>
-    ),
-    injection: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="6" y="14" width="22" height="12" rx="2" fill="currentColor" opacity=".25"/>
-        <rect x="28" y="18" width="14" height="4" fill="currentColor"/>
-        <rect x="42" y="10" width="16" height="20" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="46" y="16" width="8" height="8" fill="currentColor" opacity=".5"/>
-      </svg>
-    ),
-    press: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="14" y="6" width="36" height="6" fill="currentColor" opacity=".25"/>
-        <rect x="22" y="12" width="20" height="10" fill="currentColor"/>
-        <rect x="8" y="26" width="48" height="4" fill="currentColor" opacity=".4"/>
-        <path d="M32 22v4" stroke="currentColor" strokeWidth="1.5"/>
-      </svg>
-    ),
-    mold: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="10" y="8" width="20" height="24" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="34" y="8" width="20" height="24" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M16 14h8v12h-8zM40 14h8v12h-8z" fill="currentColor" opacity=".25"/>
-        <circle cx="20" cy="20" r="2" fill="currentColor"/>
-        <circle cx="44" cy="20" r="2" fill="currentColor"/>
-      </svg>
-    ),
-    welding: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <path d="M10 30 L24 14 L38 30" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-        <circle cx="24" cy="14" r="2.5" fill="currentColor"/>
-        <path d="M24 14 L40 8 L46 18" stroke="currentColor" strokeWidth="2"/>
-        <path d="M16 26 L20 22 M22 28 L28 22" stroke="currentColor" strokeWidth="1" opacity=".5"/>
-      </svg>
-    ),
-    painting: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="8" y="20" width="36" height="12" rx="1" fill="currentColor" opacity=".25"/>
-        <path d="M44 26 L54 22 L54 30 Z" fill="currentColor"/>
-        <circle cx="50" cy="14" r="1.5" fill="currentColor" opacity=".6"/>
-        <circle cx="55" cy="18" r="1" fill="currentColor" opacity=".6"/>
-        <circle cx="48" cy="20" r="1" fill="currentColor" opacity=".6"/>
-      </svg>
-    ),
-    food: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <ellipse cx="32" cy="26" rx="18" ry="8" fill="currentColor" opacity=".2"/>
-        <rect x="24" y="10" width="16" height="18" rx="8" fill="currentColor" opacity=".7"/>
-        <rect x="30" y="6" width="4" height="6" rx="2" fill="currentColor"/>
-        <line x1="14" y1="12" x2="14" y2="30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-        <line x1="50" y1="12" x2="50" y2="30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-        <path d="M11 12 Q14 18 17 12" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-      </svg>
-    ),
-    textile: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <path d="M8 30 Q16 18 24 30 Q32 18 40 30 Q48 18 56 30" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        <path d="M8 22 Q16 10 24 22 Q32 10 40 22 Q48 10 56 22" stroke="currentColor" strokeWidth="1.5" fill="none" opacity=".4" strokeLinecap="round"/>
-      </svg>
-    ),
-    chemical: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <path d="M22 8 L22 22 L12 34 L52 34 L42 22 L42 8 Z" fill="currentColor" opacity=".15" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="22" y="6" width="20" height="4" rx="2" fill="currentColor" opacity=".5"/>
-        <circle cx="24" cy="28" r="3" fill="currentColor" opacity=".6"/>
-        <circle cx="35" cy="30" r="2" fill="currentColor" opacity=".4"/>
-        <circle cx="44" cy="27" r="2.5" fill="currentColor" opacity=".5"/>
-      </svg>
-    ),
-    electronics: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <rect x="16" y="10" width="32" height="20" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="22" y="16" width="6" height="8" rx="1" fill="currentColor" opacity=".4"/>
-        <rect x="36" y="16" width="6" height="8" rx="1" fill="currentColor" opacity=".4"/>
-        <line x1="28" y1="20" x2="36" y2="20" stroke="currentColor" strokeWidth="1" opacity=".6"/>
-        <line x1="20" y1="14" x2="20" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="44" y1="14" x2="44" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="20" y1="26" x2="20" y2="32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="44" y1="26" x2="44" y2="32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    machine: (
-      <svg viewBox="0 0 64 40" fill="none">
-        <circle cx="32" cy="20" r="12" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="32" cy="20" r="5" fill="currentColor" opacity=".4"/>
-        <rect x="30" y="6" width="4" height="5" rx="1" fill="currentColor"/>
-        <rect x="30" y="29" width="4" height="5" rx="1" fill="currentColor"/>
-        <rect x="6" y="18" width="5" height="4" rx="1" fill="currentColor"/>
-        <rect x="53" y="18" width="5" height="4" rx="1" fill="currentColor"/>
-      </svg>
-    ),
-  };
-  return <div className="cat-glyph">{maps[kind] || maps.cnc}</div>;
 };
 
 // ══════════════════════════════════════════════════════════
