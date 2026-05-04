@@ -544,6 +544,7 @@ const HomePage = ({ onSearch }) => {
   const [loading, setLoading] = useStateP(false);
   const [aiResults, setAiResults] = useStateP(null);
   const [consulting, setConsulting] = useStateP(null);
+  const [errorMsg, setErrorMsg] = useStateP(null);
 
   // Placeholder rotation — pauses on focus or while typing
   useEffectP(() => {
@@ -559,6 +560,7 @@ const HomePage = ({ onSearch }) => {
     if (!q.trim()) {
       setAiResults(null);
       setConsulting(null);
+      setErrorMsg(null);
     }
   }, [q]);
 
@@ -567,18 +569,27 @@ const HomePage = ({ onSearch }) => {
     setLoading(true);
     setAiResults(null);
     setConsulting(null);
+    setErrorMsg(null);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q }),
       });
-      if (!resp.ok) throw new Error('API 오류');
       const data = await resp.json();
+      if (!resp.ok) {
+        const code = data?.error;
+        if (code === 'CONFIG_MISSING') setErrorMsg('서비스 설정에 문제가 있습니다. 관리자에게 문의하세요.');
+        else if (code === 'AUTH_FAILED') setErrorMsg('AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.');
+        else setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
+        console.error('AI match error:', code, data?.message);
+        return;
+      }
       setAiResults(data);
       if (data.consulting) setConsulting(data.consulting);
     } catch (e) {
       console.error('AI match failed:', e);
+      setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -614,6 +625,12 @@ const HomePage = ({ onSearch }) => {
             }
           </button>
         </div>
+        {errorMsg && (
+          <div className="home-search-error">
+            <Icon name="info" size={13} stroke={2}/>
+            {errorMsg}
+          </div>
+        )}
       </div>
 
       {(loading || hasResults) && (

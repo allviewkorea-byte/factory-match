@@ -122,30 +122,54 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'API 키가 설정되지 않았습니다' }) };
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: 'CONFIG_MISSING',
+        message: 'ANTHROPIC_API_KEY 환경변수가 Netlify에 설정되지 않았습니다.',
+        hint: 'Netlify 대시보드 → Project configuration → Environment variables',
+      }),
+    };
   }
 
-  const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      system: SYSTEM,
-      messages: [{ role: 'user', content: query }],
-    }),
-  });
-
-  if (!claudeResp.ok) {
-    const err = await claudeResp.text();
+  let claudeResp;
+  try {
+    claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: query }],
+      }),
+    });
+  } catch (e) {
     return {
       statusCode: 502,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Anthropic API 오류: ' + claudeResp.status, detail: err }),
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'NETWORK_ERROR', message: 'Anthropic API 연결 실패: ' + e.message }),
+    };
+  }
+
+  if (!claudeResp.ok) {
+    const errText = await claudeResp.text();
+    const isAuth = claudeResp.status === 401 || claudeResp.status === 403;
+    return {
+      statusCode: 502,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: isAuth ? 'AUTH_FAILED' : 'API_ERROR',
+        message: isAuth
+          ? 'ANTHROPIC_API_KEY 값이 잘못되었거나 만료되었습니다.'
+          : 'Anthropic API 오류: ' + claudeResp.status,
+        detail: errText,
+      }),
     };
   }
 
