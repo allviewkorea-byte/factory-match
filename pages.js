@@ -701,6 +701,30 @@ const HomePage = ({ onSearch }) => {
             </div>
           )}
 
+          {aiResults?.supplyChain?.length > 0 && (
+            <div className="sx-supply-chain" key={`supply-${lastSearchedQuery}`}>
+              <div className="sx-supply-header">
+                <Icon name="layers" size={13} stroke={2}/>
+                공급망 분석
+                <span className="sx-supply-intent">· {lastSearchedQuery} 제조 공정 흐름</span>
+              </div>
+              <div className="sx-supply-steps">
+                {aiResults.supplyChain.map((s, i) => (
+                  <React.Fragment key={i}>
+                    <div className="sx-supply-step">
+                      <div className="sx-supply-step-num">{s.step || i + 1}</div>
+                      <div className="sx-supply-step-label">{s.label}</div>
+                      {s.detail && <div className="sx-supply-step-detail">{s.detail}</div>}
+                    </div>
+                    {i < aiResults.supplyChain.length - 1 && (
+                      <div className="sx-supply-arrow">›</div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+
           {aiResults?.topCategories && (
             <>
               <div className="sx-mode-banner is-on">
