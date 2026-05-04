@@ -1277,6 +1277,10 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
   const f = FACTORIES.find(x => x.id === factoryId) || FACTORIES[0];
   const [tab, setTab] = useStateP('overview');
 
+  useEffect(() => {
+    if (tab === 'reviews' && f.reviews === 0) setTab('overview');
+  }, [factoryId]);
+
   const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label);
   const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label);
   const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label);
@@ -1333,20 +1337,22 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             <span className="dot">·</span>
             <span><Icon name="globe" size={13} stroke={2}/> {f.export ? '수출 가능' : '국내 거래'}</span>
           </div>
-          <div className="detail-rating">
-            <div className="detail-rating-big">
-              <Icon name="star" size={16} stroke={2.4}/>
-              <strong>{f.rating}</strong>
-              <span>/ 5.0</span>
+          {f.rating > 0 && (
+            <div className="detail-rating">
+              <div className="detail-rating-big">
+                <Icon name="star" size={16} stroke={2.4}/>
+                <strong>{f.rating}</strong>
+                <span>/ 5.0</span>
+              </div>
+              <div className="detail-rating-meta">
+                {f.reviews > 0 && <span>리뷰 {f.reviews}건</span>}
+                {f.reviews > 0 && f.deals > 0 && <span className="dot">·</span>}
+                {f.deals > 0 && <span>거래 {f.deals}건</span>}
+                {(f.reviews > 0 || f.deals > 0) && f.responseHr > 0 && f.responseHr < 24 && <span className="dot">·</span>}
+                {f.responseHr > 0 && f.responseHr < 24 && <span>응답 평균 {f.responseHr}시간</span>}
+              </div>
             </div>
-            <div className="detail-rating-meta">
-              <span>리뷰 {f.reviews}건</span>
-              <span className="dot">·</span>
-              <span>거래 {f.deals}건</span>
-              <span className="dot">·</span>
-              <span>응답 평균 {f.responseHr}시간</span>
-            </div>
-          </div>
+          )}
 
           <div className="detail-stats">
             <div className="dstat">
@@ -1393,7 +1399,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
           { id: 'overview', label: '회사 개요' },
           { id: 'capability', label: '제조 역량' },
           { id: 'certs', label: '인증·신뢰도' },
-          { id: 'reviews', label: `리뷰 ${f.reviews}` },
+          ...(f.reviews > 0 ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
         ].map(t => (
           <button
             key={t.id}
@@ -1495,27 +1501,36 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
             </div>
             <div className="trust-card">
               <h3>응답·거래 지표</h3>
-              <div className="trust-stat">
-                <div className="trust-stat-k">평균 응답 시간</div>
-                <div className="trust-stat-bar">
-                  <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
+              {f.responseHr > 0 && f.responseHr < 24 && (
+                <div className="trust-stat">
+                  <div className="trust-stat-k">평균 응답 시간</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${100 - f.responseHr * 10}%` }}/>
+                  </div>
+                  <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
                 </div>
-                <div className="trust-stat-v"><strong>{f.responseHr}시간</strong> · 상위 {f.responseHr <= 2 ? '5%' : f.responseHr <= 4 ? '15%' : '30%'}</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-stat-k">누적 거래</div>
-                <div className="trust-stat-bar">
-                  <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
+              )}
+              {f.deals > 0 && (
+                <div className="trust-stat">
+                  <div className="trust-stat-k">누적 거래</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${Math.min(100, f.deals / 4)}%` }}/>
+                  </div>
+                  <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
                 </div>
-                <div className="trust-stat-v"><strong>{f.deals}건</strong> · 최근 12개월 활성</div>
-              </div>
-              <div className="trust-stat">
-                <div className="trust-stat-k">리뷰 평점</div>
-                <div className="trust-stat-bar">
-                  <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
+              )}
+              {f.rating > 0 && (
+                <div className="trust-stat">
+                  <div className="trust-stat-k">리뷰 평점</div>
+                  <div className="trust-stat-bar">
+                    <div className="trust-stat-fill" style={{ width: `${(f.rating / 5) * 100}%` }}/>
+                  </div>
+                  <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
                 </div>
-                <div className="trust-stat-v"><strong>{f.rating}/5.0</strong> · {f.reviews}건 검증</div>
-              </div>
+              )}
+              {!f.rating && !f.deals && !(f.responseHr > 0 && f.responseHr < 24) && (
+                <p className="trust-no-data">거래 이력 데이터가 아직 없습니다.</p>
+              )}
             </div>
           </div>
         </section>
@@ -1523,29 +1538,36 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
 
       {tab === 'reviews' && (
         <section className="detail-section">
-          <div className="reviews">
-            {[
-              { name: '김○○ (전자부품 바이어)', date: '2026.03.18', rating: 5, body: '리드타임 정확하게 지켜주시고, 도면 수정 요청에도 빠르게 대응해주셨습니다. 단가도 합리적이고 다음 발주 예정.', deal: '5,000pcs · ₩12,400,000' },
-              { name: '박○○ (가전 OEM)', date: '2026.02.04', rating: 5, body: '소량 시제품도 거절 없이 받아주셔서 좋았습니다. 마감 품질이 특히 만족스럽습니다.', deal: '120pcs · ₩980,000' },
-              { name: '이○○ (자동차 부품)', date: '2026.01.22', rating: 4, body: '기본 품질은 좋으나 초기 커뮤니케이션이 다소 느렸습니다. 본 양산은 안정적이었음.', deal: '2,400pcs · ₩4,800,000' },
-            ].map((r, i) => (
-              <div key={i} className="review">
-                <div className="review-head">
-                  <div>
-                    <div className="review-name">{r.name}</div>
-                    <div className="review-date">{r.date}</div>
+          {f.reviews > 0 ? (
+            <div className="reviews">
+              {[
+                { name: '김○○ (전자부품 바이어)', date: '2026.03.18', rating: 5, body: '리드타임 정확하게 지켜주시고, 도면 수정 요청에도 빠르게 대응해주셨습니다. 단가도 합리적이고 다음 발주 예정.', deal: '5,000pcs · ₩12,400,000' },
+                { name: '박○○ (가전 OEM)', date: '2026.02.04', rating: 5, body: '소량 시제품도 거절 없이 받아주셔서 좋았습니다. 마감 품질이 특히 만족스럽습니다.', deal: '120pcs · ₩980,000' },
+                { name: '이○○ (자동차 부품)', date: '2026.01.22', rating: 4, body: '기본 품질은 좋으나 초기 커뮤니케이션이 다소 느렸습니다. 본 양산은 안정적이었음.', deal: '2,400pcs · ₩4,800,000' },
+              ].map((r, i) => (
+                <div key={i} className="review">
+                  <div className="review-head">
+                    <div>
+                      <div className="review-name">{r.name}</div>
+                      <div className="review-date">{r.date}</div>
+                    </div>
+                    <div className="review-rating">
+                      {Array.from({ length: 5 }).map((_, k) => (
+                        <Icon key={k} name="star" size={12} stroke={2} className={k < r.rating ? 'star-on' : 'star-off'}/>
+                      ))}
+                    </div>
                   </div>
-                  <div className="review-rating">
-                    {Array.from({ length: 5 }).map((_, k) => (
-                      <Icon key={k} name="star" size={12} stroke={2} className={k < r.rating ? 'star-on' : 'star-off'}/>
-                    ))}
-                  </div>
+                  <p className="review-body">{r.body}</p>
+                  <div className="review-deal">{r.deal}</div>
                 </div>
-                <p className="review-body">{r.body}</p>
-                <div className="review-deal">{r.deal}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="detail-empty">
+              <Icon name="star" size={32} stroke={1.4}/>
+              <p>아직 리뷰가 없습니다</p>
+            </div>
+          )}
         </section>
       )}
     </div>
