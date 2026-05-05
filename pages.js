@@ -4855,6 +4855,213 @@ const TermsPage = () => {
 };
 
 // ──────────────────────────────────────────────────────────
+// PrivacyPage — 개인정보처리방침
+// ──────────────────────────────────────────────────────────
+const PrivacyPage = () => {
+  return (
+    <div className="legal-page">
+      <div className="legal-page-container">
+        <h1 className="legal-page-title">개인정보처리방침</h1>
+        <p className="legal-page-meta">
+          시행일: 2026년 5월 6일<br/>
+          최종 수정일: 2026년 5월 6일
+        </p>
+
+        <section className="legal-section">
+          <h2>제1조 (총칙)</h2>
+          <p>
+            주식회사 올뷰코리아(이하 "회사")는 공장매칭(FactoryMatch, 이하 "서비스")을 운영함에 있어
+            이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령을 준수하기 위하여 노력하고 있습니다.
+          </p>
+          <p>
+            본 개인정보처리방침은 회사가 제공하는 서비스 이용과 관련하여 이용자의 개인정보 처리에 관한 사항을 규정합니다.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제2조 (수집하는 개인정보의 항목 및 수집 방법)</h2>
+          <p>회사는 다음 항목을 수집할 수 있습니다:</p>
+
+          <h3 style={{fontSize: '15px', marginTop: '16px', marginBottom: '8px', fontWeight: '600'}}>1. 자동 수집 항목</h3>
+          <ul>
+            <li>접속 IP 주소, 쿠키, 접속 일시, 서비스 이용 기록</li>
+            <li>브라우저 종류, OS, 디바이스 정보</li>
+          </ul>
+
+          <h3 style={{fontSize: '15px', marginTop: '16px', marginBottom: '8px', fontWeight: '600'}}>2. 견적 요청(RFQ) 시 수집 항목</h3>
+          <ul>
+            <li>필수: 회사명, 담당자명, 연락처(이메일 또는 전화번호), 요청 내용</li>
+            <li>선택: 첨부 파일, 추가 요구사항</li>
+          </ul>
+
+          <h3 style={{fontSize: '15px', marginTop: '16px', marginBottom: '8px', fontWeight: '600'}}>3. 신고·문의 시 수집 항목</h3>
+          <ul>
+            <li>필수: 회사명, 담당자명, 연락처, 신고 사유</li>
+            <li>선택: 증빙 자료, 추가 의견</li>
+          </ul>
+
+          <h3 style={{fontSize: '15px', marginTop: '16px', marginBottom: '8px', fontWeight: '600'}}>4. 수집 방법</h3>
+          <ul>
+            <li>이용자가 서비스 화면에서 직접 입력</li>
+            <li>이메일을 통한 수신</li>
+            <li>접속 시 자동 생성되는 정보의 자동 수집</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제3조 (개인정보의 처리 목적)</h2>
+          <p>회사는 수집한 개인정보를 다음 목적에만 사용합니다:</p>
+          <ol>
+            <li>견적 요청(RFQ) 처리 및 매칭 서비스 제공</li>
+            <li>제조업체 정보의 정정·삭제 요청 처리</li>
+            <li>이용자 문의 응대 및 고객 지원</li>
+            <li>서비스 이용 통계 분석 및 품질 개선 (개인 식별 불가능한 형태)</li>
+            <li>법령상 의무 이행</li>
+          </ol>
+          <p>회사는 위 목적 외 다른 목적으로 개인정보를 사용하지 않으며, 사용 목적이 변경될 경우 사전에 동의를 받습니다.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제4조 (개인정보의 보유 및 이용 기간)</h2>
+          <p>회사는 개인정보 수집·이용 목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다. 단, 다음의 경우 관련 법령에 따라 일정 기간 보관합니다:</p>
+          <ul>
+            <li><strong>견적 요청 기록:</strong> 처리 완료 후 3년 (전자상거래법)</li>
+            <li><strong>이용자 문의·신고 기록:</strong> 처리 완료 후 3년 (전자상거래법)</li>
+            <li><strong>접속 로그:</strong> 3개월 (통신비밀보호법)</li>
+            <li><strong>부정 이용 기록:</strong> 1년</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제5조 (제조업체 정보의 출처 및 처리)</h2>
+          <p>본 서비스에 표시되는 제조업체 정보는 다음 공개 데이터를 기반으로 합니다:</p>
+          <ul>
+            <li>공공데이터포털(data.go.kr)에 공개된 공장 등록 정보</li>
+            <li>국세청 사업자등록정보 진위확인 및 상태조회 서비스</li>
+            <li>금융위원회 기업 기본정보 및 재무정보</li>
+            <li>각 지방자치단체가 공개한 공장 정보</li>
+          </ul>
+          <p>제조업체 정보는 「공공데이터의 제공 및 이용 활성화에 관한 법률」에 따라 공개된 정보이며, B2B 거래 매칭 및 신뢰도 검증 목적으로만 활용됩니다.</p>
+          <p>회사는 다음과 같은 정보를 처리하지 않습니다:</p>
+          <ul>
+            <li>주민등록번호</li>
+            <li>개인 휴대폰 번호 (법인 대표 연락처가 아닌 경우)</li>
+            <li>대표자 개인 거주지 주소</li>
+            <li>기타 개인 식별 가능한 민감 정보</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제6조 (개인정보의 제3자 제공)</h2>
+          <p>회사는 이용자의 개인정보를 제3자에게 제공하지 않습니다. 단, 다음의 경우에는 예외로 합니다:</p>
+          <ol>
+            <li>이용자가 사전에 동의한 경우</li>
+            <li>법령에 의해 제공이 의무화된 경우</li>
+            <li>견적 요청 시 이용자가 선택한 제조업체에 한하여 견적 처리에 필요한 최소한의 정보 제공</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제7조 (개인정보 처리의 위탁)</h2>
+          <p>회사는 서비스 운영을 위해 다음과 같이 개인정보 처리를 위탁할 수 있습니다:</p>
+          <ul className="legal-company-info">
+            <li><strong>Resend (resend.com):</strong> 이메일 발송 서비스</li>
+            <li><strong>Supabase:</strong> 데이터베이스 운영 및 호스팅</li>
+            <li><strong>Netlify:</strong> 웹사이트 호스팅 및 서버리스 함수 실행</li>
+            <li><strong>Anthropic (anthropic.com):</strong> AI 매칭 분석 서비스</li>
+          </ul>
+          <p>회사는 위탁 계약 시 개인정보 보호와 관련된 의무를 명시하고, 위탁 업무를 안전하게 관리하기 위해 필요한 사항을 규정합니다.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제8조 (이용자의 권리와 행사 방법)</h2>
+          <p>이용자는 다음 권리를 행사할 수 있습니다:</p>
+          <ol>
+            <li>개인정보 열람 요구</li>
+            <li>개인정보 정정·삭제 요구</li>
+            <li>개인정보 처리 정지 요구</li>
+            <li>개인정보 처리에 대한 동의 철회</li>
+          </ol>
+          <p>위 권리 행사는 다음 방법으로 가능합니다:</p>
+          <ul>
+            <li>사이트 내 정정·삭제 요청 폼 (서비스 내 별도 페이지)</li>
+            <li>이메일: <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+          </ul>
+          <p>회사는 요청 접수 후 영업일 기준 5일 이내에 처리합니다.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제9조 (제조업체 정보 정정·삭제 요청)</h2>
+          <p>본 서비스에 게시된 제조업체 정보의 정정 또는 삭제를 원하는 경우 다음 방법으로 요청할 수 있습니다:</p>
+          <ol>
+            <li>사이트 내 신고 폼: 별도 페이지에서 신청</li>
+            <li>이메일: <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+          </ol>
+          <p>요청 시 다음 정보를 포함해주세요:</p>
+          <ul>
+            <li>회사명 및 사업자등록번호</li>
+            <li>요청 사유 (예: 정보 오류, 폐업, 정보 비공개 요청 등)</li>
+            <li>요청자 정보 및 권한 증빙 (해당 회사 관계자 확인용)</li>
+          </ul>
+          <p>회사는 요청 접수 후 영업일 기준 5일 이내 검토하여 처리합니다.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제10조 (개인정보의 안전성 확보 조치)</h2>
+          <p>회사는 개인정보 보호를 위해 다음 조치를 시행합니다:</p>
+          <ol>
+            <li><strong>관리적 조치:</strong> 개인정보 보호 책임자 지정, 정기적인 보안 교육</li>
+            <li><strong>기술적 조치:</strong> HTTPS 암호화 통신, 데이터베이스 접근 권한 관리</li>
+            <li><strong>물리적 조치:</strong> 위탁 서비스 제공자(Supabase, Netlify 등)의 보안 인증 확인</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제11조 (쿠키의 운영)</h2>
+          <p>회사는 서비스 제공을 위해 쿠키(Cookie)를 사용할 수 있습니다.</p>
+          <ul>
+            <li><strong>사용 목적:</strong> 이용자의 검색 기록 유지, 서비스 이용 분석</li>
+            <li><strong>거부 방법:</strong> 브라우저 설정에서 쿠키 저장 거부 가능 (단, 일부 기능 이용 제한 가능)</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제12조 (개인정보 보호 책임자)</h2>
+          <p>회사는 개인정보 처리에 관한 업무를 총괄하여 책임지고, 관련 불만 처리 및 피해 구제를 위해 다음과 같이 책임자를 지정합니다:</p>
+          <ul className="legal-company-info">
+            <li><strong>회사명:</strong> 주식회사 올뷰코리아</li>
+            <li><strong>책임자:</strong> 개인정보 보호 담당자</li>
+            <li><strong>이메일:</strong> <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제13조 (개인정보 침해 신고)</h2>
+          <p>개인정보 침해에 대한 신고나 상담이 필요한 경우 다음 기관에 문의할 수 있습니다:</p>
+          <ul>
+            <li><strong>개인정보보호 종합지원 포털:</strong> privacy.go.kr / 국번없이 182</li>
+            <li><strong>개인정보 분쟁조정위원회:</strong> kopico.go.kr / 1833-6972</li>
+            <li><strong>대검찰청 사이버수사과:</strong> spo.go.kr / 02-3480-3573</li>
+            <li><strong>경찰청 사이버수사국:</strong> ecrm.cyber.go.kr / 국번없이 182</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h2>제14조 (방침의 변경)</h2>
+          <ol>
+            <li>본 개인정보처리방침은 시행일로부터 적용됩니다.</li>
+            <li>법령, 정책 또는 보안 기술의 변경에 따라 내용 추가·삭제·수정이 있을 시, 사이트 내 공지사항을 통해 사전에 알립니다.</li>
+          </ol>
+        </section>
+
+        <p className="legal-page-footer">
+          본 개인정보처리방침은 2026년 5월 6일부터 시행됩니다.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // SiteFooter — 출처 표기 + 이용약관 링크
 // ──────────────────────────────────────────────────────────
 const SiteFooter = ({ onNav }) => (
@@ -4862,19 +5069,21 @@ const SiteFooter = ({ onNav }) => (
     <div className="site-footer-content">
       <div className="site-footer-info">
         <p>본 사이트는 공공데이터포털의 공개정보를 기반으로 운영됩니다.</p>
-        <p>자세한 내용은 <a href="#terms" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>을 확인하세요.</p>
+        <p>자세한 내용은 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a> 및 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('privacy'); }}>개인정보처리방침</a>을 확인하세요.</p>
       </div>
       <div className="site-footer-meta">
         <p>주식회사 올뷰코리아 © 2026</p>
         <p>
-          <a href="#terms" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>
+          {' · '}
+          <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('privacy'); }}>개인정보처리방침</a>
         </p>
       </div>
     </div>
   </footer>
 );
 
-Object.assign(window, { TermsPage, SiteFooter });
+Object.assign(window, { TermsPage, PrivacyPage, SiteFooter });
 
 
 // tweaks-panel.jsx

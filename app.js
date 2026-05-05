@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 function App() {
@@ -213,6 +213,7 @@ function App() {
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
       )}
       {route === 'terms' && <TermsPage />}
+      {route === 'privacy' && <PrivacyPage />}
 
       <SiteFooter onNav={nav}/>
 
