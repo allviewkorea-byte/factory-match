@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 function App() {
@@ -212,6 +212,9 @@ function App() {
       {route === 'admin' && (
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
       )}
+      {route === 'terms' && <TermsPage />}
+
+      <SiteFooter onNav={nav}/>
 
       <TweaksPanel title="Tweaks">
         <TweakSection title="밀도 (Density)">

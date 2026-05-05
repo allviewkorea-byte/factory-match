@@ -4683,6 +4683,199 @@ const AdminPage = ({ onOpenFactory }) => {
 Object.assign(window, { ChatPage, MyPage, AdminPage });
 
 
+// ──────────────────────────────────────────────────────────
+// TermsPage — 이용약관
+// ──────────────────────────────────────────────────────────
+const TermsPage = () => {
+  return (
+    <div className="legal-page">
+      <div className="legal-page-container">
+        <h1 className="legal-page-title">이용약관</h1>
+        <p className="legal-page-meta">
+          시행일: 2026년 5월 6일<br/>
+          최종 수정일: 2026년 5월 6일
+        </p>
+
+        <section className="legal-section">
+          <h2>제1조 (목적)</h2>
+          <p>
+            본 약관은 주식회사 올뷰코리아(이하 "회사")가 제공하는 공장매칭(FactoryMatch, 이하 "서비스")의
+            이용 조건 및 절차, 회사와 이용자의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제2조 (정의)</h2>
+          <ol>
+            <li>"서비스"란 회사가 제공하는 공장매칭(FactoryMatch) 웹사이트 및 관련 부가 서비스 일체를 말합니다.</li>
+            <li>"이용자"란 본 약관에 따라 서비스를 이용하는 회원 및 비회원을 말합니다.</li>
+            <li>"제조업체 정보"란 공공데이터포털 등 공개된 정보를 기반으로 본 서비스에 등록된 국내 제조업체의 사업자 정보를 말합니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제3조 (서비스의 목적 및 내용)</h2>
+          <p>본 서비스는 다음 목적을 위해 운영됩니다:</p>
+          <ol>
+            <li>국내 제조업체와 발주 기업 간 B2B 거래 매칭</li>
+            <li>제조업체 정보 검색 및 비교 서비스 제공</li>
+            <li>견적 요청(RFQ) 및 거래 연결 지원</li>
+            <li>거래 신뢰도 검증을 위한 사업자 정보 제공</li>
+          </ol>
+          <p>회사는 위 목적 외 본 서비스에서 제공되는 정보를 마케팅 등 다른 목적으로 사용하는 것을 금지합니다.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2>제4조 (약관의 효력 및 변경)</h2>
+          <ol>
+            <li>본 약관은 서비스를 이용하는 모든 이용자에게 그 효력이 발생합니다.</li>
+            <li>이용자가 본 서비스를 이용하는 행위는 본 약관에 동의한 것으로 간주됩니다.</li>
+            <li>회사는 관련 법령을 위배하지 않는 범위에서 본 약관을 변경할 수 있으며, 변경된 약관은 서비스 내 공지 후 효력이 발생합니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제5조 (제조업체 정보의 출처 및 활용)</h2>
+          <ol>
+            <li>본 서비스에 등록된 제조업체 정보는 다음의 공개 데이터를 기반으로 합니다:
+              <ul>
+                <li>공공데이터포털(data.go.kr)에 공개된 공장 등록 정보</li>
+                <li>국세청 사업자등록정보 진위확인 및 상태조회 서비스</li>
+                <li>금융위원회 기업 기본정보 및 재무정보</li>
+                <li>각 지방자치단체가 공개한 공장 정보</li>
+              </ul>
+            </li>
+            <li>본 서비스의 정보는 거래 신뢰도 검증을 위한 참고 자료이며, 법적 효력이 있는 증빙 자료가 아닙니다.</li>
+            <li>회사는 정보의 정확성을 위해 정기적으로 데이터를 갱신하나, 실시간 정확성을 보장하지 않습니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제6조 (이용자의 의무)</h2>
+          <ol>
+            <li>이용자는 본 서비스에서 제공받은 정보를 다음 목적으로만 사용해야 합니다:
+              <ul>
+                <li>B2B 제조 거래 검토 및 진행</li>
+                <li>거래 상대방의 신뢰도 검증</li>
+              </ul>
+            </li>
+            <li>이용자는 본 서비스에서 얻은 정보를 다음 행위에 사용해서는 안 됩니다:
+              <ul>
+                <li>무단 마케팅, 광고성 메시지 발송, 스팸 행위</li>
+                <li>제3자에게 정보를 무단 제공, 판매, 재배포</li>
+                <li>법령 또는 공서양속에 위반되는 행위</li>
+                <li>회사 또는 제3자의 권리를 침해하는 행위</li>
+              </ul>
+            </li>
+            <li>위 의무를 위반한 이용자는 그로 인해 발생한 모든 법적 책임을 부담하며, 회사는 해당 이용자의 서비스 이용을 제한할 수 있습니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제7조 (정보의 정정·삭제 요청)</h2>
+          <ol>
+            <li>제조업체 정보의 정정 또는 삭제를 원하는 경우, 다음 방법으로 요청할 수 있습니다:
+              <ul>
+                <li>사이트 내 신고 폼: [정정·삭제 요청] (서비스 내 별도 페이지)</li>
+                <li>이메일: privacy@avk-agency.com</li>
+              </ul>
+            </li>
+            <li>회사는 요청을 접수한 후 영업일 기준 5일 이내에 검토 및 처리합니다.</li>
+            <li>다음의 경우 정정·삭제 요청이 거부될 수 있습니다:
+              <ul>
+                <li>법령에서 공개를 의무화한 정보</li>
+                <li>이미 공공데이터로 공개된 정보 (이 경우 원본 출처에 정정 요청 안내)</li>
+                <li>요청자가 정보 주체임을 증명하지 못하는 경우</li>
+              </ul>
+            </li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제8조 (서비스의 제공 및 중단)</h2>
+          <ol>
+            <li>회사는 연중무휴, 1일 24시간 서비스를 제공함을 원칙으로 합니다.</li>
+            <li>다음의 경우 사전 공지 없이 서비스가 일시 중단될 수 있습니다:
+              <ul>
+                <li>시스템 점검, 보수, 교체</li>
+                <li>천재지변, 정전, 통신 장애 등 불가항력적 사유</li>
+                <li>회사가 합리적으로 판단한 사정상 서비스 제공이 불가능한 경우</li>
+              </ul>
+            </li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제9조 (책임의 제한)</h2>
+          <ol>
+            <li>회사는 본 서비스를 통해 제공되는 정보의 정확성, 완전성에 대해 합리적인 노력을 다하나, 정보의 절대적 정확성을 보장하지 않습니다.</li>
+            <li>이용자가 본 서비스의 정보를 신뢰하여 발생한 손해에 대해 회사는 다음의 경우 책임을 지지 않습니다:
+              <ul>
+                <li>공공데이터의 원본 자체에 오류가 있는 경우</li>
+                <li>이용자가 정보를 본 약관의 목적 외로 사용하여 발생한 손해</li>
+                <li>거래 당사자 간 분쟁에 회사가 개입하지 않은 경우</li>
+              </ul>
+            </li>
+            <li>본 서비스는 거래 매칭 플랫폼이며, 회사는 이용자 간 거래의 당사자가 아닙니다. 거래 결과에 대한 책임은 거래 당사자에게 있습니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제10조 (지적재산권)</h2>
+          <ol>
+            <li>본 서비스의 디자인, 로고, 콘텐츠 구성, 매칭 알고리즘 등에 대한 저작권은 회사에 귀속됩니다.</li>
+            <li>이용자는 회사의 사전 동의 없이 본 서비스의 콘텐츠를 복제, 배포, 상업적 이용할 수 없습니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제11조 (분쟁의 해결)</h2>
+          <ol>
+            <li>본 약관과 관련된 분쟁은 대한민국 법령을 적용합니다.</li>
+            <li>본 서비스 이용으로 발생한 분쟁의 관할 법원은 회사 본사 소재지 관할 법원으로 합니다.</li>
+          </ol>
+        </section>
+
+        <section className="legal-section">
+          <h2>제12조 (회사 정보)</h2>
+          <ul className="legal-company-info">
+            <li><strong>회사명:</strong> 주식회사 올뷰코리아 (AVK)</li>
+            <li><strong>서비스명:</strong> 공장매칭(FactoryMatch)</li>
+            <li><strong>대표 이메일:</strong> <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+            <li><strong>웹사이트:</strong> [본 서비스 URL]</li>
+          </ul>
+        </section>
+
+        <p className="legal-page-footer">
+          본 약관은 2026년 5월 6일부터 시행됩니다.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────
+// SiteFooter — 출처 표기 + 이용약관 링크
+// ──────────────────────────────────────────────────────────
+const SiteFooter = ({ onNav }) => (
+  <footer className="site-footer">
+    <div className="site-footer-content">
+      <div className="site-footer-info">
+        <p>본 사이트는 공공데이터포털의 공개정보를 기반으로 운영됩니다.</p>
+        <p>자세한 내용은 <a href="#terms" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>을 확인하세요.</p>
+      </div>
+      <div className="site-footer-meta">
+        <p>주식회사 올뷰코리아 © 2026</p>
+        <p>
+          <a href="#terms" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+);
+
+Object.assign(window, { TermsPage, SiteFooter });
+
 
 // tweaks-panel.jsx
 // Reusable Tweaks shell + form-control helpers.
