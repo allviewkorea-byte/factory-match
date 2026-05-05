@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 function App() {
@@ -116,6 +116,7 @@ function App() {
   };
   const [detailFrom, setDetailFrom] = useState('list');
   const [chatTarget, setChatTarget] = useState(null);
+  const [reportParams, setReportParams] = useState(null);
 
   const openFactory = (id, fromRoute) => {
     setFactoryId(id);
@@ -126,6 +127,11 @@ function App() {
   const openChat = (fid) => {
     setChatTarget(fid || null);
     setRoute('chat');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const openReport = (params) => {
+    setReportParams(params || null);
+    setRoute('report');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const addRFQ = (id) => {
@@ -184,6 +190,7 @@ function App() {
           onAddRFQ={addRFQ}
           rfqIds={rfqIds}
           onChat={openChat}
+          onReport={openReport}
         />
       )}
       {route === 'rfq' && (
@@ -214,6 +221,7 @@ function App() {
       )}
       {route === 'terms' && <TermsPage />}
       {route === 'privacy' && <PrivacyPage />}
+      {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}
 
       <SiteFooter onNav={nav}/>
 

@@ -1279,7 +1279,7 @@ function FactoryMap({ city, name }) {
   );
 }
 
-const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) => {
+const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
   const f = (window._factoryCache?.[factoryId])
     || FACTORIES.find(x => x.id === factoryId)
@@ -1313,6 +1313,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, backLabel }) 
           <button className="icon-btn" onClick={() => onChat?.(f.id)}>
             <Icon name="chat" size={14} stroke={2}/>
             채팅 시작
+          </button>
+          <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}>
+            ⚠ 이 정보 신고
           </button>
         </div>
       </div>
@@ -5062,14 +5065,210 @@ const PrivacyPage = () => {
   );
 };
 
-// SiteFooter — 출처 표기 + 이용약관 링크
+// ReportPage — 정정·삭제 요청 / 신고 / 일반 문의
+// ──────────────────────────────────────────────────────────
+const ReportPage = ({ params, onNav }) => {
+  const factoryId = params?.factoryId || '';
+  const factoryName = params?.factoryName || '';
+  const initialType = params?.type || (factoryId ? 'factory_issue' : 'general_inquiry');
+
+  const [reportType, setReportType] = useStateP(initialType);
+  const [targetFactoryName, setTargetFactoryName] = useStateP(factoryName);
+  const [reporterCompany, setReporterCompany] = useStateP('');
+  const [reporterBusinessNumber, setReporterBusinessNumber] = useStateP('');
+  const [reporterName, setReporterName] = useStateP('');
+  const [reporterEmail, setReporterEmail] = useStateP('');
+  const [reporterPhone, setReporterPhone] = useStateP('');
+  const [reason, setReason] = useStateP('');
+  const [description, setDescription] = useStateP('');
+  const [submitting, setSubmitting] = useStateP(false);
+  const [submitted, setSubmitted] = useStateP(false);
+  const [errorMsg, setErrorMsg] = useStateP('');
+
+  const validate = () => {
+    if (!reporterCompany.trim()) return '회사명을 입력해주세요.';
+    if (!reporterName.trim()) return '담당자명을 입력해주세요.';
+    if (!reporterEmail.trim()) return '이메일을 입력해주세요.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporterEmail)) return '올바른 이메일 형식이 아닙니다.';
+    if (!reason.trim()) return '사유를 입력해주세요.';
+    if ((reportType === 'factory_issue' || reportType === 'self_correction') && !targetFactoryName.trim()) {
+      return '대상 공장명을 입력해주세요.';
+    }
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    setErrorMsg('');
+    const error = validate();
+    if (error) { setErrorMsg(error); return; }
+    setSubmitting(true);
+
+    const payload = {
+      report_type: reportType,
+      target_factory_id: factoryId || null,
+      target_factory_name: targetFactoryName || null,
+      reporter_company: reporterCompany,
+      reporter_business_number: reporterBusinessNumber || null,
+      reporter_name: reporterName,
+      reporter_email: reporterEmail,
+      reporter_phone: reporterPhone || null,
+      reason,
+      description: description || null
+    };
+
+    try {
+      if (window._sb) {
+        const { error: dbError } = await window._sb.from('factory_reports').insert(payload);
+        if (dbError) throw new Error('데이터 저장에 실패했습니다.');
+      }
+
+      const emailResp = await fetch('/.netlify/functions/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!emailResp.ok) console.warn('Email notification failed, but report saved');
+
+      setSubmitted(true);
+    } catch (err) {
+      setErrorMsg(err.message || '제출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="report-page">
+        <div className="report-page-container">
+          <div className="report-success">
+            <div className="report-success-icon">✓</div>
+            <h1>접수가 완료되었습니다</h1>
+            <p>요청 내용은 영업일 기준 5일 이내에 검토 후 처리됩니다.</p>
+            <p>처리 결과는 <strong>{reporterEmail}</strong>로 회신드립니다.</p>
+            <div className="report-success-actions">
+              <button onClick={() => onNav?.('home')}>홈으로</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="report-page">
+      <div className="report-page-container">
+        <h1 className="report-page-title">정정·삭제 요청 / 문의</h1>
+        <p className="report-page-meta">
+          공장 정보의 정정·삭제 요청 또는 일반 문의를 받습니다.<br/>
+          영업일 기준 5일 이내에 검토 후 회신드립니다.
+        </p>
+
+        <div className="report-section">
+          <label className="report-label">요청 종류 <span className="required">*</span></label>
+          <div className="report-type-options">
+            {[
+              { value: 'factory_issue', title: '공장 정보 신고', desc: '제3자가 다른 공장 정보의 오류·문제를 신고' },
+              { value: 'self_correction', title: '자사 정보 정정·삭제', desc: '본인 회사 정보의 정정 또는 삭제 요청' },
+              { value: 'general_inquiry', title: '일반 문의', desc: '서비스 이용 문의·제휴·기타' },
+            ].map(opt => (
+              <label key={opt.value} className={`report-type-option ${reportType === opt.value ? 'active' : ''}`}>
+                <input type="radio" name="reportType" value={opt.value}
+                  checked={reportType === opt.value}
+                  onChange={(e) => setReportType(e.target.value)}
+                />
+                <div className="report-type-content">
+                  <strong>{opt.title}</strong>
+                  <span>{opt.desc}</span>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {(reportType === 'factory_issue' || reportType === 'self_correction') && (
+          <div className="report-section">
+            <label className="report-label">대상 공장명 <span className="required">*</span></label>
+            <input type="text" className="report-input"
+              placeholder="공장명을 입력하세요"
+              value={targetFactoryName}
+              onChange={(e) => setTargetFactoryName(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div className="report-section">
+          <h2 className="report-section-title">신청자 정보</h2>
+          <div className="report-field">
+            <label className="report-label">회사명 <span className="required">*</span></label>
+            <input type="text" className="report-input" placeholder="회사명을 입력하세요"
+              value={reporterCompany} onChange={(e) => setReporterCompany(e.target.value)}/>
+          </div>
+          <div className="report-field">
+            <label className="report-label">사업자번호</label>
+            <input type="text" className="report-input" placeholder="000-00-00000 (선택)"
+              value={reporterBusinessNumber} onChange={(e) => setReporterBusinessNumber(e.target.value)}/>
+            <span className="report-hint">자사 정정·삭제 요청 시 권한 확인용 (선택)</span>
+          </div>
+          <div className="report-field">
+            <label className="report-label">담당자명 <span className="required">*</span></label>
+            <input type="text" className="report-input" placeholder="담당자 성함"
+              value={reporterName} onChange={(e) => setReporterName(e.target.value)}/>
+          </div>
+          <div className="report-field">
+            <label className="report-label">이메일 <span className="required">*</span></label>
+            <input type="email" className="report-input" placeholder="회신 받을 이메일"
+              value={reporterEmail} onChange={(e) => setReporterEmail(e.target.value)}/>
+          </div>
+          <div className="report-field">
+            <label className="report-label">연락처</label>
+            <input type="tel" className="report-input" placeholder="000-0000-0000 (선택)"
+              value={reporterPhone} onChange={(e) => setReporterPhone(e.target.value)}/>
+          </div>
+        </div>
+
+        <div className="report-section">
+          <h2 className="report-section-title">요청 내용</h2>
+          <div className="report-field">
+            <label className="report-label">사유 <span className="required">*</span></label>
+            <input type="text" className="report-input"
+              placeholder="간단한 사유 (예: 폐업, 정보 오류, 노출 거부 등)"
+              value={reason} onChange={(e) => setReason(e.target.value)}/>
+          </div>
+          <div className="report-field">
+            <label className="report-label">상세 내용</label>
+            <textarea className="report-textarea" rows="6"
+              placeholder="구체적인 내용을 입력해주세요 (선택)"
+              value={description} onChange={(e) => setDescription(e.target.value)}/>
+          </div>
+        </div>
+
+        <div className="report-notice">
+          <p>※ 본 폼을 통해 수집된 정보는 요청 처리 목적으로만 사용되며, 처리 완료 후 3년간 보관 후 파기됩니다.</p>
+          <p>※ 자세한 내용은 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('privacy'); }}>개인정보처리방침</a>을 참조하세요.</p>
+        </div>
+
+        {errorMsg && <div className="report-error">{errorMsg}</div>}
+
+        <div className="report-actions">
+          <button className="report-cancel-btn" onClick={() => onNav?.('home')} disabled={submitting}>취소</button>
+          <button className="report-submit-btn" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? '제출 중...' : '제출하기'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// SiteFooter — 출처 표기 + 법적 링크
 // ──────────────────────────────────────────────────────────
 const SiteFooter = ({ onNav }) => (
   <footer className="site-footer">
     <div className="site-footer-content">
       <div className="site-footer-info">
         <p>본 사이트는 공공데이터포털의 공개정보를 기반으로 운영됩니다.</p>
-        <p>자세한 내용은 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a> 및 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('privacy'); }}>개인정보처리방침</a>을 확인하세요.</p>
+        <p>정보의 정정·삭제 요청은 <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('report'); }}>여기</a>에서 가능합니다.</p>
       </div>
       <div className="site-footer-meta">
         <p>주식회사 올뷰코리아 © 2026</p>
@@ -5077,13 +5276,15 @@ const SiteFooter = ({ onNav }) => (
           <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('terms'); }}>이용약관</a>
           {' · '}
           <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('privacy'); }}>개인정보처리방침</a>
+          {' · '}
+          <a href="#" onClick={(e) => { e.preventDefault(); onNav?.('report'); }}>정정/삭제 요청</a>
         </p>
       </div>
     </div>
   </footer>
 );
 
-Object.assign(window, { TermsPage, PrivacyPage, SiteFooter });
+Object.assign(window, { TermsPage, PrivacyPage, ReportPage, SiteFooter });
 
 
 // tweaks-panel.jsx

@@ -5486,3 +5486,292 @@ a { color: inherit; text-decoration: none; }
     text-align: center;
   }
 }
+
+/* ── Report page (정정/삭제 요청 폼) ── */
+.report-page {
+  background: #fafafa;
+  min-height: 100vh;
+  padding: 40px 20px 80px;
+}
+
+.report-page-container {
+  max-width: 720px;
+  margin: 0 auto;
+  background: white;
+  padding: 48px 40px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.report-page-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+}
+
+.report-page-meta {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.report-section {
+  margin-bottom: 28px;
+}
+
+.report-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.report-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.report-label .required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.report-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-type-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.report-type-option:hover {
+  border-color: #2563eb;
+  background: #f8f9ff;
+}
+
+.report-type-option.active {
+  border-color: #2563eb;
+  background: #f0f4ff;
+}
+
+.report-type-option input[type="radio"] {
+  margin-top: 4px;
+}
+
+.report-type-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-type-content strong {
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.report-type-content span {
+  font-size: 13px;
+  color: #666;
+}
+
+.report-field {
+  margin-bottom: 16px;
+}
+
+.report-input,
+.report-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.report-input:focus,
+.report-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.report-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.report-hint {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.report-notice {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.report-notice p {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.report-notice a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.report-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.report-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.report-cancel-btn,
+.report-submit-btn {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.report-cancel-btn {
+  background: white;
+  border: 1px solid #d4d4d4;
+  color: #555;
+}
+
+.report-cancel-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.report-submit-btn {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: white;
+}
+
+.report-submit-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.report-submit-btn:disabled,
+.report-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.report-success {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.report-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #10b981;
+  color: white;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.report-success h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.report-success p {
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.report-success-actions {
+  margin-top: 32px;
+}
+
+.report-success-actions button {
+  padding: 12px 32px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-report-btn {
+  background: white;
+  border: 1px solid #d4d4d4;
+  color: #888;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.detail-report-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .report-page-container {
+    padding: 32px 24px;
+  }
+
+  .report-page-title {
+    font-size: 22px;
+  }
+
+  .report-actions {
+    flex-direction: column-reverse;
+  }
+
+  .report-cancel-btn,
+  .report-submit-btn {
+    width: 100%;
+  }
+}
