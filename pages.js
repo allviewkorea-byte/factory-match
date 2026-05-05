@@ -705,6 +705,69 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
 
       {hasResults && (
         <div className={`home-results${loading ? ' is-loading' : ''}`} key={lastSearchedQuery}>
+
+          {/* 1. 공급망 분석 */}
+          {aiResults?.supplyChain?.length > 0 && (
+            <div className="sx-supply-chain" key={`supply-${lastSearchedQuery}`}>
+              <div className="sx-supply-header">
+                <Icon name="layers" size={13} stroke={2}/>
+                공급망 분석
+                <span className="sx-supply-intent">· {lastSearchedQuery} 제조 공정 흐름</span>
+              </div>
+              <div className="sx-supply-steps">
+                {aiResults.supplyChain.map((s, i) => (
+                  <React.Fragment key={i}>
+                    <div className="sx-supply-step">
+                      <div className="sx-supply-step-num">{s.step || i + 1}</div>
+                      <div className="sx-supply-step-label">{s.label}</div>
+                      {s.detail && <div className="sx-supply-step-detail">{s.detail}</div>}
+                    </div>
+                    {i < aiResults.supplyChain.length - 1 && (
+                      <div className="sx-supply-arrow">›</div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 2. 매칭 제조사 */}
+          {!loading && matchedFactoryDetails.length > 0 && (
+            <div className="sx-match-section">
+              <div className="sx-match-header">
+                <h2>
+                  <Icon name="factory" size={15} stroke={2}/>
+                  매칭 제조사
+                </h2>
+                <span className="sx-match-count">{matchedFactoryDetails.length}개사 매칭</span>
+              </div>
+              <div className="sx-match-grid">
+                {matchedFactoryDetails.map(f => (
+                  <div key={f.id} className="sx-match-card-wrap">
+                    <div
+                      className="sx-match-score-badge"
+                      style={{ background: f._matchPct >= 70 ? '#16a34a' : f._matchPct >= 50 ? '#d97706' : '#64748b' }}
+                    >
+                      <span className="sx-match-score-pct">{f._matchPct}%</span>
+                      <span className="sx-match-score-label">매칭</span>
+                    </div>
+                    <ManufacturerCard
+                      f={f}
+                      simplified
+                      density={density}
+                      onOpen={(id) => {
+                        if (!window._factoryCache) window._factoryCache = {};
+                        window._factoryCache[id] = f;
+                        onOpenFactory?.(id);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3. AI 사전 컨설팅 */}
           {consulting && (
             <div className="sx-consulting">
               <div className="sx-consulting-head">
@@ -752,30 +815,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
             </div>
           )}
 
-          {aiResults?.supplyChain?.length > 0 && (
-            <div className="sx-supply-chain" key={`supply-${lastSearchedQuery}`}>
-              <div className="sx-supply-header">
-                <Icon name="layers" size={13} stroke={2}/>
-                공급망 분석
-                <span className="sx-supply-intent">· {lastSearchedQuery} 제조 공정 흐름</span>
-              </div>
-              <div className="sx-supply-steps">
-                {aiResults.supplyChain.map((s, i) => (
-                  <React.Fragment key={i}>
-                    <div className="sx-supply-step">
-                      <div className="sx-supply-step-num">{s.step || i + 1}</div>
-                      <div className="sx-supply-step-label">{s.label}</div>
-                      {s.detail && <div className="sx-supply-step-detail">{s.detail}</div>}
-                    </div>
-                    {i < aiResults.supplyChain.length - 1 && (
-                      <div className="sx-supply-arrow">›</div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* 4. 추천 카테고리 */}
           {aiResults?.topCategories && (
             <>
               <div className="sx-mode-banner is-on">
@@ -843,41 +883,6 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
                 </div>
               </div>
             </>
-          )}
-
-          {!loading && matchedFactoryDetails.length > 0 && (
-            <div className="sx-match-section">
-              <div className="sx-match-header">
-                <h2>
-                  <Icon name="factory" size={15} stroke={2}/>
-                  매칭 제조사
-                </h2>
-                <span className="sx-match-count">{matchedFactoryDetails.length}개사 매칭</span>
-              </div>
-              <div className="sx-match-grid">
-                {matchedFactoryDetails.map(f => (
-                  <div key={f.id} className="sx-match-card-wrap">
-                    <div
-                      className="sx-match-score-badge"
-                      style={{ background: f._matchPct >= 70 ? '#16a34a' : f._matchPct >= 50 ? '#d97706' : '#64748b' }}
-                    >
-                      <span className="sx-match-score-pct">{f._matchPct}%</span>
-                      <span className="sx-match-score-label">매칭</span>
-                    </div>
-                    <ManufacturerCard
-                      f={f}
-                      simplified
-                      density={density}
-                      onOpen={(id) => {
-                        if (!window._factoryCache) window._factoryCache = {};
-                        window._factoryCache[id] = f;
-                        onOpenFactory?.(id);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
         </div>
       )}
