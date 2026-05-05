@@ -5775,3 +5775,276 @@ a { color: inherit; text-decoration: none; }
     width: 100%;
   }
 }
+
+/* ── Admin reports tab (신고 관리) ── */
+.admin-reports-tab {
+  padding: 24px;
+}
+
+.admin-reports-status-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e5e5e5;
+  margin-bottom: 24px;
+}
+
+.admin-reports-status-tab {
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-reports-status-tab:hover { color: #333; }
+
+.admin-reports-status-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.admin-reports-count-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.admin-reports-status-tab.active .admin-reports-count-badge {
+  background: #2563eb;
+}
+
+.admin-reports-list {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-reports-loading,
+.admin-reports-empty,
+.admin-reports-error {
+  padding: 60px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+.admin-reports-error {
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+.admin-reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-reports-table thead { background: #f9f9f9; }
+
+.admin-reports-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 1px solid #e5e5e5;
+  white-space: nowrap;
+}
+
+.admin-reports-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.admin-reports-table tbody tr:hover { background: #fafafa; }
+
+.admin-reports-reason-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-reports-type-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-reports-type-badge.type-factory_issue  { background: #fef2f2; color: #dc2626; }
+.admin-reports-type-badge.type-self_correction { background: #fef9c3; color: #a16207; }
+.admin-reports-type-badge.type-general_inquiry { background: #f0f9ff; color: #0369a1; }
+
+.admin-reports-detail-btn {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-reports-detail-btn:hover {
+  background: #f5f5f5;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.admin-reports-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.admin-reports-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.admin-reports-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.admin-reports-modal-header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+
+.admin-reports-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #888;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.admin-reports-modal-close:hover { color: #333; }
+
+.admin-reports-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.admin-reports-detail-section { margin-bottom: 24px; }
+
+.admin-reports-detail-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.admin-reports-detail-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-reports-detail-row strong {
+  min-width: 100px;
+  color: #666;
+  font-weight: 600;
+}
+
+.admin-reports-detail-row a { color: #2563eb; text-decoration: underline; }
+
+.admin-reports-detail-description { font-size: 14px; margin-top: 8px; }
+.admin-reports-detail-description strong { display: block; color: #666; font-weight: 600; margin-bottom: 6px; }
+
+.admin-reports-detail-text {
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.admin-reports-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-reports-status-badge.status-pending    { background: #fef9c3; color: #a16207; }
+.admin-reports-status-badge.status-processing { background: #dbeafe; color: #1e40af; }
+.admin-reports-status-badge.status-resolved   { background: #d1fae5; color: #065f46; }
+.admin-reports-status-badge.status-rejected   { background: #fee2e2; color: #991b1b; }
+
+.admin-reports-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.admin-reports-action-btn {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #d4d4d4;
+  background: white;
+  color: #555;
+}
+
+.admin-reports-action-btn:hover { background: #f5f5f5; }
+
+.admin-reports-action-btn.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.admin-reports-action-btn.primary:hover { background: #1d4ed8; }
+
+@media (max-width: 768px) {
+  .admin-reports-table { font-size: 12px; }
+  .admin-reports-table th, .admin-reports-table td { padding: 8px; }
+  .admin-reports-modal { max-height: 95vh; }
+  .admin-reports-detail-row { flex-direction: column; gap: 2px; }
+  .admin-reports-detail-row strong { min-width: auto; }
+}

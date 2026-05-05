@@ -4090,6 +4090,252 @@ function extractRegion(addr) {
   return 'etc';
 }
 
+// AdminReportsTab — 신고 관리
+// ──────────────────────────────────────────────────────────
+const AdminReportsTab = () => {
+  const [activeStatus, setActiveStatus] = useState('pending');
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [counts, setCounts] = useState({ pending: 0, processing: 0, resolved: 0, rejected: 0 });
+
+  const loadReports = async (status) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: dbError } = await window._sb
+        .from('factory_reports')
+        .select('*')
+        .eq('status', status)
+        .order('created_at', { ascending: false });
+      if (dbError) throw dbError;
+      setReports(data || []);
+    } catch (err) {
+      console.error('Load reports error:', err);
+      setError('신고 목록을 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCounts = async () => {
+    try {
+      const statuses = ['pending', 'processing', 'resolved', 'rejected'];
+      const results = await Promise.all(
+        statuses.map(s =>
+          window._sb
+            .from('factory_reports')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', s)
+        )
+      );
+      const newCounts = {};
+      statuses.forEach((s, i) => { newCounts[s] = results[i].count || 0; });
+      setCounts(newCounts);
+    } catch (err) {
+      console.error('Load counts error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!window._sb) { setLoading(false); setError('Supabase 연결이 필요합니다.'); return; }
+    loadReports(activeStatus);
+    loadCounts();
+  }, [activeStatus]);
+
+  const handleStatusChange = async (reportId, newStatus, adminNote = '') => {
+    try {
+      const updates = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'resolved' || newStatus === 'rejected') {
+        updates.resolved_at = new Date().toISOString();
+      }
+      if (adminNote) updates.admin_note = adminNote;
+      const { error: dbError } = await window._sb
+        .from('factory_reports')
+        .update(updates)
+        .eq('id', reportId);
+      if (dbError) throw dbError;
+      await loadReports(activeStatus);
+      await loadCounts();
+      setSelectedReport(null);
+    } catch (err) {
+      console.error('Status change error:', err);
+      alert('상태 변경에 실패했습니다.');
+    }
+  };
+
+  const STATUS_LABELS = { pending: '접수', processing: '처리중', resolved: '완료', rejected: '거절' };
+  const TYPE_LABELS = { factory_issue: '공장 신고', self_correction: '자사 정정', general_inquiry: '일반 문의' };
+
+  const formatDate = (iso) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+
+  return (
+    <div className="admin-reports-tab">
+      <div className="admin-reports-status-tabs">
+        {['pending', 'processing', 'resolved', 'rejected'].map(s => (
+          <button
+            key={s}
+            className={`admin-reports-status-tab ${activeStatus === s ? 'active' : ''}`}
+            onClick={() => setActiveStatus(s)}
+          >
+            {STATUS_LABELS[s]}
+            {counts[s] > 0 && <span className="admin-reports-count-badge">{counts[s]}</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="admin-reports-list">
+        {loading && <div className="admin-reports-loading">로딩 중...</div>}
+        {error && <div className="admin-reports-error">{error}</div>}
+        {!loading && !error && reports.length === 0 && (
+          <div className="admin-reports-empty">{STATUS_LABELS[activeStatus]} 상태의 신고가 없습니다.</div>
+        )}
+        {!loading && !error && reports.length > 0 && (
+          <table className="admin-reports-table">
+            <thead>
+              <tr>
+                <th>접수일시</th><th>종류</th><th>대상 공장</th>
+                <th>신청자</th><th>회사명</th><th>사유</th><th>액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map(r => (
+                <tr key={r.id}>
+                  <td>{formatDate(r.created_at)}</td>
+                  <td>
+                    <span className={`admin-reports-type-badge type-${r.report_type}`}>
+                      {TYPE_LABELS[r.report_type] || r.report_type}
+                    </span>
+                  </td>
+                  <td>{r.target_factory_name || '-'}</td>
+                  <td>{r.reporter_name}</td>
+                  <td>{r.reporter_company}</td>
+                  <td className="admin-reports-reason-cell">{r.reason}</td>
+                  <td>
+                    <button className="admin-reports-detail-btn" onClick={() => setSelectedReport(r)}>
+                      상세
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {selectedReport && (
+        <div className="admin-reports-modal-overlay" onClick={() => setSelectedReport(null)}>
+          <div className="admin-reports-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-reports-modal-header">
+              <h2>신고 상세</h2>
+              <button className="admin-reports-modal-close" onClick={() => setSelectedReport(null)}>×</button>
+            </div>
+
+            <div className="admin-reports-modal-body">
+              <div className="admin-reports-detail-section">
+                <h3>요청 정보</h3>
+                <div className="admin-reports-detail-row"><strong>접수번호:</strong> #{selectedReport.id}</div>
+                <div className="admin-reports-detail-row"><strong>접수일시:</strong> {formatDate(selectedReport.created_at)}</div>
+                <div className="admin-reports-detail-row"><strong>종류:</strong> {TYPE_LABELS[selectedReport.report_type]}</div>
+                <div className="admin-reports-detail-row">
+                  <strong>현재 상태:</strong>
+                  <span className={`admin-reports-status-badge status-${selectedReport.status}`}>
+                    {STATUS_LABELS[selectedReport.status]}
+                  </span>
+                </div>
+                {selectedReport.target_factory_name && (
+                  <div className="admin-reports-detail-row">
+                    <strong>대상 공장:</strong> {selectedReport.target_factory_name}
+                    {selectedReport.target_factory_id && (
+                      <span style={{color:'#888',fontSize:'12px'}}> (ID: {selectedReport.target_factory_id})</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="admin-reports-detail-section">
+                <h3>신청자 정보</h3>
+                <div className="admin-reports-detail-row"><strong>회사명:</strong> {selectedReport.reporter_company}</div>
+                {selectedReport.reporter_business_number && (
+                  <div className="admin-reports-detail-row"><strong>사업자번호:</strong> {selectedReport.reporter_business_number}</div>
+                )}
+                <div className="admin-reports-detail-row"><strong>담당자:</strong> {selectedReport.reporter_name}</div>
+                <div className="admin-reports-detail-row">
+                  <strong>이메일:</strong>
+                  <a href={`mailto:${selectedReport.reporter_email}`}>{selectedReport.reporter_email}</a>
+                </div>
+                {selectedReport.reporter_phone && (
+                  <div className="admin-reports-detail-row"><strong>연락처:</strong> {selectedReport.reporter_phone}</div>
+                )}
+              </div>
+
+              <div className="admin-reports-detail-section">
+                <h3>요청 내용</h3>
+                <div className="admin-reports-detail-row"><strong>사유:</strong> {selectedReport.reason}</div>
+                {selectedReport.description && (
+                  <div className="admin-reports-detail-description">
+                    <strong>상세:</strong>
+                    <div className="admin-reports-detail-text">{selectedReport.description}</div>
+                  </div>
+                )}
+              </div>
+
+              {selectedReport.admin_note && (
+                <div className="admin-reports-detail-section">
+                  <h3>관리자 메모</h3>
+                  <div className="admin-reports-detail-text">{selectedReport.admin_note}</div>
+                </div>
+              )}
+
+              {selectedReport.resolved_at && (
+                <div className="admin-reports-detail-section">
+                  <h3>처리 정보</h3>
+                  <div className="admin-reports-detail-row"><strong>처리일시:</strong> {formatDate(selectedReport.resolved_at)}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="admin-reports-modal-actions">
+              {selectedReport.status === 'pending' && (<>
+                <button className="admin-reports-action-btn primary"
+                  onClick={() => handleStatusChange(selectedReport.id, 'processing')}>
+                  처리 시작
+                </button>
+                <button className="admin-reports-action-btn"
+                  onClick={() => { const n = prompt('거절 사유를 입력하세요:'); if (n) handleStatusChange(selectedReport.id, 'rejected', n); }}>
+                  거절
+                </button>
+              </>)}
+              {selectedReport.status === 'processing' && (<>
+                <button className="admin-reports-action-btn primary"
+                  onClick={() => { const n = prompt('처리 내용을 입력하세요 (선택):') || ''; handleStatusChange(selectedReport.id, 'resolved', n); }}>
+                  완료 처리
+                </button>
+                <button className="admin-reports-action-btn"
+                  onClick={() => { const n = prompt('거절 사유를 입력하세요:'); if (n) handleStatusChange(selectedReport.id, 'rejected', n); }}>
+                  거절
+                </button>
+              </>)}
+              {(selectedReport.status === 'resolved' || selectedReport.status === 'rejected') && (
+                <button className="admin-reports-action-btn"
+                  onClick={() => handleStatusChange(selectedReport.id, 'pending')}>
+                  접수 상태로 되돌리기
+                </button>
+              )}
+              <button className="admin-reports-action-btn cancel" onClick={() => setSelectedReport(null)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
@@ -4325,6 +4571,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'users',     label: '사용자' },
           { id: 'rfq',       label: 'RFQ 모니터링' },
           { id: 'logs',      label: '업로드 이력' },
+          { id: 'reports',   label: '신고 관리' },
         ].map(t => (
           <button
             key={t.id}
@@ -4457,6 +4704,12 @@ const AdminPage = ({ onOpenFactory }) => {
               </tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {tab === 'reports' && (
+        <section className="admin-panel">
+          <AdminReportsTab />
         </section>
       )}
 
@@ -4683,7 +4936,7 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab });
 
 
 // ──────────────────────────────────────────────────────────
