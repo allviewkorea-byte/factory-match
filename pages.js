@@ -540,7 +540,7 @@ const SXGlyph = ({ kind }) => {
   return map[kind] || map.metal;
 };
 
-const HomePage = ({ onSearch }) => {
+const HomePage = ({ onSearch, onOpenFactory, density }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
   const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
@@ -549,6 +549,7 @@ const HomePage = ({ onSearch }) => {
   const [consulting, setConsulting] = useStateP(null);
   const [errorMsg, setErrorMsg] = useStateP(null);
   const [lastSearchedQuery, setLastSearchedQuery] = useStateP('');
+  const [matchedFactoryDetails, setMatchedFactoryDetails] = useStateP([]);
 
   // Placeholder rotation — pauses on focus or while typing
   useEffectP(() => {
@@ -608,6 +609,7 @@ const HomePage = ({ onSearch }) => {
         const code = data?.error;
         setAiResults(null);
         setConsulting(null);
+        setMatchedFactoryDetails([]);
         if (code === 'CONFIG_MISSING') setErrorMsg('서비스 설정에 문제가 있습니다. 관리자에게 문의하세요.');
         else if (code === 'AUTH_FAILED') setErrorMsg('AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.');
         else setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
@@ -618,10 +620,39 @@ const HomePage = ({ onSearch }) => {
       setLastSearchedQuery(q);
       setAiResults(data);
       setConsulting(data.consulting || null);
+
+      // Hydrate matched factory details (top 3)
+      if (data.matchedFactories && data.matchedFactories.length > 0) {
+        const ids = data.matchedFactories.slice(0, 3).map(m => m.id);
+        let details = [];
+        if (window._sb) {
+          try {
+            const { data: rows } = await window._sb.from('factories').select('*').in('id', ids);
+            if (rows && rows.length) {
+              const byId = {};
+              rows.map(window._dbRowToFactory).forEach(f => { byId[f.id] = f; });
+              details = data.matchedFactories.slice(0, 3)
+                .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
+                .filter(Boolean);
+            }
+          } catch (_) {}
+        }
+        if (!details.length) {
+          const byId = {};
+          ((window.MFG_DATA || {}).FACTORIES || []).forEach(f => { byId[f.id] = f; });
+          details = data.matchedFactories.slice(0, 3)
+            .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
+            .filter(Boolean);
+        }
+        setMatchedFactoryDetails(details);
+      } else {
+        setMatchedFactoryDetails([]);
+      }
     } catch (e) {
       console.error('AI match failed:', e);
       setAiResults(null);
       setConsulting(null);
+      setMatchedFactoryDetails([]);
       setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
@@ -812,6 +843,41 @@ const HomePage = ({ onSearch }) => {
                 </div>
               </div>
             </>
+          )}
+
+          {!loading && matchedFactoryDetails.length > 0 && (
+            <div className="sx-match-section">
+              <div className="sx-match-header">
+                <h2>
+                  <Icon name="factory" size={15} stroke={2}/>
+                  매칭 제조사
+                </h2>
+                <span className="sx-match-count">{matchedFactoryDetails.length}개사 매칭</span>
+              </div>
+              <div className="sx-match-grid">
+                {matchedFactoryDetails.map(f => (
+                  <div key={f.id} className="sx-match-card-wrap">
+                    <div
+                      className="sx-match-score-badge"
+                      style={{ background: f._matchPct >= 70 ? '#16a34a' : f._matchPct >= 50 ? '#d97706' : '#64748b' }}
+                    >
+                      <span className="sx-match-score-pct">{f._matchPct}%</span>
+                      <span className="sx-match-score-label">매칭</span>
+                    </div>
+                    <ManufacturerCard
+                      f={f}
+                      simplified
+                      density={density}
+                      onOpen={(id) => {
+                        if (!window._factoryCache) window._factoryCache = {};
+                        window._factoryCache[id] = f;
+                        onOpenFactory?.(id);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
