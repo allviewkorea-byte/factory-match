@@ -1144,7 +1144,6 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                       onOpenFactory(id);
                     }}
                     density={density}
-                    compact
                     simplified
                     onAddRFQ={onAddRFQ}
                     rfqIds={rfqIds}
