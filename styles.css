@@ -135,11 +135,12 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, p, span, div, label, 
 .hdr-user-meta, .new-body h4 {
   white-space: normal;
 }
-.hdr-nav, .list-search-chips, .mcard-tags, .cap-tags,
+.list-search-chips, .mcard-tags, .cap-tags,
 .detail-hero-meta, .hero-trending, .hero-actions, .detail-cta,
 .detail-bar-actions, .rfq-stepper {
   flex-wrap: wrap;
 }
+.hdr-nav { flex-wrap: nowrap; overflow-x: auto; }
 .hdr-left, .hdr-right { flex-shrink: 0; }
 .hdr-nav-item, .chip, .btn, .searchbox-btn { flex-shrink: 0; }
 button { font: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; padding: 0; }
