@@ -1042,6 +1042,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (!window._sb) { setDbLoading(false); return; }
     let mounted = true;
     const PAGE = 1000;
+    const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
 
     const loadPage = async (from, acc) => {
       const { data, error } = await window._sb
@@ -1056,7 +1057,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         return;
       }
       const next = [...acc, ...data.map(window._dbRowToFactory)];
-      if (data.length < PAGE) {
+      if (data.length < PAGE || next.length >= MAX_LOAD) {
         setFactories(next);
         setDbLoading(false);
       } else {
@@ -2718,29 +2719,39 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
 
       // Use server-matched factories from Netlify function if available
       if (data.matchedFactories && data.matchedFactories.length > 0) {
-        let allFactories = [];
-        if (window._sb) {
+        // Fetch only the specific matched IDs — never pull the full table
+        const ids = data.matchedFactories.slice(0, 10).map(m => m.id);
+        let rows = [];
+        if (window._sb && ids.length) {
           try {
-            const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
-            if (rows && rows.length) allFactories = rows;
+            const { data: dbRows } = await window._sb.from('factories').select('*').in('id', ids);
+            if (dbRows) rows = dbRows;
           } catch (_) {}
         }
-        if (!allFactories.length) allFactories = (window.MFG_DATA || {}).FACTORIES || [];
-
+        const staticById = {};
+        ((window.MFG_DATA || {}).FACTORIES || []).forEach(f => { staticById[f.id] = f; });
         const byId = {};
-        allFactories.forEach(f => { byId[f.id] = f; });
+        (rows.length ? rows.map(window._dbRowToFactory) : []).forEach(f => { byId[f.id] = f; });
         const scored = data.matchedFactories
-          .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
+          .map(m => (byId[m.id] || staticById[m.id])
+            ? { ...(byId[m.id] || staticById[m.id]), _matchPct: m.matchPct }
+            : null)
           .filter(Boolean);
         setMatchedFactories(scored);
       } else {
-        // Fallback: score locally
+        // Fallback: server-side filtered search with LIMIT — never pull full table
         const st = data.searchTerms || {};
         let allFactories = [];
         if (window._sb) {
           try {
-            const { data: rows } = await window._sb.from('factories').select('*').eq('hidden', false);
-            if (rows && rows.length) allFactories = rows;
+            let q = window._sb.from('factories').select('*').eq('hidden', false);
+            const kw = (st.keywords || []).concat(st.industries || []).filter(Boolean);
+            if (kw.length > 0) {
+              q = q.ilike('summary', `%${kw[0]}%`);
+            }
+            q = q.order('rating', { ascending: false }).limit(200);
+            const { data: rows } = await q;
+            if (rows && rows.length) allFactories = rows.map(window._dbRowToFactory);
           } catch (_) {}
         }
         if (!allFactories.length) allFactories = (window.MFG_DATA || {}).FACTORIES || [];
