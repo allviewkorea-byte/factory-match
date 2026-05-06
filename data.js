@@ -287,7 +287,7 @@ window._dbRowToFactory = (row) => ({
   en: row.en || '',
   city: row.city || '',
   region: row.region || '',
-  coord: { x: row.coord_x || 50, y: row.coord_y || 50 },
+  coord: (row.coord_x != null && row.coord_y != null) ? { x: row.coord_x, y: row.coord_y } : null,
   industries: row.industries || [],
   processes: row.processes || [],
   products: row.products || [],

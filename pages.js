@@ -498,27 +498,65 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
 };
 
 // Google Maps panel for the list page right column
-function ListMapPanel({ selectedFactory, mapsKey }) {
-  if (!MAPS_ENABLED || !mapsKey) {
-    return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13 }}>
-        <Icon name="pin" size={20} stroke={1.6}/>
-        <span>지도 준비 중</span>
-      </div>
-    );
-  }
-  const src = selectedFactory
-    ? `https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(selectedFactory.name + ' ' + selectedFactory.city)}&language=ko`
-    : `https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=36.5,127.5&zoom=7&maptype=roadmap&language=ko`;
+// coord_x/coord_y are 0-100 SVG-space values matching Korea's geographic layout.
+// Pins are rendered as an absolute-positioned overlay on top of the iframe.
+function ListMapPanel({ factories, selectedFactory, mapsKey, onOpenFactory }) {
+  const [hoveredPin, setHoveredPin] = React.useState(null);
+  // Only factories with explicit coord data stored in DB
+  const pinFactories = React.useMemo(
+    () => (factories || []).filter(f => f.coord != null),
+    [factories]
+  );
+  // Show pins only in Korea overview mode (not when zoomed to a specific factory)
+  const showPins = !selectedFactory && pinFactories.length > 0;
+
+  const mapSrc = !MAPS_ENABLED || !mapsKey ? null
+    : selectedFactory
+      ? `https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(selectedFactory.name + ' ' + selectedFactory.city)}&language=ko`
+      : `https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=36.5,127.5&zoom=7&maptype=roadmap&language=ko`;
+
   return (
-    <iframe
-      key={src}
-      src={src}
-      style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
-      loading="lazy"
-      referrerPolicy="no-referrer-when-downgrade"
-      title={selectedFactory ? `${selectedFactory.name} 위치` : '한국 제조사 지도'}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {mapSrc ? (
+        <iframe
+          key={mapSrc}
+          src={mapSrc}
+          style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={selectedFactory ? `${selectedFactory.name} 위치` : '한국 제조사 지도'}
+        />
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13, background: 'var(--bg-soft)' }}>
+          <Icon name="pin" size={20} stroke={1.6}/>
+          <span>지도 준비 중</span>
+        </div>
+      )}
+      {showPins && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          {pinFactories.slice(0, 200).map(f => {
+            const isHov = hoveredPin === f.id;
+            return (
+              <button
+                key={f.id}
+                className={`map-pin${isHov ? ' is-hovered' : ''}`}
+                style={{ left: `${f.coord.x}%`, top: `${f.coord.y}%`, pointerEvents: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                onMouseEnter={() => setHoveredPin(f.id)}
+                onMouseLeave={() => setHoveredPin(null)}
+                onClick={() => {
+                  if (!window._factoryCache) window._factoryCache = {};
+                  window._factoryCache[f.id] = f;
+                  onOpenFactory(f.id);
+                }}
+              >
+                <span className="map-pin-dot" />
+                <span className="map-pin-label">{f.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1459,7 +1497,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
         {/* Right: map */}
         <div className="list-map">
-          <ListMapPanel selectedFactory={selectedFactory} mapsKey={mapsKey} />
+          <ListMapPanel
+            factories={filtered}
+            selectedFactory={selectedFactory}
+            mapsKey={mapsKey}
+            onOpenFactory={onOpenFactory}
+          />
           {selectedFactory && (
             <div className="map-side">
               <div className="map-side-body">
