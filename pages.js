@@ -1371,6 +1371,116 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label).filter(Boolean);
   const inRfq = rfqIds.includes(f.id);
 
+  // ── 소유자 편집 상태 ──
+  const [isOwner, setIsOwner] = useStateP(false);
+  const [showEditModal, setShowEditModal] = useStateP(false);
+  const [editForm, setEditForm] = useStateP({});
+  const [matInput, setMatInput] = useStateP('');
+  const [certInput, setCertInput] = useStateP('');
+  const [editSaving, setEditSaving] = useStateP(false);
+  const [editToast, setEditToast] = useStateP('');
+
+  // 소유자 확인
+  useEffectP(() => {
+    setIsOwner(false);
+    (async () => {
+      try {
+        const { data: { user } } = await window._sb.auth.getUser();
+        if (!user) return;
+        const { data } = await window._sb
+          .from('user_profiles')
+          .select('factory_id, status')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (data?.factory_id === f.id && data?.status === 'approved') setIsOwner(true);
+      } catch {}
+    })();
+  }, [f.id]);
+
+  const openEditModal = () => {
+    setEditForm({
+      summary: f.summary || '',
+      processes: [...(f.processes || [])],
+      materials: [...(f.materials || [])],
+      products: [...(f.products || [])],
+      moq: f.moq || 1,
+      moqUnit: f.moqUnit || '피스',
+      leadDays: f.leadDays || 14,
+      certs: [...(f.certs || [])],
+      oem: !!f.oem,
+      odm: !!f.odm,
+      export: !!f.export,
+      image: f.image || '#a8b4c8',
+    });
+    setMatInput('');
+    setCertInput('');
+    setShowEditModal(true);
+  };
+
+  const saveEdit = async () => {
+    setEditSaving(true);
+    try {
+      const updates = {
+        summary: editForm.summary,
+        processes: editForm.processes,
+        materials: editForm.materials,
+        products: editForm.products,
+        moq: Number(editForm.moq) || 1,
+        moq_unit: editForm.moqUnit,
+        lead_days: Number(editForm.leadDays) || 14,
+        certs: editForm.certs,
+        oem: editForm.oem,
+        odm: editForm.odm,
+        export: editForm.export,
+        image: editForm.image,
+      };
+      const { error } = await window._sb.from('factories').update(updates).eq('id', f.id);
+      if (error) throw error;
+      const updated = {
+        ...f,
+        summary: editForm.summary,
+        processes: editForm.processes,
+        materials: editForm.materials,
+        products: editForm.products,
+        moq: Number(editForm.moq) || 1,
+        moqUnit: editForm.moqUnit,
+        leadDays: Number(editForm.leadDays) || 14,
+        certs: editForm.certs,
+        oem: editForm.oem,
+        odm: editForm.odm,
+        export: editForm.export,
+        image: editForm.image,
+      };
+      setResolvedFactory(updated);
+      if (window._factoryCache) window._factoryCache[f.id] = updated;
+      setShowEditModal(false);
+      setEditToast('공장 정보가 업데이트되었습니다');
+      setTimeout(() => setEditToast(''), 3200);
+    } catch (e) {
+      setEditToast('저장 실패: ' + (e.message || '오류'));
+      setTimeout(() => setEditToast(''), 4000);
+    }
+    setEditSaving(false);
+  };
+
+  const toggleChip = (field, id) => setEditForm(prev => ({
+    ...prev,
+    [field]: prev[field].includes(id) ? prev[field].filter(x => x !== id) : [...prev[field], id],
+  }));
+  const addFreeChip = (field, val, clearFn) => {
+    const v = val.trim();
+    if (!v) return;
+    setEditForm(prev => ({
+      ...prev,
+      [field]: prev[field].includes(v) ? prev[field] : [...prev[field], v],
+    }));
+    clearFn('');
+  };
+  const removeFreeChip = (field, val) => setEditForm(prev => ({
+    ...prev,
+    [field]: prev[field].filter(x => x !== val),
+  }));
+
   useEffect(() => {
     if (tab === 'reviews' && !isSample) setTab('overview');
     if (tab === 'certs' && f.certs.length === 0 && !isSample) setTab('overview');
@@ -1404,6 +1514,12 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <Icon name="chat" size={14} stroke={2}/>
             채팅 시작
           </button>
+          {isOwner && (
+            <button className="icon-btn detail-edit-btn" onClick={openEditModal}>
+              <Icon name="user" size={14} stroke={2}/>
+              내 공장 정보 수정
+            </button>
+          )}
           <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}>
             ⚠ 이 정보 신고
           </button>
@@ -1649,6 +1765,217 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             )}
           </div>
         </section>
+      )}
+
+      {/* ── 토스트 ── */}
+      {editToast && (
+        <div className={'fe-toast ' + (editToast.includes('실패') ? 'fe-toast-err' : 'fe-toast-ok')}>
+          {editToast}
+        </div>
+      )}
+
+      {/* ── 공장 정보 수정 모달 ── */}
+      {showEditModal && (
+        <div className="fe-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="fe-modal" onClick={e => e.stopPropagation()}>
+            <div className="fe-head">
+              <h2>내 공장 정보 수정</h2>
+              <button className="fe-close" onClick={() => setShowEditModal(false)}>
+                <Icon name="close" size={18} stroke={2}/>
+              </button>
+            </div>
+
+            <div className="fe-body">
+              {/* 수정 불가 섹션 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">기본 정보 (수정 불가)</h3>
+                <div className="fe-readonly-grid">
+                  <div className="fe-ro-item">
+                    <span className="fe-ro-label">회사명</span>
+                    <span className="fe-ro-value">{f.name}</span>
+                  </div>
+                  {f.businessNumber && (
+                    <div className="fe-ro-item">
+                      <span className="fe-ro-label">사업자번호</span>
+                      <span className="fe-ro-value">{f.businessNumber.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3')}</span>
+                    </div>
+                  )}
+                  <div className="fe-ro-item">
+                    <span className="fe-ro-label">주소</span>
+                    <span className="fe-ro-value">{f.city}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 회사 소개 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">회사 소개</h3>
+                <textarea
+                  className="fe-textarea"
+                  rows={4}
+                  value={editForm.summary}
+                  onChange={e => setEditForm(p => ({ ...p, summary: e.target.value }))}
+                  placeholder="회사 소개를 입력하세요 (100~300자 권장)"
+                />
+              </div>
+
+              {/* 주요 공정 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">주요 공정</h3>
+                <div className="fe-chip-grid">
+                  {PROCESSES.map(p => (
+                    <button
+                      key={p.id}
+                      className={'fe-chip ' + (editForm.processes?.includes(p.id) ? 'is-on' : '')}
+                      onClick={() => toggleChip('processes', p.id)}
+                      type="button"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 소재 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">주요 소재</h3>
+                <div className="fe-free-chips">
+                  {(editForm.materials || []).map(m => (
+                    <span key={m} className="fe-free-chip">
+                      {m}
+                      <button className="fe-free-chip-x" onClick={() => removeFreeChip('materials', m)}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="fe-chip-input-row">
+                  <input
+                    className="fe-input"
+                    value={matInput}
+                    onChange={e => setMatInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFreeChip('materials', matInput, setMatInput); } }}
+                    placeholder="소재 입력 후 Enter (예: 알루미늄)"
+                  />
+                  <button className="fe-chip-add-btn" onClick={() => addFreeChip('materials', matInput, setMatInput)}>추가</button>
+                </div>
+              </div>
+
+              {/* 주요 제품 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">주요 제품</h3>
+                <div className="fe-chip-grid">
+                  {PRODUCTS.map(p => (
+                    <button
+                      key={p.id}
+                      className={'fe-chip ' + (editForm.products?.includes(p.id) ? 'is-on' : '')}
+                      onClick={() => toggleChip('products', p.id)}
+                      type="button"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 생산 조건 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">생산 조건</h3>
+                <div className="fe-cond-grid">
+                  <label className="fe-field">
+                    <span>최소 주문 수량 (MOQ)</span>
+                    <input
+                      className="fe-input"
+                      type="number"
+                      min="1"
+                      value={editForm.moq}
+                      onChange={e => setEditForm(p => ({ ...p, moq: e.target.value }))}
+                    />
+                  </label>
+                  <label className="fe-field">
+                    <span>단위</span>
+                    <input
+                      className="fe-input"
+                      value={editForm.moqUnit}
+                      onChange={e => setEditForm(p => ({ ...p, moqUnit: e.target.value }))}
+                      placeholder="피스"
+                    />
+                  </label>
+                  <label className="fe-field">
+                    <span>리드타임 (일)</span>
+                    <input
+                      className="fe-input"
+                      type="number"
+                      min="1"
+                      value={editForm.leadDays}
+                      onChange={e => setEditForm(p => ({ ...p, leadDays: e.target.value }))}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* 인증 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">보유 인증</h3>
+                <div className="fe-free-chips">
+                  {(editForm.certs || []).map(c => (
+                    <span key={c} className="fe-free-chip">
+                      {c}
+                      <button className="fe-free-chip-x" onClick={() => removeFreeChip('certs', c)}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="fe-chip-input-row">
+                  <input
+                    className="fe-input"
+                    value={certInput}
+                    onChange={e => setCertInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFreeChip('certs', certInput, setCertInput); } }}
+                    placeholder="인증명 입력 후 Enter (예: ISO 9001)"
+                  />
+                  <button className="fe-chip-add-btn" onClick={() => addFreeChip('certs', certInput, setCertInput)}>추가</button>
+                </div>
+              </div>
+
+              {/* 거래 형태 */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">거래 형태</h3>
+                <div className="fe-toggle-row">
+                  {[['oem', 'OEM'], ['odm', 'ODM'], ['export', '수출 가능']].map(([key, label]) => (
+                    <button
+                      key={key}
+                      className={'fe-toggle ' + (editForm[key] ? 'is-on' : '')}
+                      onClick={() => setEditForm(p => ({ ...p, [key]: !p[key] }))}
+                      type="button"
+                    >
+                      <span className="fe-toggle-dot"/>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 대표 이미지 (색상 코드) */}
+              <div className="fe-section">
+                <h3 className="fe-section-title">대표 이미지 색상</h3>
+                <div className="fe-image-row">
+                  <div className="fe-color-preview" style={{ background: editForm.image }}/>
+                  <input
+                    className="fe-input"
+                    value={editForm.image}
+                    onChange={e => setEditForm(p => ({ ...p, image: e.target.value }))}
+                    placeholder="#a8b4c8"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="fe-foot">
+              <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>취소</button>
+              <button className="btn btn-primary" onClick={saveEdit} disabled={editSaving}>
+                {editSaving ? '저장중…' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {tab === 'reviews' && (

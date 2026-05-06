@@ -6358,12 +6358,216 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   transition: all 0.15s;
 }
-
 .detail-report-btn:hover {
   background: #fef2f2;
   border-color: #fca5a5;
   color: #dc2626;
 }
+
+.detail-edit-btn {
+  background: #eff6ff !important;
+  border-color: #93c5fd !important;
+  color: var(--brand-700) !important;
+  font-weight: 600;
+}
+.detail-edit-btn:hover {
+  background: #dbeafe !important;
+  color: var(--brand-700) !important;
+}
+
+/* ── Factory Edit Modal (fe-*) ────────────────────────── */
+.fe-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.48);
+  display: flex; align-items: flex-start; justify-content: center;
+  z-index: 400;
+  padding: 20px 16px 40px;
+  overflow-y: auto;
+}
+.fe-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%; max-width: 640px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.22);
+  display: flex; flex-direction: column;
+  margin: auto;
+}
+.fe-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line-2);
+  position: sticky; top: 0; background: #fff; border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+.fe-head h2 { font-size: 16px; font-weight: 700; color: var(--ink-1); margin: 0; }
+.fe-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-3); padding: 4px; border-radius: 6px; display: flex;
+}
+.fe-close:hover { background: var(--surface-2); color: var(--ink-1); }
+.fe-body {
+  padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 24px;
+  overflow-y: auto;
+}
+.fe-foot {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--line-2);
+  position: sticky; bottom: 0; background: #fff; border-radius: 0 0 16px 16px;
+}
+
+.fe-section { display: flex; flex-direction: column; gap: 10px; }
+.fe-section-title {
+  font-size: 13px; font-weight: 700; color: var(--ink-2);
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* read-only */
+.fe-readonly-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.fe-ro-item { display: flex; flex-direction: column; gap: 2px; }
+.fe-ro-label { font-size: 11px; color: var(--ink-4); }
+.fe-ro-value { font-size: 13px; color: var(--ink-3); font-weight: 500; }
+
+/* inputs */
+.fe-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink-1);
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.fe-textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.fe-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink-1);
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.fe-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.fe-field { display: flex; flex-direction: column; gap: 5px; }
+.fe-field span { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+
+/* chip selectors */
+.fe-chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.fe-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.fe-chip:hover { border-color: var(--brand); color: var(--brand-700); }
+.fe-chip.is-on {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* free-form chips */
+.fe-free-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.fe-free-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px 4px 10px;
+  background: #eff6ff;
+  color: var(--brand-700);
+  border-radius: 999px;
+  font-size: 12px; font-weight: 500;
+}
+.fe-free-chip-x {
+  background: none; border: none; cursor: pointer;
+  color: var(--brand-700); font-size: 14px;
+  line-height: 1; padding: 0; margin-left: 2px;
+  opacity: 0.7; font-family: inherit;
+}
+.fe-free-chip-x:hover { opacity: 1; }
+.fe-chip-input-row { display: flex; gap: 6px; }
+.fe-chip-add-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  background: var(--surface-2); color: var(--ink-2);
+  cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.fe-chip-add-btn:hover { background: var(--surface-1); }
+
+/* conditions grid */
+.fe-cond-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+
+/* toggles */
+.fe-toggle-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.fe-toggle {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  background: var(--surface-2); color: var(--ink-3);
+  cursor: pointer; font-family: inherit;
+  transition: all 0.12s;
+}
+.fe-toggle.is-on {
+  background: #eff6ff; color: var(--brand-700);
+  border-color: #93c5fd;
+}
+.fe-toggle-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--ink-5);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.fe-toggle.is-on .fe-toggle-dot { background: var(--brand); }
+
+/* image preview */
+.fe-image-row { display: flex; align-items: center; gap: 10px; }
+.fe-color-preview {
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid var(--line-2); flex-shrink: 0;
+}
+
+/* toast */
+.fe-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%; transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-size: 13px; font-weight: 600;
+  z-index: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  white-space: nowrap;
+  animation: fadeSlideIn .2s ease;
+}
+.fe-toast-ok { background: #022c22; color: #d1fae5; }
+.fe-toast-err { background: #450a0a; color: #fee2e2; }
 
 @media (max-width: 768px) {
   .report-page-container {
