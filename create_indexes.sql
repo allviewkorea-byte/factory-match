@@ -18,22 +18,13 @@ CREATE INDEX IF NOT EXISTS idx_factories_hidden_rating
 CREATE INDEX IF NOT EXISTS idx_factories_region
   ON factories (region);
 
--- 4. industries GIN 인덱스 (jsonb 배열 포함 검색)
---    industries 컬럼이 jsonb 타입인 경우:
+-- 4. industries GIN 인덱스 (text[] 배열 포함 검색)
 CREATE INDEX IF NOT EXISTS idx_factories_industries
-  ON factories USING GIN (industries jsonb_path_ops);
+  ON factories USING GIN (industries);
 
---    industries 컬럼이 text 타입인 경우 위 인덱스 대신 아래 사용:
--- CREATE INDEX IF NOT EXISTS idx_factories_industries
---   ON factories USING GIN ((industries::jsonb) jsonb_path_ops);
-
--- 5. processes GIN 인덱스
+-- 5. processes GIN 인덱스 (text[] 배열 포함 검색)
 CREATE INDEX IF NOT EXISTS idx_factories_processes
-  ON factories USING GIN (processes jsonb_path_ops);
-
---    processes 컬럼이 text 타입인 경우 위 인덱스 대신 아래 사용:
--- CREATE INDEX IF NOT EXISTS idx_factories_processes
---   ON factories USING GIN ((processes::jsonb) jsonb_path_ops);
+  ON factories USING GIN (processes);
 
 -- 6. summary trigram 인덱스 (ILIKE 쿼리 가속)
 CREATE INDEX IF NOT EXISTS idx_factories_summary_trgm
