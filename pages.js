@@ -1325,12 +1325,6 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
           </aside>
 
           <div className="list-results">
-            {dbLoading && (
-              <div className="list-db-status">
-                <div className="list-db-spinner"/>
-                <span>Supabase에서 제조사 데이터 불러오는 중…</span>
-              </div>
-            )}
             {dbError && (
               <div className="list-db-error">Supabase 오류: {dbError}</div>
             )}
