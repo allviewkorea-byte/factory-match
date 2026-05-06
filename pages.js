@@ -2697,22 +2697,6 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
         </div>
       )}
 
-      <div className="sx-related">
-        <span className="sx-related-k">
-          <Icon name="sparkle" size={11} stroke={2.2}/>
-          연관 키워드:
-        </span>
-        {SX_RELATED_KEYWORDS.map(kw => (
-          <button
-            key={kw}
-            className={`sx-related-chip ${activeKw === kw ? 'is-active' : ''}`}
-            onClick={() => setActiveKw(activeKw === kw ? null : kw)}
-          >
-            {kw}
-          </button>
-        ))}
-      </div>
-
       <div className="sx-results">
         {(() => {
           const displayConsulting = consulting || { unitCost: 'AI 분석 중...', moqGuide: '검색 후 표시', leadTime: '-', budgetRange: '-', certRequired: [], caution: '검색어를 입력해주세요' };
@@ -2932,6 +2916,22 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
             </div>
           </>
         )}
+      </div>
+
+      <div className="sx-related">
+        <span className="sx-related-k">
+          <Icon name="sparkle" size={11} stroke={2.2}/>
+          연관 키워드:
+        </span>
+        {SX_RELATED_KEYWORDS.map(kw => (
+          <button
+            key={kw}
+            className={`sx-related-chip ${activeKw === kw ? 'is-active' : ''}`}
+            onClick={() => setActiveKw(activeKw === kw ? null : kw)}
+          >
+            {kw}
+          </button>
+        ))}
       </div>
 
       <div className="sx-compare">
