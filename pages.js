@@ -4920,6 +4920,310 @@ const AdminReportsTab = () => {
   );
 };
 
+// AdminSignupTab — 가입 신청 관리
+// ──────────────────────────────────────────────────────────
+const AdminSignupTab = () => {
+  const [activeStatus, setActiveStatus] = useState('all');
+  const [signups, setSignups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [memo, setMemo] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState('');
+  const [counts, setCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
+
+  const loadSignups = async (status) => {
+    setLoading(true);
+    setError('');
+    try {
+      let q = window._sb.from('user_profiles').select('*').order('created_at', { ascending: false });
+      if (status !== 'all') q = q.eq('status', status);
+      const { data, error: dbErr } = await q;
+      if (dbErr) throw dbErr;
+      setSignups(data || []);
+    } catch (err) {
+      console.error('AdminSignupTab load error:', err);
+      setError('목록을 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCounts = async () => {
+    try {
+      const statuses = ['pending', 'approved', 'rejected'];
+      const [allRes, ...results] = await Promise.all([
+        window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
+        ...statuses.map(s =>
+          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', s)
+        ),
+      ]);
+      const c = { all: allRes.count || 0 };
+      statuses.forEach((s, i) => { c[s] = results[i].count || 0; });
+      setCounts(c);
+    } catch (err) {
+      console.error('AdminSignupTab count error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!window._sb) { setLoading(false); setError('Supabase 연결이 필요합니다.'); return; }
+    loadSignups(activeStatus);
+    loadCounts();
+  }, [activeStatus]);
+
+  const openDetail = (row) => {
+    setSelected(row);
+    setMemo(row.admin_memo || '');
+    setEmailStatus('');
+  };
+
+  const handleApprove = async () => {
+    if (!selected || actionLoading) return;
+    setActionLoading(true);
+    try {
+      const now = new Date().toISOString();
+      const updates = { status: 'approved', approved_at: now, updated_at: now };
+      if (memo.trim()) updates.admin_memo = memo.trim();
+      const { error: dbErr } = await window._sb.from('user_profiles').update(updates).eq('id', selected.id);
+      if (dbErr) throw dbErr;
+
+      if (selected.role === 'manufacturer' && selected.business_number) {
+        const bizNum = selected.business_number.replace(/\D/g, '');
+        const { data: matched } = await window._sb.from('factories').select('id, business_number').limit(200);
+        if (matched) {
+          const hit = matched.find(f => f.business_number && f.business_number.replace(/\D/g, '') === bizNum);
+          if (hit) {
+            await window._sb.from('factories').update({ owner_user_id: selected.id }).eq('id', hit.id);
+          }
+        }
+      }
+
+      setEmailStatus('sending');
+      try {
+        const res = await fetch('/.netlify/functions/send-approval-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'approved', email: selected.email, name: selected.contact_name, company: selected.company_name }),
+        });
+        setEmailStatus(res.ok ? 'sent' : 'failed');
+      } catch { setEmailStatus('failed'); }
+
+      await loadSignups(activeStatus);
+      await loadCounts();
+      setSelected(s => s ? { ...s, status: 'approved', approved_at: now, admin_memo: memo.trim() || s.admin_memo } : null);
+    } catch (err) {
+      console.error('Approve error:', err);
+      alert('승인 처리에 실패했습니다: ' + (err.message || err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selected || actionLoading) return;
+    const reason = prompt('거절 사유를 입력하세요 (선택사항):');
+    if (reason === null) return;
+    setActionLoading(true);
+    try {
+      const now = new Date().toISOString();
+      const finalMemo = reason.trim() || memo.trim();
+      const updates = { status: 'rejected', updated_at: now };
+      if (finalMemo) updates.admin_memo = finalMemo;
+      const { error: dbErr } = await window._sb.from('user_profiles').update(updates).eq('id', selected.id);
+      if (dbErr) throw dbErr;
+
+      setEmailStatus('sending');
+      try {
+        const res = await fetch('/.netlify/functions/send-approval-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'rejected', email: selected.email, name: selected.contact_name, company: selected.company_name, reason: finalMemo }),
+        });
+        setEmailStatus(res.ok ? 'sent' : 'failed');
+      } catch { setEmailStatus('failed'); }
+
+      await loadSignups(activeStatus);
+      await loadCounts();
+      setSelected(s => s ? { ...s, status: 'rejected', admin_memo: finalMemo || s.admin_memo } : null);
+    } catch (err) {
+      console.error('Reject error:', err);
+      alert('거절 처리에 실패했습니다: ' + (err.message || err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!selected || actionLoading) return;
+    setEmailStatus('sending');
+    try {
+      const res = await fetch('/.netlify/functions/send-approval-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: selected.status === 'approved' ? 'approved' : 'rejected', email: selected.email, name: selected.contact_name, company: selected.company_name }),
+      });
+      setEmailStatus(res.ok ? 'sent' : 'failed');
+    } catch { setEmailStatus('failed'); }
+  };
+
+  const saveMemo = async () => {
+    if (!selected) return;
+    try {
+      await window._sb.from('user_profiles').update({ admin_memo: memo, updated_at: new Date().toISOString() }).eq('id', selected.id);
+      setSignups(prev => prev.map(r => r.id === selected.id ? { ...r, admin_memo: memo } : r));
+    } catch (err) { alert('메모 저장 실패: ' + (err.message || err)); }
+  };
+
+  const fmtDate = (iso) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+
+  const STATUS_LABELS = { all: '전체', pending: '대기중', approved: '승인됨', rejected: '거절됨' };
+  const ROLE_LABELS = { buyer: '바이어', manufacturer: '제조사' };
+
+  return (
+    <div className="asgn-wrap">
+      <div className="asgn-status-tabs">
+        {['all', 'pending', 'approved', 'rejected'].map(s => (
+          <button
+            key={s}
+            className={`asgn-status-tab ${activeStatus === s ? 'active' : ''}`}
+            onClick={() => setActiveStatus(s)}
+          >
+            {STATUS_LABELS[s]}
+            {counts[s] > 0 && <span className="asgn-count-badge">{counts[s]}</span>}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div className="asgn-state-msg">로딩 중…</div>}
+      {error && <div className="asgn-state-msg asgn-error">{error}</div>}
+      {!loading && !error && signups.length === 0 && (
+        <div className="asgn-state-msg">해당 상태의 신청이 없습니다.</div>
+      )}
+      {!loading && !error && signups.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table asgn-table">
+            <thead>
+              <tr>
+                <th>신청일</th><th>유형</th><th>회사명</th><th>사업자번호</th>
+                <th>담당자</th><th>연락처</th><th>상태</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {signups.map(r => (
+                <tr key={r.id}>
+                  <td className="mono">{fmtDate(r.created_at)}</td>
+                  <td><span className={`asgn-role-badge role-${r.role}`}>{ROLE_LABELS[r.role] || r.role || '-'}</span></td>
+                  <td><strong>{r.company_name || '-'}</strong></td>
+                  <td className="mono">{r.business_number || '-'}</td>
+                  <td>{r.contact_name || '-'}</td>
+                  <td className="mono">{r.phone || '-'}</td>
+                  <td><span className={`asgn-status-badge status-${r.status}`}>{STATUS_LABELS[r.status] || r.status}</span></td>
+                  <td><button className="admin-reports-detail-btn" onClick={() => openDetail(r)}>상세</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {selected && (
+        <div className="admin-reports-modal-overlay" onClick={() => setSelected(null)}>
+          <div className="admin-reports-modal asgn-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-reports-modal-header">
+              <h2>가입 신청 상세</h2>
+              <button className="admin-reports-modal-close" onClick={() => setSelected(null)}>×</button>
+            </div>
+            <div className="admin-reports-modal-body">
+              <div className="admin-reports-detail-section">
+                <h3>기본 정보</h3>
+                <div className="admin-reports-detail-row"><strong>신청일:</strong> {fmtDate(selected.created_at)}</div>
+                <div className="admin-reports-detail-row">
+                  <strong>유형:</strong>
+                  <span className={`asgn-role-badge role-${selected.role}`}>{ROLE_LABELS[selected.role] || selected.role}</span>
+                </div>
+                <div className="admin-reports-detail-row">
+                  <strong>상태:</strong>
+                  <span className={`asgn-status-badge status-${selected.status}`}>{STATUS_LABELS[selected.status]}</span>
+                </div>
+                {selected.approved_at && (
+                  <div className="admin-reports-detail-row"><strong>처리일:</strong> {fmtDate(selected.approved_at)}</div>
+                )}
+              </div>
+              <div className="admin-reports-detail-section">
+                <h3>회사 정보</h3>
+                <div className="admin-reports-detail-row"><strong>회사명:</strong> {selected.company_name || '-'}</div>
+                <div className="admin-reports-detail-row"><strong>사업자번호:</strong> <span className="mono">{selected.business_number || '-'}</span></div>
+                <div className="admin-reports-detail-row"><strong>담당자:</strong> {selected.contact_name || '-'}</div>
+                <div className="admin-reports-detail-row">
+                  <strong>이메일:</strong>
+                  <a href={`mailto:${selected.email}`}>{selected.email}</a>
+                </div>
+                <div className="admin-reports-detail-row"><strong>연락처:</strong> <span className="mono">{selected.phone || '-'}</span></div>
+              </div>
+              {selected.interests && selected.interests.length > 0 && (
+                <div className="admin-reports-detail-section">
+                  <h3>관심 분야</h3>
+                  <div className="asgn-interests">
+                    {(Array.isArray(selected.interests) ? selected.interests : []).map(t => (
+                      <span key={t} className="asgn-interest-chip">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selected.document_url && (
+                <div className="admin-reports-detail-section">
+                  <h3>제출 서류</h3>
+                  <a className="asgn-doc-link" href={selected.document_url} target="_blank" rel="noopener noreferrer">
+                    <Icon name="file" size={14} stroke={2}/> 서류 보기 (새 탭)
+                  </a>
+                </div>
+              )}
+              <div className="admin-reports-detail-section">
+                <h3>관리자 메모</h3>
+                <div className="asgn-memo-wrap">
+                  <textarea
+                    className="asgn-memo-textarea"
+                    rows={3}
+                    placeholder="내부 메모를 입력하세요…"
+                    value={memo}
+                    onChange={e => setMemo(e.target.value)}
+                  />
+                  <button className="asgn-memo-save-btn" onClick={saveMemo}>메모 저장</button>
+                </div>
+              </div>
+              {emailStatus && (
+                <div className={`asgn-email-status ${emailStatus}`}>
+                  {emailStatus === 'sending' && '이메일 발송 중…'}
+                  {emailStatus === 'sent' && '이메일 발송 완료'}
+                  {emailStatus === 'failed' && '이메일 발송 실패 (Netlify 함수 확인 필요)'}
+                </div>
+              )}
+            </div>
+            <div className="admin-reports-modal-actions">
+              {selected.status === 'pending' && (<>
+                <button className="admin-reports-action-btn primary" disabled={actionLoading} onClick={handleApprove}>
+                  {actionLoading ? '처리 중…' : '승인'}
+                </button>
+                <button className="admin-reports-action-btn" disabled={actionLoading} onClick={handleReject}>거절</button>
+              </>)}
+              {(selected.status === 'approved' || selected.status === 'rejected') && (
+                <button className="admin-reports-action-btn" disabled={actionLoading} onClick={handleResendEmail}>이메일 재발송</button>
+              )}
+              <button className="admin-reports-action-btn cancel" onClick={() => setSelected(null)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
@@ -5156,6 +5460,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'rfq',       label: 'RFQ 모니터링' },
           { id: 'logs',      label: '업로드 이력' },
           { id: 'reports',   label: '신고 관리' },
+          { id: 'signups',   label: '가입 신청' },
         ].map(t => (
           <button
             key={t.id}
@@ -5294,6 +5599,12 @@ const AdminPage = ({ onOpenFactory }) => {
       {tab === 'reports' && (
         <section className="admin-panel">
           <AdminReportsTab />
+        </section>
+      )}
+
+      {tab === 'signups' && (
+        <section className="admin-panel">
+          <AdminSignupTab />
         </section>
       )}
 
@@ -5520,7 +5831,7 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab });
 
 
 // ──────────────────────────────────────────────────────────
