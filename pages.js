@@ -544,6 +544,133 @@ const SXGlyph = ({ kind }) => {
 
 const HOME_TAGS = ['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공'];
 
+const ParticleCanvas = () => {
+  const canvasRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = ['#4F8EF7', '#A78BFA', '#60A5FA'];
+    const COUNT = 88;
+    const ATTRACT_R = 150;
+    const LINE_R = 90;
+    const LINE_R2 = LINE_R * LINE_R;
+
+    let W = 0, H = 0;
+    const mouse = { x: -9999, y: -9999 };
+    let animId = 0;
+    const pts = [];
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function init() {
+      pts.length = 0;
+      for (let i = 0; i < COUNT; i++) {
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        pts.push({
+          x, y, ox: x, oy: y,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          r: 2 + Math.random() * 2,
+          a: 0.4 + Math.random() * 0.3,
+          c: COLORS[Math.floor(Math.random() * COLORS.length)],
+        });
+      }
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, W, H);
+
+      for (const p of pts) {
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+
+        if (d < ATTRACT_R && d > 1) {
+          const f = (1 - d / ATTRACT_R) * 0.12;
+          p.vx += (dx / d) * f;
+          p.vy += (dy / d) * f;
+        } else {
+          p.vx += (p.ox - p.x) * 0.003;
+          p.vy += (p.oy - p.y) * 0.003;
+          p.vx += (Math.random() - 0.5) * 0.018;
+          p.vy += (Math.random() - 0.5) * 0.018;
+        }
+
+        p.vx *= 0.94;
+        p.vy *= 0.94;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.globalAlpha = p.a;
+        ctx.fillStyle = p.c;
+        ctx.fill();
+      }
+
+      ctx.lineWidth = 1;
+      for (let i = 0; i < pts.length - 1; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x;
+          const dy = pts[i].y - pts[j].y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < LINE_R2) {
+            ctx.globalAlpha = (1 - d2 / LINE_R2) * 0.13;
+            ctx.strokeStyle = '#7BA4F5';
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      animId = requestAnimationFrame(tick);
+    }
+
+    const onMove = e => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    resize();
+    init();
+    tick();
+
+    window.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseleave', onLeave);
+    window.addEventListener('resize', resize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseleave', onLeave);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    />
+  );
+};
+
 const HomePage = ({ onSearch }) => {
   const [q, setQ] = useStateP('');
 
@@ -561,6 +688,7 @@ const HomePage = ({ onSearch }) => {
 
   return (
     <div className="page page-home">
+      <ParticleCanvas />
       <div className="home-hero">
         <h1 className="home-headline">제조 조건만 입력하세요.</h1>
         <p className="home-subline">맞는 공장이 먼저 찾아옵니다.</p>
@@ -2527,6 +2655,7 @@ function LandingPage({ onNav }) {
 
   return (
     <div className="ldg2">
+      <ParticleCanvas />
       <header className="ldg2-nav">
         <AuthLogo/>
         <div className="ldg2-nav-right">
