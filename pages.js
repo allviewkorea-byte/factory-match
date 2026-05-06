@@ -893,18 +893,26 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
 // ══════════════════════════════════════════════════════════
 // LIST + MAP
 // ══════════════════════════════════════════════════════════
+
+// Persists filter state across unmount/remount (e.g. List → Detail → List)
+let _listStateCache = null;
+
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
   const [factories, setFactories] = useStateP(window.MFG_DATA.FACTORIES);
   const [dbLoading, setDbLoading] = useStateP(true);
   const [dbError, setDbError] = useStateP(null);
-  const [query, setQuery] = useStateP(initialQuery || '');
-  const [activeProcess, setActiveProcess] = useStateP('all');
-  const [activeRegion, setActiveRegion] = useStateP('all');
-  const [moqMax, setMoqMax] = useStateP(10000);
-  const [oemOnly, setOemOnly] = useStateP(false);
-  const [exportOnly, setExportOnly] = useStateP(false);
-  const [sort, setSort] = useStateP('match');
+
+  // Restore filter state from cache, unless this is a fresh search from home
+  const _prevInitialQuery = _listStateCache?.initialQuery;
+  const _freshSearch = !!(initialQuery && initialQuery !== _prevInitialQuery);
+  const [query, setQuery] = useStateP(_freshSearch ? initialQuery : (_listStateCache?.query ?? initialQuery ?? ''));
+  const [activeProcess, setActiveProcess] = useStateP(_freshSearch ? 'all' : (_listStateCache?.activeProcess ?? 'all'));
+  const [activeRegion, setActiveRegion] = useStateP(_freshSearch ? 'all' : (_listStateCache?.activeRegion ?? 'all'));
+  const [moqMax, setMoqMax] = useStateP(_freshSearch ? 10000 : (_listStateCache?.moqMax ?? 10000));
+  const [oemOnly, setOemOnly] = useStateP(_freshSearch ? false : (_listStateCache?.oemOnly ?? false));
+  const [exportOnly, setExportOnly] = useStateP(_freshSearch ? false : (_listStateCache?.exportOnly ?? false));
+  const [sort, setSort] = useStateP(_freshSearch ? 'match' : (_listStateCache?.sort ?? 'match'));
   const [hovered, setHovered] = useStateP(null);
   const [selected, setSelected] = useStateP(null);
   const [page, setPage] = useStateP(1);
@@ -922,11 +930,18 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         .range(from, from + PAGE - 1);
       if (!mounted) return;
       if (error) { setDbError(error.message); setDbLoading(false); return; }
-      if (!data || data.length === 0) { setDbLoading(false); return; }
+      if (!data || data.length === 0) {
+        setFactories(acc.length > 0 ? acc : window.MFG_DATA.FACTORIES);
+        setDbLoading(false);
+        return;
+      }
       const next = [...acc, ...data.map(window._dbRowToFactory)];
-      setFactories(next);
-      setDbLoading(false);
-      if (data.length === PAGE) loadPage(from + PAGE, next);
+      if (data.length < PAGE) {
+        setFactories(next);
+        setDbLoading(false);
+      } else {
+        loadPage(from + PAGE, next);
+      }
     };
 
     loadPage(0, []);
@@ -956,6 +971,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
 
   useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
+
+  useEffectP(() => {
+    _listStateCache = { initialQuery, query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort };
+  }, [query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -1340,7 +1359,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               <span style={{color:'#555'}}>사업자번호 </span>
               {f.businessNumber.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3')}
               {f.businessStatus === 'active' && (
-                <span style={{background:'#e6f4ea',color:'#2d7a3a',borderRadius:'4px',padding:'2px 8px',fontSize:'11px',marginLeft:'8px',fontWeight:'600'}}>영업중</span>
+                <span style={{background:'#e6f4ea',color:'#2d7a3a',borderRadius:'4px',padding:'2px 8px',fontSize:'11px',marginLeft:'8px',fontWeight:'600'}}>등록법인</span>
               )}
             </div>
           )}
