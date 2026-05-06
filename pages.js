@@ -607,6 +607,63 @@ const HomePage = ({ onSearch }) => {
 // Persists filter state across unmount/remount (e.g. List → Detail → List)
 let _listStateCache = null;
 
+const INDUSTRY_CATS = [
+  { id: 'metal',     label: '금속/기계',   industryId: 'machine',     subs: [
+    { id: 'cnc',      label: 'CNC 가공',   pids: ['cnc', 'cutting'] },
+    { id: 'press',    label: '프레스',     pids: ['press'] },
+    { id: 'welding',  label: '용접',       pids: ['welding'] },
+    { id: 'forging',  label: '단조',       pids: [] },
+    { id: 'casting',  label: '주조',       pids: [] },
+    { id: 'heat',     label: '열처리',     pids: [] },
+    { id: 'painting', label: '도장',       pids: ['painting'] },
+  ]},
+  { id: 'electronics', label: '전자/PCB', industryId: 'electronics', subs: [
+    { id: 'pcb',      label: 'PCB 조립',  pids: [] },
+    { id: 'smt',      label: 'SMT',       pids: [] },
+    { id: 'semicon',  label: '반도체',    pids: [] },
+    { id: 'eparts',   label: '전장부품',  pids: [] },
+  ]},
+  { id: 'plastic',   label: '플라스틱/고무', industryId: null, subs: [
+    { id: 'injection',label: '사출',      pids: ['injection'] },
+    { id: 'mold',     label: '금형',      pids: ['mold'] },
+    { id: 'extrusion',label: '압출',      pids: [] },
+    { id: 'silicone', label: '실리콘',    pids: [] },
+  ]},
+  { id: 'textile',   label: '섬유/봉제',  industryId: 'textile',    subs: [
+    { id: 'sewing',   label: '봉제',      pids: [] },
+    { id: 'dyeing',   label: '나염',      pids: [] },
+    { id: 'embroid',  label: '자수',      pids: [] },
+    { id: 'notions',  label: '단추/부자재', pids: [] },
+    { id: 'knit',     label: '니트',      pids: [] },
+  ]},
+  { id: 'food',      label: '식품',       industryId: 'food',       subs: [
+    { id: 'foodproc', label: '식품가공',  pids: [] },
+    { id: 'foodpack', label: '포장',      pids: [] },
+    { id: 'foodoem',  label: 'OEM식품',   pids: [] },
+    { id: 'haccp',    label: 'HACCP',     pids: [] },
+  ]},
+  { id: 'chemical',  label: '화학/소재',  industryId: 'chemical',   subs: [
+    { id: 'plating',  label: '도금',      pids: [] },
+    { id: 'coating',  label: '코팅',      pids: [] },
+    { id: 'chemproc', label: '화학처리',  pids: [] },
+  ]},
+  { id: 'wood',      label: '목재/가구',  industryId: null, subs: [
+    { id: 'woodwork', label: '목공',      pids: [] },
+    { id: 'furniture',label: '가구',      pids: [] },
+    { id: 'interior', label: '인테리어 자재', pids: [] },
+  ]},
+  { id: 'print',     label: '인쇄/포장',  industryId: null, subs: [
+    { id: 'printing', label: '인쇄',      pids: [] },
+    { id: 'packaging',label: '패키지',    pids: [] },
+    { id: 'label',    label: '라벨',      pids: [] },
+  ]},
+  { id: 'other',     label: '기타',       industryId: null, subs: [
+    { id: 'assemblyX',label: '조립',      pids: ['assembly'] },
+    { id: 'logistics',label: '물류포장',  pids: [] },
+    { id: 'etcX',     label: '기타',      pids: [] },
+  ]},
+];
+
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
   const [factories, setFactories] = useStateP(window.MFG_DATA.FACTORIES);
@@ -627,6 +684,27 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [selected, setSelected] = useStateP(null);
   const [page, setPage] = useStateP(1);
   const PAGE_SIZE = 20;
+
+  // Accordion state: which sections are open
+  const [openSections, setOpenSections] = useStateP(() => new Set(['region', 'industry']));
+  const toggleSection = (id) => setOpenSections(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+
+  // Industry filter & category expand state
+  const [activeIndustry, setActiveIndustry] = useStateP('all');
+  const [openCats, setOpenCats] = useStateP(() => new Set());
+  const toggleCat = (id) => setOpenCats(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const selectIndustry = (id) => {
+    setActiveIndustry(prev => prev === id ? 'all' : id);
+    // auto-expand the parent category when picking a subcategory
+    for (const c of INDUSTRY_CATS) {
+      if (c.id === id) { setOpenCats(prev => { const n = new Set(prev); n.add(id); return n; }); break; }
+      if (c.subs.some(s => s.id === id)) { setOpenCats(prev => { const n = new Set(prev); n.add(c.id); return n; }); break; }
+    }
+  };
 
   useEffectP(() => {
     if (!window._sb) { setDbLoading(false); return; }
@@ -659,6 +737,22 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   }, []);
 
   const filtered = useMemoP(() => {
+    // Resolve industry filter → set of process IDs (or industry ID) to match
+    let industryPids = null;   // array of process IDs (OR logic)
+    let industryId = null;     // industry string to match in f.industries
+    if (activeIndustry !== 'all') {
+      const cat = INDUSTRY_CATS.find(c => c.id === activeIndustry);
+      if (cat) {
+        industryPids = cat.subs.flatMap(s => s.pids);
+        industryId = cat.industryId;
+      } else {
+        for (const c of INDUSTRY_CATS) {
+          const sub = c.subs.find(s => s.id === activeIndustry);
+          if (sub) { industryPids = sub.pids; industryId = null; break; }
+        }
+      }
+    }
+
     let arr = factories.filter(f => {
       if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
@@ -666,6 +760,11 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       if (f.moq > moqMax) return false;
       if (oemOnly && !f.oem) return false;
       if (exportOnly && !f.export) return false;
+      if (industryPids !== null || industryId !== null) {
+        const pidMatch = industryPids && industryPids.length > 0 && industryPids.some(p => (f.processes || []).includes(p));
+        const indMatch = industryId && (f.industries || []).includes(industryId);
+        if (!pidMatch && !indMatch) return false;
+      }
       if (query) {
         const q = query.toLowerCase();
         const hay = ((f.name || '') + (f.en || '') + (f.city || '') + (f.summary || '') + (f.materials || []).join(' ')).toLowerCase();
@@ -678,9 +777,9 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     else if (sort === 'deals') arr.sort((a, b) => b.deals - a.deals);
     else arr.sort((a, b) => (b.rating * 50 + b.deals / 10) - (a.rating * 50 + a.deals / 10));
     return arr;
-  }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
+  }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
-  useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query]);
+  useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
   useEffectP(() => {
     _listStateCache = { initialQuery, query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort };
@@ -727,85 +826,179 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       <div className="list-shell">
         {/* Left: filters + list */}
         <div className="list-left">
-          <aside className="filters">
-            <div className="filters-section">
-              <div className="filters-h">
-                <h4>지역</h4>
-                <button className="filters-reset" onClick={() => setActiveRegion('all')}>초기화</button>
-              </div>
-              <div className="filters-radios">
-                {[
-                  { id: 'all', label: '전국' },
-                  { id: 'gyeonggi', label: '수도권 (서울·경기·인천)' },
-                  { id: 'busan', label: '부산' },
-                  { id: 'gyeongnam', label: '경남' },
-                  { id: 'ulsan', label: '울산' },
-                  { id: 'daegu', label: '대구·경북' },
-                  { id: 'chungcheong', label: '충청 (충남·충북·대전·세종)' },
-                  { id: 'jeonla', label: '광주·전남·전북' },
-                  { id: 'gangwon', label: '강원' },
-                  { id: 'jeju', label: '제주' },
-                ].map(r => (
-                  <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
-                    <input
-                      type="radio"
-                      checked={activeRegion === r.id}
-                      onChange={() => setActiveRegion(r.id)}
-                    />
-                    <span className="filter-radio-dot"/>
-                    <span>{r.label}</span>
-                    <span className="filter-radio-count">
-                      {r.id === 'all' ? factories.length : factories.filter(f => f.region === r.id).length}
-                    </span>
-                  </label>
-                ))}
+          <aside className="filters acc-filters">
+
+            {/* ── 지역 ── */}
+            <div className={`acc-section ${openSections.has('region') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('region')}>
+                <span className="acc-title">지역</span>
+                {activeRegion !== 'all' && <span className="acc-active-dot"/>}
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  <button className="acc-reset-link" onClick={() => setActiveRegion('all')} disabled={activeRegion === 'all'}>초기화</button>
+                  <div className="filters-radios">
+                    {[
+                      { id: 'all', label: '전국' },
+                      { id: 'gyeonggi', label: '수도권 (서울·경기·인천)' },
+                      { id: 'busan', label: '부산' },
+                      { id: 'gyeongnam', label: '경남' },
+                      { id: 'ulsan', label: '울산' },
+                      { id: 'daegu', label: '대구·경북' },
+                      { id: 'chungcheong', label: '충청 (충남·충북·대전·세종)' },
+                      { id: 'jeonla', label: '광주·전남·전북' },
+                      { id: 'gangwon', label: '강원' },
+                      { id: 'jeju', label: '제주' },
+                    ].map(r => (
+                      <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
+                        <input type="radio" checked={activeRegion === r.id} onChange={() => setActiveRegion(r.id)}/>
+                        <span className="filter-radio-dot"/>
+                        <span>{r.label}</span>
+                        <span className="filter-radio-count">
+                          {r.id === 'all' ? factories.length : factories.filter(f => f.region === r.id).length}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="filters-section">
-              <div className="filters-h">
-                <h4>최소 주문 수량 (MOQ)</h4>
-                <span className="filters-val">≤ {moqMax.toLocaleString()}</span>
-              </div>
-              <input
-                type="range"
-                className="filter-range"
-                min="50"
-                max="10000"
-                step="50"
-                value={moqMax}
-                onChange={(e) => setMoqMax(+e.target.value)}
-              />
-              <div className="filter-range-labels">
-                <span>50</span><span>10,000+</span>
+            {/* ── 업종/공장 종류 ── */}
+            <div className={`acc-section ${openSections.has('industry') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('industry')}>
+                <span className="acc-title">업종/공장 종류</span>
+                {activeIndustry !== 'all' && <span className="acc-active-dot"/>}
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  {activeIndustry !== 'all' && (
+                    <button className="acc-reset-link" onClick={() => setActiveIndustry('all')}>전체 보기</button>
+                  )}
+                  {INDUSTRY_CATS.map(cat => (
+                    <div key={cat.id} className="ind-cat">
+                      <div className="ind-cat-header">
+                        <button
+                          className={`ind-cat-label ${activeIndustry === cat.id ? 'is-active' : ''}`}
+                          onClick={() => selectIndustry(cat.id)}
+                        >
+                          {cat.label}
+                        </button>
+                        <button
+                          className={`ind-cat-expand ${openCats.has(cat.id) ? 'is-open' : ''}`}
+                          onClick={() => toggleCat(cat.id)}
+                          aria-label="소분류 펼치기"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                      </div>
+                      <div className={`ind-subs ${openCats.has(cat.id) ? 'is-open' : ''}`}>
+                        <div className="ind-subs-inner">
+                          {cat.subs.map(sub => (
+                            <button
+                              key={sub.id}
+                              className={`ind-sub ${activeIndustry === sub.id ? 'is-active' : ''}`}
+                              onClick={() => selectIndustry(sub.id)}
+                            >
+                              <span className="ind-sub-dot"/>
+                              {sub.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="filters-section">
-              <h4>인증</h4>
-              <div className="filters-checks">
-                {['ISO 9001', 'IATF 16949', 'KC', 'CE', 'HACCP'].map(c => (
-                  <label key={c} className="filter-check">
-                    <input type="checkbox"/>
+            {/* ── MOQ ── */}
+            <div className={`acc-section ${openSections.has('moq') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('moq')}>
+                <span className="acc-title">최소 주문 수량 (MOQ)</span>
+                {moqMax < 10000 && <span className="acc-val-badge">≤ {moqMax.toLocaleString()}</span>}
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  <div className="acc-moq-val">≤ {moqMax.toLocaleString()}</div>
+                  <input
+                    type="range"
+                    className="filter-range"
+                    min="50" max="10000" step="50"
+                    value={moqMax}
+                    onChange={(e) => setMoqMax(+e.target.value)}
+                  />
+                  <div className="filter-range-labels">
+                    <span>50</span><span>10,000+</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 인증 ── */}
+            <div className={`acc-section ${openSections.has('cert') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('cert')}>
+                <span className="acc-title">인증</span>
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  {['ISO 9001', 'IATF 16949', 'KC', 'CE', 'HACCP'].map(c => (
+                    <label key={c} className="filter-check">
+                      <input type="checkbox"/>
+                      <span className="filter-check-box"><Icon name="check" size={10} stroke={3}/></span>
+                      <span>{c}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── 리드타임 ── */}
+            <div className={`acc-section ${openSections.has('lead') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('lead')}>
+                <span className="acc-title">리드타임</span>
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  {['7일 이내', '14일 이내', '30일 이내', '협의'].map(c => (
+                    <label key={c} className="filter-check">
+                      <input type="checkbox"/>
+                      <span className="filter-check-box"><Icon name="check" size={10} stroke={3}/></span>
+                      <span>{c}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── 기타 필터 ── */}
+            <div className={`acc-section ${openSections.has('misc') ? 'acc-open' : ''}`}>
+              <button className="acc-header" onClick={() => toggleSection('misc')}>
+                <span className="acc-title">기타 필터</span>
+                {(oemOnly || exportOnly) && <span className="acc-active-dot"/>}
+                <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div className="acc-body">
+                <div className="acc-body-inner">
+                  <label className="filter-check">
+                    <input type="checkbox" checked={oemOnly} onChange={() => setOemOnly(!oemOnly)}/>
                     <span className="filter-check-box"><Icon name="check" size={10} stroke={3}/></span>
-                    <span>{c}</span>
+                    <span>OEM 가능</span>
                   </label>
-                ))}
+                  <label className="filter-check">
+                    <input type="checkbox" checked={exportOnly} onChange={() => setExportOnly(!exportOnly)}/>
+                    <span className="filter-check-box"><Icon name="check" size={10} stroke={3}/></span>
+                    <span>수출 가능</span>
+                  </label>
+                </div>
               </div>
             </div>
 
-            <div className="filters-section">
-              <h4>리드타임</h4>
-              <div className="filters-checks">
-                {['7일 이내', '14일 이내', '30일 이내', '협의'].map(c => (
-                  <label key={c} className="filter-check">
-                    <input type="checkbox"/>
-                    <span className="filter-check-box"><Icon name="check" size={10} stroke={3}/></span>
-                    <span>{c}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
           </aside>
 
           <div className="list-results">
