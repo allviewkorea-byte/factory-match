@@ -497,6 +497,31 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
   );
 };
 
+// Google Maps panel for the list page right column
+function ListMapPanel({ selectedFactory, mapsKey }) {
+  if (!MAPS_ENABLED || !mapsKey) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13 }}>
+        <Icon name="pin" size={20} stroke={1.6}/>
+        <span>지도 준비 중</span>
+      </div>
+    );
+  }
+  const src = selectedFactory
+    ? `https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(selectedFactory.name + ' ' + selectedFactory.city)}&language=ko`
+    : `https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=36.5,127.5&zoom=7&maptype=roadmap&language=ko`;
+  return (
+    <iframe
+      key={src}
+      src={src}
+      style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      title={selectedFactory ? `${selectedFactory.name} 위치` : '한국 제조사 지도'}
+    />
+  );
+}
+
 Object.assign(window, { Icon, Header, Badge, Chip, ManufacturerCard, KoreaMap });
 
 
@@ -1001,6 +1026,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [factories, setFactories] = useStateP(window.MFG_DATA.FACTORIES);
   const [dbLoading, setDbLoading] = useStateP(true);
   const [dbError, setDbError] = useStateP(null);
+  const [dbTotalCount, setDbTotalCount] = useStateP(null);
+  const mapsKey = useMapsKey();
 
   // Restore filter state from cache, unless this is a fresh search from home
   const _prevInitialQuery = _listStateCache?.initialQuery;
@@ -1043,6 +1070,11 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     let mounted = true;
     const PAGE = 1000;
     const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
+
+    // Fetch total DB count separately (not limited by MAX_LOAD)
+    window._sb.from('factories').select('*', { count: 'exact', head: true }).eq('hidden', false)
+      .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
+      .catch(() => {});
 
     const loadPage = async (from, acc) => {
       const { data, error } = await window._sb
@@ -1121,6 +1153,9 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const selectedFactory = selected ? filtered.find(f => f.id === selected) : null;
+
+  const hasFilter = !!(query || activeProcess !== 'all' || activeRegion !== 'all' || oemOnly || exportOnly || activeIndustry !== 'all');
+  const displayTotal = hasFilter ? filtered.length : (dbTotalCount ?? factories.length);
 
   return (
     <div className="page page-list">
@@ -1340,7 +1375,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             <div className="list-results-head">
               <div>
-                <strong>{dbLoading ? '…' : filtered.length.toLocaleString()}</strong>개 중{' '}
+                <strong>{dbLoading ? '…' : displayTotal.toLocaleString()}</strong>개 중{' '}
                 <span className="results-range">
                   {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
                 </span>
@@ -1424,12 +1459,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
         {/* Right: map */}
         <div className="list-map">
-          <KoreaMap
-            factories={Array.from(new Map(filtered.map(f => [f.id, f])).values())}
-            selectedId={selected}
-            hoveredId={hovered}
-            onPin={(id) => setSelected(id)}
-          />
+          <ListMapPanel selectedFactory={selectedFactory} mapsKey={mapsKey} />
           {selectedFactory && (
             <div className="map-side">
               <div className="map-side-body">
