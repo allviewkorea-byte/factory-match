@@ -542,352 +542,60 @@ const SXGlyph = ({ kind }) => {
   return map[kind] || map.metal;
 };
 
-const HomePage = ({ onSearch, onOpenFactory, density }) => {
+const HOME_TAGS = ['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공'];
+
+const HomePage = ({ onSearch }) => {
   const [q, setQ] = useStateP('');
-  const [isFocused, setIsFocused] = useStateP(false);
-  const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
-  const [loading, setLoading] = useStateP(false);
-  const [aiResults, setAiResults] = useStateP(null);
-  const [consulting, setConsulting] = useStateP(null);
-  const [errorMsg, setErrorMsg] = useStateP(null);
-  const [lastSearchedQuery, setLastSearchedQuery] = useStateP('');
-  const [matchedFactoryDetails, setMatchedFactoryDetails] = useStateP([]);
 
-  // Placeholder rotation — pauses on focus or while typing
   useEffectP(() => {
-    if (isFocused || q.length > 0) return;
-    const interval = setInterval(() => {
-      setPlaceholderIndex(prev => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [isFocused, q]);
-
-  // Home-reset: dispatched by logo click when already on home
-  useEffectP(() => {
-    const handleReset = () => {
-      setQ('');
-      setAiResults(null);
-      setConsulting(null);
-      setErrorMsg(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    const handleReset = () => { setQ(''); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     window.addEventListener('home-reset', handleReset);
     return () => window.removeEventListener('home-reset', handleReset);
   }, []);
 
-  // Browser back button: close search results when returning to pre-search state
-  useEffectP(() => {
-    const handlePopState = (e) => {
-      if (!e.state?.searched) {
-        setQ('');
-        setAiResults(null);
-        setConsulting(null);
-        setErrorMsg(null);
-        setLastSearchedQuery('');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const handleAiSearch = async () => {
-    if (!q.trim()) return;
-    // First search: push history entry so back button closes results
-    if (!aiResults && !consulting) {
-      history.pushState({ searched: true }, '', window.location.href);
-    }
-    setLoading(true);
-    setErrorMsg(null);
-    // Old results stay visible (dimmed via is-loading) until new data arrives
-    try {
-      const resp = await fetch('/.netlify/functions/ai-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        const code = data?.error;
-        setAiResults(null);
-        setConsulting(null);
-        setMatchedFactoryDetails([]);
-        if (code === 'CONFIG_MISSING') setErrorMsg('서비스 설정에 문제가 있습니다. 관리자에게 문의하세요.');
-        else if (code === 'AUTH_FAILED') setErrorMsg('AI 서비스 인증에 실패했습니다. 관리자에게 문의하세요.');
-        else setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
-        console.error('AI match error:', code, data?.message);
-        return;
-      }
-      // Key change + data update in same batch → remount triggers fresh animation
-      setLastSearchedQuery(q);
-      setAiResults(data);
-      setConsulting(data.consulting || null);
-
-      // Hydrate matched factory details (top 3)
-      if (data.matchedFactories && data.matchedFactories.length > 0) {
-        const ids = data.matchedFactories.slice(0, 3).map(m => m.id);
-        let details = [];
-        if (window._sb) {
-          try {
-            const { data: rows } = await window._sb.from('factories').select('*').in('id', ids);
-            if (rows && rows.length) {
-              const byId = {};
-              rows.map(window._dbRowToFactory).forEach(f => { byId[f.id] = f; });
-              details = data.matchedFactories.slice(0, 3)
-                .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
-                .filter(Boolean);
-            }
-          } catch (_) {}
-        }
-        if (!details.length) {
-          const byId = {};
-          ((window.MFG_DATA || {}).FACTORIES || []).forEach(f => { byId[f.id] = f; });
-          details = data.matchedFactories.slice(0, 3)
-            .map(m => byId[m.id] ? { ...byId[m.id], _matchPct: m.matchPct } : null)
-            .filter(Boolean);
-        }
-        setMatchedFactoryDetails(details);
-      } else {
-        setMatchedFactoryDetails([]);
-      }
-    } catch (e) {
-      console.error('AI match failed:', e);
-      setAiResults(null);
-      setConsulting(null);
-      setMatchedFactoryDetails([]);
-      setErrorMsg('일시적인 오류입니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setLoading(false);
-    }
+  const submit = (val) => {
+    const query = (val ?? q).trim();
+    if (!query) return;
+    onSearch?.(query);
   };
-
-  const hasResults = !!(consulting || aiResults?.topCategories);
 
   return (
     <div className="page page-home">
-      <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
-        {!hasResults && <h1 className="home-headline">{HOME_HEADLINE}</h1>}
-        {!hasResults && <p className="home-subline">{HOME_SUBLINE}</p>}
+      <div className="home-hero">
+        <h1 className="home-headline">제조 조건만 입력하세요.</h1>
+        <p className="home-subline">맞는 공장이 먼저 찾아옵니다.</p>
+
         <div className="home-search-wrapper">
           <input
             type="text"
             className="home-search-input"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAiSearch(); }}
-            placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
+            onChange={e => setQ(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submit(); }}
+            placeholder="가공방식, 소재, 제품명으로 검색"
           />
           {q && (
             <button className="home-search-clear" onClick={() => setQ('')} aria-label="지우기">
               <Icon name="close" size={12} stroke={2.4}/>
             </button>
           )}
-          <button className="home-search-btn" onClick={handleAiSearch} disabled={loading}>
-            {loading
-              ? <span className="home-search-spinner"/>
-              : <Icon name="search" size={20} stroke={2.2}/>
-            }
+          <button className="home-search-btn" onClick={() => submit()}>
+            <Icon name="search" size={20} stroke={2.2}/>
           </button>
         </div>
-        {errorMsg && (
-          <div className="home-search-error">
-            <Icon name="info" size={13} stroke={2}/>
-            {errorMsg}
-          </div>
-        )}
-        {loading && (
-          <div className="home-search-loading">
-            <span className="home-loading-spinner"/>
-            <span>AI가 분석 중…</span>
-          </div>
-        )}
-      </div>
 
-      {hasResults && (
-        <div className={`home-results${loading ? ' is-loading' : ''}`} key={lastSearchedQuery}>
-
-          {/* 1. 공급망 분석 */}
-          {aiResults?.supplyChain?.length > 0 && (
-            <div className="sx-supply-chain" key={`supply-${lastSearchedQuery}`}>
-              <div className="sx-supply-header">
-                <Icon name="layers" size={13} stroke={2}/>
-                공급망 분석
-                <span className="sx-supply-intent">· {lastSearchedQuery} 제조 공정 흐름</span>
-              </div>
-              <div className="sx-supply-steps">
-                {aiResults.supplyChain.map((s, i) => (
-                  <React.Fragment key={i}>
-                    <div className="sx-supply-step">
-                      <div className="sx-supply-step-num">{s.step || i + 1}</div>
-                      <div className="sx-supply-step-label">{s.label}</div>
-                      {s.detail && <div className="sx-supply-step-detail">{s.detail}</div>}
-                    </div>
-                    {i < aiResults.supplyChain.length - 1 && (
-                      <div className="sx-supply-arrow">›</div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 2. 매칭 제조사 */}
-          {!loading && matchedFactoryDetails.length > 0 && (
-            <div className="sx-match-section">
-              <div className="sx-match-header">
-                <h2>
-                  <Icon name="factory" size={15} stroke={2}/>
-                  매칭 제조사
-                </h2>
-                <span className="sx-match-count">{matchedFactoryDetails.length}개사 매칭</span>
-              </div>
-              <div className="sx-match-grid">
-                {matchedFactoryDetails.map(f => (
-                  <div key={f.id} className="sx-match-card-wrap">
-                    <div
-                      className="sx-match-score-badge"
-                      style={{ background: f._matchPct >= 70 ? '#16a34a' : f._matchPct >= 50 ? '#d97706' : '#64748b' }}
-                    >
-                      <span className="sx-match-score-pct">{f._matchPct}%</span>
-                      <span className="sx-match-score-label">매칭</span>
-                    </div>
-                    <ManufacturerCard
-                      f={f}
-                      simplified
-                      density={density}
-                      onOpen={(id) => {
-                        if (!window._factoryCache) window._factoryCache = {};
-                        window._factoryCache[id] = f;
-                        onOpenFactory?.(id);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 3. AI 사전 컨설팅 */}
-          {consulting && (
-            <div className="sx-consulting">
-              <div className="sx-consulting-head">
-                <Icon name="sparkle" size={14} stroke={2.4}/>
-                AI 사전 컨설팅
-              </div>
-              <div className="sx-consulting-grid">
-                {consulting.unitCost && (
-                  <div className="sx-consulting-item">
-                    <span className="sx-consulting-label">예상 단가</span>
-                    <span className="sx-consulting-val">{consulting.unitCost}</span>
-                  </div>
-                )}
-                {consulting.moqGuide && (
-                  <div className="sx-consulting-item">
-                    <span className="sx-consulting-label">최소 발주량</span>
-                    <span className="sx-consulting-val">{consulting.moqGuide}</span>
-                  </div>
-                )}
-                {consulting.leadTime && (
-                  <div className="sx-consulting-item">
-                    <span className="sx-consulting-label">리드타임</span>
-                    <span className="sx-consulting-val">{consulting.leadTime}</span>
-                  </div>
-                )}
-                {consulting.budgetRange && (
-                  <div className="sx-consulting-item">
-                    <span className="sx-consulting-label">예산 범위</span>
-                    <span className="sx-consulting-val">{consulting.budgetRange}</span>
-                  </div>
-                )}
-                {(consulting.certRequired || []).length > 0 && (
-                  <div className="sx-consulting-item">
-                    <span className="sx-consulting-label">필요 인증</span>
-                    <span className="sx-consulting-val">{consulting.certRequired.join(' · ')}</span>
-                  </div>
-                )}
-                {consulting.caution && (
-                  <div className="sx-consulting-item sx-consulting-caution">
-                    <span className="sx-consulting-label">주의사항</span>
-                    <span className="sx-consulting-val">{consulting.caution}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 4. 추천 카테고리 */}
-          {aiResults?.topCategories && (
-            <>
-              <div className="sx-mode-banner is-on">
-                <div className="sx-mode-banner-icon">
-                  <Icon name="sparkle" size={16} stroke={2.4}/>
-                </div>
-                <div>
-                  <strong>"{q}"</strong>에 가장 적합한 <strong>3개 카테고리</strong>를 추출했습니다 · 매칭률·거래량·리드타임 종합 분석
-                </div>
-                <div className="sx-mode-banner-meta">
-                  <span className="sx-mode-pulse"/>
-                  AI 분석 완료
-                </div>
-              </div>
-
-              <div className="sx-rec-h">
-                <h2>
-                  <Icon name="sparkle" size={16} stroke={2.2}/>
-                  추천 카테고리
-                </h2>
-              </div>
-
-              <div className="sx-rec-grid">
-                {aiResults.topCategories.map((r, i) => (
-                  <button key={r.id || i} className="sx-rec" onClick={() => onSearch?.(r.title)}>
-                    <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
-                    <div className="sx-rec-glyph"><SXGlyph kind={r.glyph}/></div>
-                    <div>
-                      <div className="sx-rec-title-row">
-                        <h3>{r.title}</h3>
-                        <span className="sx-rec-match">
-                          <Icon name="sparkle" size={9} stroke={2.6}/>
-                          매칭 {r.match}%
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-4)', fontFamily: 'var(--font-num)', marginTop: 2, fontWeight: 500 }}>{r.en}</div>
-                    </div>
-                    <p className="sx-rec-desc">{r.desc}</p>
-                    <div className="sx-rec-tags">
-                      {(r.tags || []).map(t => <span key={t} className="sx-rec-tag">{t}</span>)}
-                    </div>
-                    <div className="sx-rec-stats">
-                      <div className="sx-rec-count">
-                        <span className="sx-rec-count-n">{r.count}</span>
-                        <span className="sx-rec-count-l">개사</span>
-                      </div>
-                      <div className="sx-rec-stats-meta">
-                        {r.avgLead && <span>평균 리드 <strong>{r.avgLead}</strong></span>}
-                        {r.avgPrice && <span>단가 <strong>{r.avgPrice}</strong></span>}
-                      </div>
-                    </div>
-                    <div className="sx-rec-cta">
-                      <span>제조사 더 보기</span>
-                      <Icon name="arrow_right" size={15} stroke={2.4} className="sx-rec-cta-arrow"/>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="sx-tip">
-                <Icon name="sparkle" size={14} stroke={2.2}/>
-                <div>
-                  <strong>왜 3개만?</strong> 선택지가 많을수록 의사결정 시간이 길어집니다.
-                  자동추천은 매칭률 88% 이상의 카테고리만 추출해 평균 <strong>탐색 시간을 73% 단축</strong>합니다.
-                </div>
-              </div>
-            </>
-          )}
+        <div className="home-tag-row">
+          {HOME_TAGS.map(tag => (
+            <button key={tag} className="home-tag-pill" onClick={() => { setQ(tag); submit(tag); }}>
+              {tag}
+            </button>
+          ))}
         </div>
-      )}
+
+        <div className="home-stats-bar">
+          전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+        </div>
+      </div>
     </div>
   );
 };
@@ -2615,123 +2323,71 @@ const AuthLogo = ({ size = 36 }) => (
 // 1) LANDING (로그아웃 상태)
 // ═══════════════════════════════════════════════════════════
 function LandingPage({ onNav }) {
+  const [q, setQ] = useAuthState('');
+  const [showModal, setShowModal] = useAuthState(false);
+
+  const handleSearch = (val) => {
+    const query = (val ?? q).trim();
+    if (!query) return;
+    setShowModal(true);
+  };
+
   return (
-    <div className="landing">
-      <header className="landing-hdr">
+    <div className="ldg2">
+      <header className="ldg2-nav">
         <AuthLogo/>
-        <div className="landing-hdr-right">
-          <button className="landing-nav-link" onClick={() => onNav('login')}>로그인</button>
-          <button className="btn-primary landing-cta" onClick={() => onNav('signup')}>
-            무료로 시작하기
-            <Icon name="arrow_right" size={14} stroke={2.4}/>
-          </button>
+        <div className="ldg2-nav-right">
+          <button className="ldg2-nav-login" onClick={() => onNav('login')}>로그인</button>
+          <button className="ldg2-nav-signup" onClick={() => onNav('signup')}>무료로 시작하기</button>
         </div>
       </header>
 
-      <main className="landing-main">
-        <section className="landing-hero">
-          <div className="landing-hero-text">
-            <div className="landing-eyebrow">
-              <span className="landing-eyebrow-dot"/>
-              전국 <strong>12,138개</strong> 제조사 DB · 지금 무료로 시작하세요
-            </div>
-            <h1 className="landing-title">
-              제조 조건만 입력하세요.<br/>
-              <span className="landing-title-grad">맞는 공장이 먼저 찾아옵니다.</span>
-            </h1>
-            <p className="landing-sub">
-              가공방식·소재·제품을 입력하면 맞는 공장을 먼저 찾아드립니다.
-            </p>
-            <div className="landing-cta-row">
-              <button className="btn-primary landing-cta-big" onClick={() => onNav('signup')}>
-                <Icon name="sparkle" size={16} stroke={2.2}/>
-                무료로 시작하기
-              </button>
-              <button className="btn-ghost landing-cta-big" onClick={() => onNav('login')}>
-                로그인
-              </button>
-            </div>
-            <div className="landing-trust">
-              <div className="landing-trust-stars">
-                {[0,1,2,3,4].map(i => (
-                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>
-                ))}
-              </div>
-              <span><strong>4.8</strong> · 바이어 <strong>980+</strong>의 평가</span>
-            </div>
+      <main className="ldg2-main">
+        <section className="ldg2-hero">
+          <h1 className="ldg2-headline">제조 조건만 입력하세요.</h1>
+          <p className="ldg2-sub">맞는 공장이 먼저 찾아옵니다.</p>
+
+          <div className="ldg2-search-wrap">
+            <input
+              type="text"
+              className="ldg2-search-input"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+              placeholder="가공방식, 소재, 제품명으로 검색"
+              autoComplete="off"
+            />
+            <button className="ldg2-search-btn" onClick={handleSearch}>
+              <Icon name="search" size={20} stroke={2.2}/>
+            </button>
           </div>
 
-          <div className="landing-hero-visual">
-            <div className="lhv-card lhv-c1">
-              <div className="lhv-card-glyph"><Icon name="search" size={18} stroke={2}/></div>
-              <div>
-                <div className="lhv-card-title">"음료자판기"</div>
-                <div className="lhv-card-meta">3개 카테고리 매칭됨</div>
-              </div>
-              <div className="lhv-card-pulse"/>
-            </div>
-            <div className="lhv-card lhv-c2">
-              <div className="lhv-rank">RANK 01</div>
-              <div className="lhv-card-glyph lhv-card-glyph-lg">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="28" height="28"><path d="M4 19h16"/><path d="M5 19V9l3-2 3 2v10"/><path d="M13 19v-7l3-2 3 2v7"/></svg>
-              </div>
-              <div className="lhv-c2-title">금속 가공</div>
-              <div className="lhv-c2-meta">매칭률 96% · 184개사</div>
-              <div className="lhv-c2-bar"><div className="lhv-c2-bar-fill" style={{ width: '96%' }}/></div>
-            </div>
-            <div className="lhv-card lhv-c3">
-              <div className="lhv-c3-row">
-                <div className="lhv-c3-avatar">대</div>
-                <div>
-                  <div className="lhv-c3-title">대성정밀(주)</div>
-                  <div className="lhv-c3-meta">안산 · 견적 응답 ✓</div>
-                </div>
-                <div className="lhv-c3-badge">2시간 전</div>
-              </div>
-            </div>
-            <div className="lhv-grid"/>
-          </div>
-        </section>
-
-        <section className="landing-features">
-          <div className="landing-section-title">
-            <h2>3단계로 끝나는 제조 매칭</h2>
-            <p>가입부터 첫 견적까지 평균 8분</p>
-          </div>
-          <div className="landing-feat-grid">
-            {[
-              { num: '01', icon: 'search', title: '제조 조건 검색', desc: '가공방식·소재·키워드만 입력하면 AI가 적합 카테고리를 추출합니다.' },
-              { num: '02', icon: 'layers', title: '제조사 비교', desc: '인증·실적·리드타임을 한눈에 비교하고 관심 공장을 모아두세요.' },
-              { num: '03', icon: 'check', title: '동시 견적 요청', desc: '최대 5곳에 한 번에 견적 요청 — 평균 4시간 내 응답.' },
-            ].map(f => (
-              <div key={f.num} className="landing-feat">
-                <div className="landing-feat-num">{f.num}</div>
-                <div className="landing-feat-icon"><Icon name={f.icon} size={22} stroke={1.8}/></div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
+          <div className="ldg2-tag-row">
+            {HOME_TAGS.map(tag => (
+              <button key={tag} className="ldg2-tag" onClick={() => handleSearch(tag)}>
+                {tag}
+              </button>
             ))}
           </div>
         </section>
 
-        <section className="landing-final-cta">
-          <h2>가입하면 첫 매칭이 더 정확해집니다</h2>
-          <p>관심 분야·발주 규모를 등록하면 맞춤 추천이 활성화됩니다.</p>
-          <button className="btn-primary landing-cta-big" onClick={() => onNav('signup')}>
-            무료로 시작하기 · 1분 소요
-            <Icon name="arrow_right" size={15} stroke={2.4}/>
-          </button>
-        </section>
+        <div className="ldg2-stats">
+          전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+        </div>
       </main>
 
-      <footer className="landing-foot">
-        <div>© 2025 FactoryMatch · 사업자 123-45-67890</div>
-        <div className="landing-foot-links">
-          <a href="#">이용약관</a>
-          <a href="#">개인정보처리방침</a>
-          <a href="#">고객센터</a>
+      {showModal && (
+        <div className="ldg2-modal-overlay">
+          <div className="ldg2-modal">
+            <h2 className="ldg2-modal-title">검색하려면 가입이 필요합니다</h2>
+            <p className="ldg2-modal-sub">무료로 가입하면 전국 12,138개 공장 DB를 검색할 수 있습니다.</p>
+            <div className="ldg2-modal-btns">
+              <button className="ldg2-modal-signup-btn" onClick={() => onNav('signup')}>무료로 시작하기</button>
+              <button className="ldg2-modal-login-btn" onClick={() => onNav('login')}>로그인</button>
+            </div>
+          </div>
         </div>
-      </footer>
+      )}
     </div>
   );
 }
@@ -4064,21 +3720,24 @@ function SignupPage({ onNav }) {
           {/* ── 5단계: 완료 ── */}
           {step === 5 && (
             <div className="sgn-complete">
-              <div className="sgn-complete-ico">
-                <Icon name="shield" size={40} stroke={1.4}/>
+              <div className="sgn-complete-ico sgn-complete-ico-check">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="8 12 11 15 16 9"/>
+                </svg>
               </div>
               <h2 className="sgn-complete-ttl">가입 신청이 완료되었습니다</h2>
               <p className="sgn-complete-sub">
-                검토 후 승인 이메일을 보내드립니다<br/>
+                담당자 검토 후 승인 이메일을 보내드립니다<br/>
                 <strong>영업일 1–2일</strong> 소요됩니다
               </p>
               <div className="sgn-complete-card">
                 <div className="sgn-cr"><span className="sgn-ck">이메일</span><span className="sgn-cv">{form.email}</span></div>
                 <div className="sgn-cr"><span className="sgn-ck">유형</span><span className="sgn-cv">{userType === 'buyer' ? '바이어' : '제조사'}</span></div>
-                <div className="sgn-cr"><span className="sgn-ck">상태</span><span className="sgn-cv sgn-pending">검토 중</span></div>
+                <div className="sgn-cr"><span className="sgn-ck">DB 규모</span><span className="sgn-cv">전국 12,138개 공장</span></div>
               </div>
-              <button className="btn-primary sgn-btn" onClick={() => onNav('login')}>
-                로그인 페이지로 이동
+              <button className="btn-primary sgn-btn" onClick={() => onNav('landing')}>
+                홈으로 이동
               </button>
             </div>
           )}
