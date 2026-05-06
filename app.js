@@ -9,6 +9,39 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
+// Parse route and factoryId from current URL once at startup
+function _parseInitialUrl() {
+  const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
+  if (APP_ROUTES.includes(p) || AUTH_ROUTES.includes(p)) return { route: p, factoryId: null };
+  const h = (window.location.hash || '').replace('#', '');
+  const m = h.match(/^\/factory\/(.+)$/);
+  if (m) return { route: 'detail', factoryId: m[1] };
+  const cleanH = h.replace(/^\//, '');
+  if (AUTH_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
+  if (APP_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
+  try {
+    return { route: localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing', factoryId: null };
+  } catch { return { route: 'landing', factoryId: null }; }
+}
+
+// Parse route/factoryId from any hash string
+function _parseHash(h) {
+  const m = h.match(/^\/factory\/(.+)$/);
+  if (m) return { route: 'detail', factoryId: m[1] };
+  const clean = h.replace(/^\//, '');
+  if (APP_ROUTES.includes(clean) || AUTH_ROUTES.includes(clean)) return { route: clean, factoryId: null };
+  return null;
+}
+
+// Build hash string from route + factoryId
+function _buildHash(route, factoryId) {
+  if (route === 'detail' && factoryId) return `/factory/${factoryId}`;
+  if (route === 'home') return '';
+  return route;
+}
+
+const _INITIAL = _parseInitialUrl();
+
 function App() {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
@@ -21,41 +54,34 @@ function App() {
     catch { return null; }
   });
 
-  const [route, setRoute] = useState(() => {
-    const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
-    if (APP_ROUTES.includes(p)) return p;
-    if (AUTH_ROUTES.includes(p)) return p;
-    const h = (window.location.hash || '').replace('#', '');
-    if (AUTH_ROUTES.includes(h)) return h;
-    if (APP_ROUTES.includes(h)) return h;
-    try {
-      return localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing';
-    } catch { return 'landing'; }
-  });
+  const [route, setRoute] = useState(_INITIAL.route);
+  const [factoryId, setFactoryId] = useState(_INITIAL.factoryId);
+
   const initialMount = useRef(true);
-  const [factoryId, setFactoryId] = useState(null);
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
-
 
   useEffect(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
   }, [tweaks.density]);
 
+  // Keep URL in sync with route + factoryId
   useEffect(() => {
-    const hash = route === 'home' ? '' : route;
-    const url = hash ? `#${hash}` : (window.location.pathname + window.location.search);
+    const hashPart = _buildHash(route, factoryId);
+    const url = hashPart ? `#${hashPart}` : (window.location.pathname + window.location.search);
     const currentHash = (window.location.hash || '').replace('#', '');
-    const currentRoute = currentHash || 'home';
+    const parsed = _parseHash(currentHash);
+    const currentRoute = parsed ? parsed.route : (currentHash.replace(/^\//, '') || 'home');
+    const currentFactoryId = parsed?.factoryId ?? null;
+    const urlMatchesState = currentRoute === route && (route !== 'detail' || currentFactoryId === factoryId);
+
     if (initialMount.current) {
-      // Initial load: replace so we don't add a history entry
-      history.replaceState({ route }, '', url);
+      history.replaceState({ route, factoryId }, '', url);
       initialMount.current = false;
-    } else if (currentRoute !== route) {
-      // Only push when URL actually needs to change (prevents double-push on popstate)
-      history.pushState({ route }, '', url);
+    } else if (!urlMatchesState) {
+      history.pushState({ route, factoryId }, '', url);
     }
-  }, [route]);
+  }, [route, factoryId]);
 
   useEffect(() => {
     const h = (e) => nav(e.detail);
@@ -64,11 +90,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // popstate fires on browser back/forward — only setRoute, never pushState
     const onPopState = (e) => {
-      const r = e.state?.route || (window.location.hash || '').replace('#', '') || 'home';
-      if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
-      else setRoute('home');
+      const h = (window.location.hash || '').replace('#', '');
+      const parsed = _parseHash(h);
+      if (parsed) {
+        if (parsed.factoryId) setFactoryId(parsed.factoryId);
+        setRoute(parsed.route);
+      } else {
+        const r = e.state?.route || h.replace(/^\//, '') || 'home';
+        if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
+        else setRoute('home');
+        if (e.state?.factoryId) setFactoryId(e.state.factoryId);
+      }
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -253,4 +286,3 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById('app'));
 root.render(<App/>);
-

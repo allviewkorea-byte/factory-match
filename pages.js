@@ -1301,9 +1301,39 @@ function FactoryMap({ city, name }) {
 
 const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
-  const f = (window._factoryCache?.[factoryId])
-    || FACTORIES.find(x => x.id === factoryId)
-    || FACTORIES[0];
+
+  const _fromCacheOrFixture = (id) =>
+    (window._factoryCache?.[id]) || FACTORIES.find(x => x.id === id) || null;
+
+  const [resolvedFactory, setResolvedFactory] = useStateP(() => _fromCacheOrFixture(factoryId));
+  const [detailLoading, setDetailLoading] = useStateP(() => !_fromCacheOrFixture(factoryId));
+
+  useEffectP(() => {
+    const cached = _fromCacheOrFixture(factoryId);
+    if (cached) {
+      setResolvedFactory(cached);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    window._sb.from('factories').select('*').eq('id', factoryId).single()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (data && !error) {
+          const factory = window._dbRowToFactory(data);
+          if (!window._factoryCache) window._factoryCache = {};
+          window._factoryCache[factoryId] = factory;
+          setResolvedFactory(factory);
+        } else {
+          setResolvedFactory(FACTORIES[0]);
+        }
+        setDetailLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [factoryId]);
+
+  const f = resolvedFactory || FACTORIES[0];
   const [tab, setTab] = useStateP('overview');
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
@@ -1317,6 +1347,14 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     if (tab === 'certs' && f.certs.length === 0 && !isSample) setTab('overview');
     if (tab === 'capability' && procLabels.length === 0 && (f.materials || []).length === 0 && prodLabels.length === 0) setTab('overview');
   }, [factoryId]);
+
+  if (detailLoading) {
+    return (
+      <div className="page page-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="list-db-spinner" style={{ fontSize: 14, color: 'var(--ink-3)' }}>공장 정보를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page page-detail">
