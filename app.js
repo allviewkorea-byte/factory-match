@@ -1,13 +1,46 @@
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
+
+// Parse route and factoryId from current URL once at startup
+function _parseInitialUrl() {
+  const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
+  if (APP_ROUTES.includes(p) || AUTH_ROUTES.includes(p)) return { route: p, factoryId: null };
+  const h = (window.location.hash || '').replace('#', '');
+  const m = h.match(/^\/factory\/(.+)$/);
+  if (m) return { route: 'detail', factoryId: m[1] };
+  const cleanH = h.replace(/^\//, '');
+  if (AUTH_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
+  if (APP_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
+  try {
+    return { route: localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing', factoryId: null };
+  } catch { return { route: 'landing', factoryId: null }; }
+}
+
+// Parse route/factoryId from any hash string
+function _parseHash(h) {
+  const m = h.match(/^\/factory\/(.+)$/);
+  if (m) return { route: 'detail', factoryId: m[1] };
+  const clean = h.replace(/^\//, '');
+  if (APP_ROUTES.includes(clean) || AUTH_ROUTES.includes(clean)) return { route: clean, factoryId: null };
+  return null;
+}
+
+// Build hash string from route + factoryId
+function _buildHash(route, factoryId) {
+  if (route === 'detail' && factoryId) return `/factory/${factoryId}`;
+  if (route === 'home') return '';
+  return route;
+}
+
+const _INITIAL = _parseInitialUrl();
 
 function App() {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
@@ -21,32 +54,56 @@ function App() {
     catch { return null; }
   });
 
-  const [route, setRoute] = useState(() => {
-    const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
-    if (APP_ROUTES.includes(p)) return p;
-    if (AUTH_ROUTES.includes(p)) return p;
-    const h = (window.location.hash || '').replace('#', '');
-    if (AUTH_ROUTES.includes(h)) return h;
-    if (APP_ROUTES.includes(h)) return h;
-    try {
-      return localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing';
-    } catch { return 'landing'; }
-  });
-  const [factoryId, setFactoryId] = useState(null);
+  const [route, setRoute] = useState(_INITIAL.route);
+  const [factoryId, setFactoryId] = useState(_INITIAL.factoryId);
+
+  const initialMount = useRef(true);
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
 
+  // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
+  useEffect(() => {
+    const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data } = await window._sb
+          .from('user_profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (!data) {
+          // 신규 소셜 유저 → 가입 온보딩으로
+          setAuthed(false);
+          nav('signup');
+        } else {
+          try { localStorage.setItem('fm-authed', '1'); } catch {}
+          setAuthed(true);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
   }, [tweaks.density]);
 
+  // Keep URL in sync with route + factoryId
   useEffect(() => {
-    const target = route === 'home' ? '' : route;
-    if ((window.location.hash || '').replace('#', '') !== target) {
-      window.location.hash = target;
+    const hashPart = _buildHash(route, factoryId);
+    const url = hashPart ? `#${hashPart}` : (window.location.pathname + window.location.search);
+    const currentHash = (window.location.hash || '').replace('#', '');
+    const parsed = _parseHash(currentHash);
+    const currentRoute = parsed ? parsed.route : (currentHash.replace(/^\//, '') || 'home');
+    const currentFactoryId = parsed?.factoryId ?? null;
+    const urlMatchesState = currentRoute === route && (route !== 'detail' || currentFactoryId === factoryId);
+
+    if (initialMount.current) {
+      history.replaceState({ route, factoryId }, '', url);
+      initialMount.current = false;
+    } else if (!urlMatchesState) {
+      history.pushState({ route, factoryId }, '', url);
     }
-  }, [route]);
+  }, [route, factoryId]);
 
   useEffect(() => {
     const h = (e) => nav(e.detail);
@@ -54,14 +111,31 @@ function App() {
     return () => window.removeEventListener('auth-nav', h);
   }, []);
 
+  // 페이지뷰 추적 — route 변경 시 Supabase page_views에 INSERT
   useEffect(() => {
-    const onHashChange = () => {
+    if (!window._sb || route === 'admin') return;
+    window._sb.from('page_views').insert({
+      path: route,
+      referrer: document.referrer || null,
+    }).then(() => {});
+  }, [route]);
+
+  useEffect(() => {
+    const onPopState = (e) => {
       const h = (window.location.hash || '').replace('#', '');
-      const r = h || 'home';
-      if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
+      const parsed = _parseHash(h);
+      if (parsed) {
+        if (parsed.factoryId) setFactoryId(parsed.factoryId);
+        setRoute(parsed.route);
+      } else {
+        const r = e.state?.route || h.replace(/^\//, '') || 'home';
+        if (APP_ROUTES.includes(r) || AUTH_ROUTES.includes(r)) setRoute(r);
+        else setRoute('home');
+        if (e.state?.factoryId) setFactoryId(e.state.factoryId);
+      }
     };
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const nav = (r) => {
@@ -106,6 +180,7 @@ function App() {
   };
   const [detailFrom, setDetailFrom] = useState('list');
   const [chatTarget, setChatTarget] = useState(null);
+  const [reportParams, setReportParams] = useState(null);
 
   const openFactory = (id, fromRoute) => {
     setFactoryId(id);
@@ -118,12 +193,17 @@ function App() {
     setRoute('chat');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  const openReport = (params) => {
+    setReportParams(params || null);
+    setRoute('report');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const addRFQ = (id) => {
     setRfqIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
   const handleSearch = (q) => {
     setSearchQ(q);
-    setRoute('list');
+    setRoute('search');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -132,7 +212,7 @@ function App() {
       <>
         {route === 'landing' && <LandingPage onNav={nav}/>}
         {route === 'login' && <AuthFormPage mode="login" onNav={nav} onSubmit={handleAuthSubmit}/>}
-        {route === 'signup' && <AuthFormPage mode="signup" onNav={nav} onSubmit={handleAuthSubmit}/>}
+        {route === 'signup' && <SignupPage onNav={nav}/>}
         {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
         {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
         {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}
@@ -150,6 +230,14 @@ function App() {
           onSearch={handleSearch}
           density={tweaks.density}
           heroVariant={tweaks.heroVariant}
+        />
+      )}
+      {route === 'search' && (
+        <SearchUXPage
+          initialQuery={searchQ}
+          onOpenFactory={(id) => openFactory(id, 'search')}
+          onSearch={handleSearch}
+          onNav={nav}
         />
       )}
       {route === 'list' && (
@@ -174,6 +262,7 @@ function App() {
           onAddRFQ={addRFQ}
           rfqIds={rfqIds}
           onChat={openChat}
+          onReport={openReport}
         />
       )}
       {route === 'rfq' && (
@@ -202,6 +291,11 @@ function App() {
       {route === 'admin' && (
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
       )}
+      {route === 'terms' && <TermsPage />}
+      {route === 'privacy' && <PrivacyPage />}
+      {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}
+
+      <SiteFooter onNav={nav}/>
 
       <TweaksPanel title="Tweaks">
         <TweakSection title="밀도 (Density)">
@@ -231,4 +325,3 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById('app'));
 root.render(<App/>);
-
