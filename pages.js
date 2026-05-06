@@ -687,11 +687,6 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
     return () => clearInterval(id);
   }, [isFocused, q]);
 
-  // Clear results when query is erased
-  useEffectP(() => {
-    if (!q.trim()) { setAiResults(null); setConsulting(null); setMatchedFactoryDetails([]); }
-  }, [q]);
-
   const handleAiSearch = async () => {
     const query = q.trim();
     if (!query) return;
