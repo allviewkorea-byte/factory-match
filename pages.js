@@ -5661,9 +5661,254 @@ const AdminSignupTab = () => {
   );
 };
 
+// AdminPasswordGate
+// ──────────────────────────────────────────────────────────
+const ADMIN_SESSION_KEY = 'fm-admin-auth';
+
+const AdminPasswordGate = ({ onAuth }) => {
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    const trimmed = pw.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/.netlify/functions/verify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: trimmed }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        try { sessionStorage.setItem(ADMIN_SESSION_KEY, '1'); } catch {}
+        onAuth();
+      } else {
+        setError('비밀번호가 올바르지 않습니다.');
+      }
+    } catch {
+      setError('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <main className="page admin-gate-page">
+      <div className="admin-gate-box">
+        <div className="admin-gate-icon">
+          <Icon name="shield" size={28} stroke={1.8}/>
+        </div>
+        <h1 className="admin-gate-title">관리자 인증</h1>
+        <p className="admin-gate-sub">접근하려면 관리자 비밀번호가 필요합니다.</p>
+        <div className="admin-gate-form">
+          <input
+            type="password"
+            className="admin-gate-input"
+            value={pw}
+            onChange={e => setPw(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
+            placeholder="비밀번호"
+            autoFocus
+          />
+          {error && <p className="admin-gate-error">{error}</p>}
+          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSubmit} disabled={loading}>
+            {loading ? '확인중…' : '확인'}
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+};
+
+// AdminAnalyticsTab
+// ──────────────────────────────────────────────────────────
+const AdminAnalyticsTab = () => {
+  const [todayViews, setTodayViews] = useState(null);
+  const [totalViews, setTotalViews] = useState(null);
+  const [dayChart, setDayChart] = useState([]);
+  const [refBreakdown, setRefBreakdown] = useState(null);
+  const [userStats, setUserStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // 7일치 뷰 로드
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
+        const { data: views } = await window._sb
+          .from('page_views')
+          .select('path, referrer, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: true });
+
+        if (views) {
+          setTodayViews(views.filter(v => v.created_at >= todayStart.toISOString()).length);
+
+          const days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(); d.setDate(d.getDate() - (6 - i)); d.setHours(0, 0, 0, 0);
+            return d;
+          });
+          setDayChart(days.map(d => {
+            const next = new Date(d); next.setDate(next.getDate() + 1);
+            const v = views.filter(x => x.created_at >= d.toISOString() && x.created_at < next.toISOString()).length;
+            return { label: `${d.getMonth() + 1}/${d.getDate()}`, v };
+          }));
+
+          const ref = { direct: 0, search: 0, social: 0, other: 0 };
+          views.forEach(v => {
+            if (!v.referrer) ref.direct++;
+            else if (/google|naver|daum|bing|yahoo/i.test(v.referrer)) ref.search++;
+            else if (/facebook|twitter|instagram|kakao|linkedin/i.test(v.referrer)) ref.social++;
+            else ref.other++;
+          });
+          setRefBreakdown(ref);
+        }
+
+        // 전체 누적
+        const { count: total } = await window._sb
+          .from('page_views').select('id', { count: 'exact', head: true });
+        setTotalViews(total ?? 0);
+
+        // 유저 통계
+        const [
+          { count: uAll },
+          { count: uPending },
+          { count: uApproved },
+        ] = await Promise.all([
+          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
+          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+        ]);
+        setUserStats({ total: uAll ?? 0, pending: uPending ?? 0, approved: uApproved ?? 0 });
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const BarChart = ({ data }) => {
+    const max = Math.max(...data.map(d => d.v), 1);
+    const cols = data.length;
+    const W = 420, H = 100;
+    const colW = W / cols;
+    const barW = Math.max(6, colW - 8);
+    return (
+      <svg width="100%" viewBox={`0 0 ${W} ${H + 24}`} style={{ overflow: 'visible', display: 'block' }}>
+        {data.map((d, i) => {
+          const bh = Math.max(2, (d.v / max) * H);
+          const x = i * colW + (colW - barW) / 2;
+          return (
+            <g key={i}>
+              <rect x={x} y={H - bh} width={barW} height={bh} fill="#3b82f6" rx="3" opacity="0.85"/>
+              {d.v > 0 && (
+                <text x={x + barW / 2} y={H - bh - 4} textAnchor="middle" fontSize="9" fill="#555">{d.v}</text>
+              )}
+              <text x={x + barW / 2} y={H + 16} textAnchor="middle" fontSize="9" fill="#999">{d.label}</text>
+            </g>
+          );
+        })}
+        <line x1={0} y1={H} x2={W} y2={H} stroke="#eee" strokeWidth="1"/>
+      </svg>
+    );
+  };
+
+  const Metric = ({ label, value, sub }) => (
+    <div className="an-metric">
+      <div className="an-metric-v">{value ?? '—'}</div>
+      <div className="an-metric-k">{label}</div>
+      {sub && <div className="an-metric-sub">{sub}</div>}
+    </div>
+  );
+
+  if (loading) return <div className="an-loading">데이터를 불러오는 중…</div>;
+
+  const totalRef = refBreakdown ? Object.values(refBreakdown).reduce((a, b) => a + b, 0) : 1;
+  const refPct = (n) => totalRef ? Math.round((n / totalRef) * 100) : 0;
+
+  return (
+    <div className="an-grid">
+      {/* 방문자 요약 */}
+      <div className="an-card an-card-wide">
+        <h3 className="an-card-title">방문자 통계</h3>
+        <div className="an-metrics-row">
+          <Metric label="오늘 방문자" value={todayViews}/>
+          <Metric label="누적 방문자 (전체)" value={totalViews?.toLocaleString()}/>
+          <Metric label="최근 7일" value={dayChart.reduce((s, d) => s + d.v, 0)}/>
+        </div>
+      </div>
+
+      {/* 7일 바 차트 */}
+      <div className="an-card an-card-wide">
+        <h3 className="an-card-title">최근 7일 일별 방문</h3>
+        {dayChart.length > 0 ? (
+          <div className="an-chart-wrap">
+            <BarChart data={dayChart}/>
+          </div>
+        ) : (
+          <p className="an-empty">데이터가 없습니다.</p>
+        )}
+      </div>
+
+      {/* 유입 경로 */}
+      <div className="an-card">
+        <h3 className="an-card-title">유입 경로 (최근 7일)</h3>
+        {refBreakdown ? (
+          <div className="an-ref-list">
+            {[
+              { label: '직접 접속', key: 'direct', color: '#3b82f6' },
+              { label: '검색엔진', key: 'search', color: '#10b981' },
+              { label: '소셜',     key: 'social', color: '#8b5cf6' },
+              { label: '기타',     key: 'other',  color: '#f59e0b' },
+            ].map(({ label, key, color }) => (
+              <div key={key} className="an-ref-row">
+                <div className="an-ref-label">
+                  <span className="an-ref-dot" style={{ background: color }}/>
+                  {label}
+                </div>
+                <div className="an-ref-bar-wrap">
+                  <div className="an-ref-bar" style={{ width: refPct(refBreakdown[key]) + '%', background: color }}/>
+                </div>
+                <span className="an-ref-val">{refBreakdown[key]}</span>
+                <span className="an-ref-pct">({refPct(refBreakdown[key])}%)</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="an-empty">데이터가 없습니다.</p>}
+      </div>
+
+      {/* 주요 지표 */}
+      <div className="an-card">
+        <h3 className="an-card-title">주요 지표</h3>
+        {userStats ? (
+          <div className="an-kpi-list">
+            <div className="an-kpi-row">
+              <span>전체 가입 신청</span>
+              <strong>{userStats.total}</strong>
+            </div>
+            <div className="an-kpi-row">
+              <span>승인 대기</span>
+              <strong className="an-kpi-pending">{userStats.pending}</strong>
+            </div>
+            <div className="an-kpi-row">
+              <span>승인 완료</span>
+              <strong className="an-kpi-ok">{userStats.approved}</strong>
+            </div>
+          </div>
+        ) : <p className="an-empty">데이터가 없습니다.</p>}
+      </div>
+    </div>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
+  const [authed, setAuthed] = useState(() => {
+    try { return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'; } catch { return false; }
+  });
   const [data, setData] = useState(ADMIN_FACTORIES);
   const [totalCount, setTotalCount] = useState(null);
   const [tab, setTab] = useState('factories');
@@ -5858,6 +6103,14 @@ const AdminPage = ({ onOpenFactory }) => {
     { key: 'summary',  label: '단지명' },
   ];
 
+  // 비밀번호 게이트 — 모든 훅 선언 이후에 위치
+  if (!authed) return <AdminPasswordGate onAuth={() => setAuthed(true)}/>;
+
+  const handleLogout = () => {
+    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch {}
+    setAuthed(false);
+  };
+
   return (
     <main className="page admin-page">
       <header className="admin-hero">
@@ -5870,6 +6123,10 @@ const AdminPage = ({ onOpenFactory }) => {
           <p>CSV로 일괄 업로드하고, 검증 완료된 제조사만 공개로 전환하세요.</p>
         </div>
         <div className="admin-hero-actions">
+          <button className="btn btn-secondary" onClick={handleLogout}>
+            <Icon name="lock" size={14} stroke={2}/>
+            로그아웃
+          </button>
           <button className="btn btn-secondary" onClick={downloadTemplate}>
             <Icon name="arrow_up_right" size={14} stroke={2}/>
             템플릿 다운로드
@@ -5898,6 +6155,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'logs',      label: '업로드 이력' },
           { id: 'reports',   label: '신고 관리' },
           { id: 'signups',   label: '가입 신청' },
+          { id: 'analytics', label: '통계' },
         ].map(t => (
           <button
             key={t.id}
@@ -6042,6 +6300,12 @@ const AdminPage = ({ onOpenFactory }) => {
       {tab === 'signups' && (
         <section className="admin-panel">
           <AdminSignupTab />
+        </section>
+      )}
+
+      {tab === 'analytics' && (
+        <section className="admin-panel">
+          <AdminAnalyticsTab />
         </section>
       )}
 

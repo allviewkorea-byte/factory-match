@@ -111,6 +111,15 @@ function App() {
     return () => window.removeEventListener('auth-nav', h);
   }, []);
 
+  // 페이지뷰 추적 — route 변경 시 Supabase page_views에 INSERT
+  useEffect(() => {
+    if (!window._sb || route === 'admin') return;
+    window._sb.from('page_views').insert({
+      path: route,
+      referrer: document.referrer || null,
+    }).then(() => {});
+  }, [route]);
+
   useEffect(() => {
     const onPopState = (e) => {
       const h = (window.location.hash || '').replace('#', '');
