@@ -61,6 +61,28 @@ function App() {
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
 
+  // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
+  useEffect(() => {
+    const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data } = await window._sb
+          .from('user_profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (!data) {
+          // 신규 소셜 유저 → 가입 온보딩으로
+          setAuthed(false);
+          nav('signup');
+        } else {
+          try { localStorage.setItem('fm-authed', '1'); } catch {}
+          setAuthed(true);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
   }, [tweaks.density]);

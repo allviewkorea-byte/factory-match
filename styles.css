@@ -2472,24 +2472,50 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Google button */
-.auth-google-btn {
+/* 소셜 로그인 토스트 */
+.auth-social-toast {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; margin-bottom: 12px;
+  background: oklch(0.97 0.03 250); border: 1px solid oklch(0.88 0.08 250);
+  border-radius: 8px; color: var(--brand);
+  font-size: 13px; font-weight: 500;
+}
+
+/* 소셜 버튼 컨테이너 */
+.auth-social-btns {
+  display: flex; flex-direction: column; gap: 9px;
+  margin-bottom: 18px;
+}
+
+/* 공통 소셜 버튼 */
+.auth-social-btn {
   width: 100%;
   display: flex; align-items: center; justify-content: center;
   gap: 10px;
   padding: 12px;
-  background: #fff;
-  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-1);
-  transition: all 0.12s;
-  margin-bottom: 18px;
+  font-size: 14px; font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.12s, transform 0.1s;
 }
-.auth-google-btn:hover {
-  border-color: var(--ink-4);
-  background: var(--bg-soft);
+.auth-social-btn:hover { filter: brightness(0.93); }
+.auth-social-btn:active { transform: scale(0.98); }
+
+/* 카카오 */
+.auth-kakao-btn {
+  background: #FEE500; color: #191600;
 }
+/* 네이버 */
+.auth-naver-btn {
+  background: #03C75A; color: #fff;
+}
+/* 구글 — 기존 스타일 유지 */
+.auth-social-btn.auth-google-btn {
+  background: #fff; color: var(--ink-1);
+  border: 1px solid var(--line-strong);
+}
+.auth-social-btn.auth-google-btn:hover { filter: none; background: var(--bg-soft); }
 
 /* Divider */
 .auth-divider {

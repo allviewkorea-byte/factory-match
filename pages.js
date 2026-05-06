@@ -2746,6 +2746,26 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   const [showPw, setShowPw] = useAuthState(false);
   const [agree, setAgree] = useAuthState({ tos: false, privacy: false, marketing: false });
   const allAgreed = agree.tos && agree.privacy;
+  const [socialToast, setSocialToast] = useAuthState(null);
+
+  const handleSocialLogin = (provider) => {
+    const clientId = provider === 'kakao' ? window._KAKAO_CLIENT_ID : window._NAVER_CLIENT_ID;
+    if (!clientId) {
+      const label = provider === 'kakao' ? '카카오' : '네이버';
+      setSocialToast(`${label} 로그인 서비스를 준비 중입니다`);
+      setTimeout(() => setSocialToast(null), 3000);
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + '/');
+    sessionStorage.setItem('_sgn_provider', provider);
+    if (provider === 'kakao') {
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
+    } else {
+      const state = Math.random().toString(36).slice(2);
+      sessionStorage.setItem('_naver_state', state);
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+    }
+  };
 
   const pwStrength = (() => {
     if (!password) return 0;
@@ -2785,14 +2805,44 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
               : '이메일로 로그인하거나 구글 계정을 사용하세요.'}</p>
           </div>
 
-          <button className="auth-google-btn" onClick={() => onSubmit({ email: 'user@gmail.com', google: true })}>
-            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2.1 1.4-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.2-8L6.2 33C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2c-.4.4 6.6-4.8 6.6-14.9 0-1.3-.1-2.4-.4-3.5z"/></svg>
-            {isSignup ? '구글로 가입' : '구글로 로그인'}
-          </button>
+          {socialToast && (
+            <div className="auth-social-toast">
+              <Icon name="info" size={13} stroke={2}/>
+              {socialToast}
+            </div>
+          )}
+
+          <div className="auth-social-btns">
+            <button
+              className="auth-social-btn auth-kakao-btn"
+              onClick={() => handleSocialLogin('kakao')}
+            >
+              <svg width="18" height="17" viewBox="0 0 18 17" fill="none">
+                <path fill="currentColor" d="M9 0C4.03 0 0 3.13 0 7c0 2.48 1.57 4.67 3.96 5.93l-.85 3.18 3.6-2.35c.74.1 1.5.24 2.29.24 4.97 0 9-3.13 9-7S13.97 0 9 0z"/>
+              </svg>
+              {isSignup ? '카카오로 가입' : '카카오로 로그인'}
+            </button>
+            <button
+              className="auth-social-btn auth-naver-btn"
+              onClick={() => handleSocialLogin('naver')}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path fill="currentColor" d="M9.13 8.16L6.12 3H3v10h3.87V7.84L9.88 13H13V3H9.13z"/>
+              </svg>
+              {isSignup ? '네이버로 가입' : '네이버로 로그인'}
+            </button>
+            <button
+              className="auth-social-btn auth-google-btn"
+              onClick={() => onSubmit({ email: 'user@gmail.com', google: true })}
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2.1 1.4-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.2-8L6.2 33C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2c-.4.4 6.6-4.8 6.6-14.9 0-1.3-.1-2.4-.4-3.5z"/></svg>
+              {isSignup ? '구글로 가입' : '구글로 로그인'}
+            </button>
+          </div>
 
           <div className="auth-divider">
             <span className="auth-divider-line"/>
-            <span className="auth-divider-text">또는 이메일로</span>
+            <span className="auth-divider-text">또는 이메일로 계속하기</span>
             <span className="auth-divider-line"/>
           </div>
 
@@ -3582,6 +3632,27 @@ function SignupPage({ onNav }) {
 
   const [step, setStep] = useStateP(1);
   const [userType, setUserType] = useStateP(null);
+  const [sgnSocialToast, setSgnSocialToast] = useStateP(null);
+
+  const handleSgnSocial = (provider) => {
+    const clientId = provider === 'kakao' ? window._KAKAO_CLIENT_ID : window._NAVER_CLIENT_ID;
+    if (!clientId) {
+      const label = provider === 'kakao' ? '카카오' : '네이버';
+      setSgnSocialToast(`${label} 로그인 서비스를 준비 중입니다`);
+      setTimeout(() => setSgnSocialToast(null), 3000);
+      return;
+    }
+    const redirectUri = encodeURIComponent(window.location.origin + '/');
+    sessionStorage.setItem('_sgn_provider', provider);
+    if (provider === 'kakao') {
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
+    } else {
+      const state = Math.random().toString(36).slice(2);
+      sessionStorage.setItem('_naver_state', state);
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+    }
+  };
+
   const [form, setForm] = useStateP({
     email: '', password: '', passwordConfirm: '',
     companyName: '', businessNumber: '', contactName: '', contactPhone: '',
@@ -3718,8 +3789,37 @@ function SignupPage({ onNav }) {
           {step === 1 && (<>
             <div className="auth-card-head">
               <h1>공장매칭 시작하기</h1>
-              <p>어떤 유형으로 가입하실 건가요?</p>
+              <p>소셜 계정 또는 이메일로 가입하세요</p>
             </div>
+
+            {sgnSocialToast && (
+              <div className="auth-social-toast">
+                <Icon name="info" size={13} stroke={2}/>
+                {sgnSocialToast}
+              </div>
+            )}
+
+            <div className="auth-social-btns">
+              <button className="auth-social-btn auth-kakao-btn" onClick={() => handleSgnSocial('kakao')}>
+                <svg width="18" height="17" viewBox="0 0 18 17" fill="none">
+                  <path fill="currentColor" d="M9 0C4.03 0 0 3.13 0 7c0 2.48 1.57 4.67 3.96 5.93l-.85 3.18 3.6-2.35c.74.1 1.5.24 2.29.24 4.97 0 9-3.13 9-7S13.97 0 9 0z"/>
+                </svg>
+                카카오로 가입
+              </button>
+              <button className="auth-social-btn auth-naver-btn" onClick={() => handleSgnSocial('naver')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path fill="currentColor" d="M9.13 8.16L6.12 3H3v10h3.87V7.84L9.88 13H13V3H9.13z"/>
+                </svg>
+                네이버로 가입
+              </button>
+            </div>
+
+            <div className="auth-divider" style={{ margin: '16px 0' }}>
+              <span className="auth-divider-line"/>
+              <span className="auth-divider-text">또는 유형 선택 후 이메일로</span>
+              <span className="auth-divider-line"/>
+            </div>
+
             <div className="sgn-type-grid">
               <button className="sgn-type-card" onClick={() => { setUserType('buyer'); setStep(2); }}>
                 <div className="sgn-type-icon sgn-type-buyer">
