@@ -203,7 +203,7 @@ function App() {
   };
   const handleSearch = (q) => {
     setSearchQ(q);
-    setRoute('search');
+    setRoute('list');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
