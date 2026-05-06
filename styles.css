@@ -4958,6 +4958,178 @@ a { color: inherit; text-decoration: none; }
   white-space: nowrap;
 }
 
+/* ── SignupPage ── */
+.sgn-card { max-width: 520px; }
+.sgn-step-head { margin-top: 20px; }
+
+/* 단계 표시 */
+.sgn-steps {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 24px;
+}
+.sgn-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--bg-soft); color: var(--ink-4);
+  border: 1.5px solid var(--line);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.sgn-dot.is-active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.sgn-dot.is-done { background: var(--emerald); color: #fff; border-color: var(--emerald); }
+.sgn-line {
+  flex: 1; height: 2px; max-width: 48px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+.sgn-line.is-done { background: var(--emerald); }
+
+/* 유형 선택 */
+.sgn-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.sgn-type-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 24px 16px;
+  border: 1.5px solid var(--line); border-radius: 14px;
+  background: #fff; cursor: pointer;
+  transition: all 0.15s;
+}
+.sgn-type-card:hover { border-color: var(--brand); background: var(--brand-soft); }
+.sgn-type-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  display: grid; place-items: center;
+  background: var(--bg-soft);
+}
+.sgn-type-buyer { background: oklch(0.96 0.06 250); color: var(--brand); }
+.sgn-type-mfr { background: oklch(0.96 0.06 150); color: var(--emerald); }
+.sgn-type-name { font-size: 15px; font-weight: 700; color: var(--ink-1); }
+.sgn-type-desc { font-size: 12px; color: var(--ink-3); text-align: center; line-height: 1.55; }
+.sgn-login-hint { text-align: center; font-size: 13px; color: var(--ink-3); }
+.sgn-text-btn {
+  color: var(--brand); font-size: 13px; font-weight: 600;
+  margin-left: 6px; text-decoration: underline;
+}
+
+/* 폼 */
+.sgn-form { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+.sgn-field { display: flex; flex-direction: column; gap: 6px; }
+.sgn-req { font-style: normal; color: var(--rose); }
+.sgn-wrap-err { border-color: var(--rose) !important; }
+.sgn-err { font-size: 11.5px; color: var(--rose); }
+.sgn-sep { height: 1px; background: var(--line-faint); margin: 2px 0; }
+
+/* 관심분야 칩 */
+.sgn-section { display: flex; flex-direction: column; gap: 8px; }
+.sgn-section-ttl { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.sgn-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sgn-chip {
+  padding: 6px 12px; border-radius: 20px;
+  font-size: 12.5px; font-weight: 500;
+  border: 1.5px solid var(--line);
+  background: #fff; color: var(--ink-2);
+  transition: all 0.12s; cursor: pointer;
+}
+.sgn-chip:hover { border-color: var(--brand); color: var(--brand); }
+.sgn-chip.is-on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+
+/* 서류 업로드 */
+.sgn-upload-block { display: flex; flex-direction: column; gap: 8px; }
+.sgn-upload-ttl {
+  font-size: 13px; font-weight: 600; color: var(--ink-2);
+  display: flex; align-items: center; gap: 8px;
+}
+.sgn-badge-req {
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 700;
+  background: var(--rose); color: #fff;
+}
+.sgn-badge-opt {
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600;
+  background: var(--bg-soft); color: var(--ink-3);
+}
+.sgn-drop-zone {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 24px 20px; border-radius: 12px;
+  border: 2px dashed var(--line);
+  background: var(--bg-soft);
+  cursor: pointer; text-align: center;
+  transition: all 0.15s;
+}
+.sgn-drop-zone:hover { border-color: var(--brand); background: var(--brand-soft); }
+.sgn-drop-zone.has-file { border-style: solid; border-color: var(--emerald); background: oklch(0.96 0.04 150); }
+.sgn-dz-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--line);
+  display: grid; place-items: center;
+  color: var(--ink-3);
+}
+.sgn-dz-icon.is-ok { background: var(--emerald); border-color: var(--emerald); color: #fff; }
+.sgn-dz-name { font-size: 13.5px; font-weight: 600; color: var(--ink-1); }
+.sgn-dz-hint { font-size: 12px; color: var(--ink-4); }
+.sgn-error-box {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 8px;
+  background: oklch(0.97 0.03 30); border: 1px solid oklch(0.88 0.08 30);
+  color: var(--rose); font-size: 13px;
+}
+
+/* 버튼 */
+.sgn-btn {
+  width: 100%; justify-content: center;
+  display: flex; align-items: center; gap: 6px;
+  padding: 13px;
+  font-size: 14.5px; font-weight: 700;
+  border-radius: 12px; margin-bottom: 10px;
+}
+.sgn-btn-off { opacity: 0.45; cursor: not-allowed; }
+.sgn-skip-btn {
+  width: 100%; text-align: center;
+  font-size: 13px; color: var(--ink-3);
+  padding: 8px; border-radius: 8px;
+  transition: color 0.12s;
+}
+.sgn-skip-btn:hover { color: var(--ink-1); }
+.sgn-spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  animation: _spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+.sgn-privacy { font-size: 11.5px; color: var(--ink-4); text-align: center; line-height: 1.55; }
+
+/* 완료 화면 */
+.sgn-complete {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 8px 0;
+}
+.sgn-complete-ico {
+  width: 80px; height: 80px; border-radius: 24px;
+  background: oklch(0.95 0.07 250); color: var(--brand);
+  display: grid; place-items: center;
+}
+.sgn-complete-ttl { font-size: 20px; font-weight: 700; color: var(--ink-1); text-align: center; letter-spacing: -0.02em; }
+.sgn-complete-sub { font-size: 14px; color: var(--ink-3); text-align: center; line-height: 1.7; }
+.sgn-complete-card {
+  width: 100%; background: var(--bg-soft);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 4px 16px;
+}
+.sgn-cr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--line-faint);
+  font-size: 13.5px;
+}
+.sgn-cr:last-child { border-bottom: none; }
+.sgn-ck { color: var(--ink-3); font-weight: 500; }
+.sgn-cv { color: var(--ink-1); font-weight: 600; }
+.sgn-pending {
+  padding: 3px 8px; border-radius: 5px;
+  background: var(--amber-soft); color: var(--amber);
+  font-size: 12px;
+}
+
 /* ── AI 공급망 분석 ── */
 .sx-ai-loading {
   display: flex; align-items: center; gap: 10px;

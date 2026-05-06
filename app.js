@@ -181,7 +181,7 @@ function App() {
       <>
         {route === 'landing' && <LandingPage onNav={nav}/>}
         {route === 'login' && <AuthFormPage mode="login" onNav={nav} onSubmit={handleAuthSubmit}/>}
-        {route === 'signup' && <AuthFormPage mode="signup" onNav={nav} onSubmit={handleAuthSubmit}/>}
+        {route === 'signup' && <SignupPage onNav={nav}/>}
         {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
         {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
         {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}

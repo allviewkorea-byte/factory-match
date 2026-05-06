@@ -3575,10 +3575,424 @@ function WelcomePage({ data, onEnter }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// SignupPage — 회원가입 (5단계)
+// ═══════════════════════════════════════════════════════════
+function SignupPage({ onNav }) {
+  const { PROCESSES } = window.MFG_DATA;
+
+  const [step, setStep] = useStateP(1);
+  const [userType, setUserType] = useStateP(null);
+  const [form, setForm] = useStateP({
+    email: '', password: '', passwordConfirm: '',
+    companyName: '', businessNumber: '', contactName: '', contactPhone: '',
+    neededProcesses: [], neededMaterials: [], orderScale: '',
+    ownedProcesses: [], ownedMaterials: [], certs: [],
+    oemAvailable: false, odmAvailable: false,
+    businessDoc: null, factoryPhoto: null,
+  });
+  const [errors, setErrors] = useStateP({});
+  const [loading, setLoading] = useStateP(false);
+
+  const SGN_MATERIALS = ['알루미늄', 'SUS304', 'SS400', 'ABS', 'PC', 'PP', 'PET', '티타늄', '황동', '구리', 'FR-4', '탄소강'];
+  const SGN_CERTS = ['ISO 9001', 'IATF 16949', 'ISO 14001', 'ISO 22000', 'HACCP', 'KC', 'CE', 'UL', 'OEKO-TEX'];
+  const SGN_SCALES = ['소량 (~100개)', '중량 (100–1,000개)', '중대량 (1,000–10,000개)', '대량 (10,000개+)'];
+
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const tog = (arr, item) => arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+
+  const fmtBiz = (v) => {
+    const d = v.replace(/\D/g, '').slice(0, 10);
+    if (d.length < 4) return d;
+    if (d.length < 6) return `${d.slice(0,3)}-${d.slice(3)}`;
+    return `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;
+  };
+  const fmtPhone = (v) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return `${d.slice(0,3)}-${d.slice(3)}`;
+    return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+  };
+
+  const validateStep2 = () => {
+    const e = {};
+    if (!form.email.includes('@')) e.email = '유효한 이메일을 입력하세요';
+    if (form.password.length < 8) e.password = '비밀번호는 8자 이상이어야 합니다';
+    if (form.password !== form.passwordConfirm) e.passwordConfirm = '비밀번호가 일치하지 않습니다';
+    if (!form.companyName.trim()) e.companyName = '회사명을 입력하세요';
+    if (form.businessNumber.replace(/\D/g, '').length < 10) e.businessNumber = '사업자번호 10자리를 입력하세요';
+    if (!form.contactName.trim()) e.contactName = '담당자명을 입력하세요';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const goNext = () => {
+    if (step === 2 && !validateStep2()) return;
+    setStep(s => s + 1);
+  };
+  const goBack = () => {
+    if (step > 1 && step < 5) setStep(s => s - 1);
+    else onNav('landing');
+  };
+
+  const handleSubmit = async () => {
+    if (!form.businessDoc) return;
+    setLoading(true);
+    setErrors({});
+    try {
+      const { data: authData, error: authError } = await window._sb.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
+      if (authError) throw authError;
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('가입에 실패했습니다');
+
+      let documentUrl = null;
+      if (form.businessDoc) {
+        const ext = form.businessDoc.name.split('.').pop().toLowerCase();
+        const { data: up, error: upErr } = await window._sb.storage
+          .from('user-documents')
+          .upload(`${userId}/business-doc.${ext}`, form.businessDoc);
+        if (!upErr && up) documentUrl = `${userId}/business-doc.${ext}`;
+      }
+      if (userType === 'manufacturer' && form.factoryPhoto) {
+        const ext2 = form.factoryPhoto.name.split('.').pop().toLowerCase();
+        await window._sb.storage.from('user-documents')
+          .upload(`${userId}/factory-photo.${ext2}`, form.factoryPhoto);
+      }
+
+      const interests = userType === 'buyer'
+        ? { needed_processes: form.neededProcesses, needed_materials: form.neededMaterials, order_scale: form.orderScale }
+        : { owned_processes: form.ownedProcesses, main_materials: form.ownedMaterials, certs: form.certs, oem: form.oemAvailable, odm: form.odmAvailable };
+
+      await window._sb.from('user_profiles').insert({
+        id: userId,
+        user_type: userType,
+        company_name: form.companyName,
+        business_number: form.businessNumber.replace(/\D/g, ''),
+        contact_name: form.contactName,
+        contact_phone: form.contactPhone || null,
+        contact_email: form.email,
+        interests,
+        document_url: documentUrl,
+        status: 'pending',
+      });
+
+      setStep(5);
+    } catch (err) {
+      setErrors({ submit: err.message || '가입 중 오류가 발생했습니다' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const TOTAL = 4;
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-shell-bg"/>
+      <div className="auth-shell-inner">
+        <header className="auth-mini-hdr">
+          <AuthLogo size={32}/>
+          <button className="auth-back-btn" onClick={goBack}>
+            <Icon name={step > 1 && step < 5 ? 'arrow_left' : 'close'} size={14} stroke={2}/>
+          </button>
+        </header>
+
+        <div className="auth-card sgn-card">
+          {/* 단계 표시 */}
+          {step >= 2 && step <= 4 && (
+            <div className="sgn-steps">
+              {Array.from({ length: TOTAL }, (_, i) => i + 1).map(n => (
+                <React.Fragment key={n}>
+                  <div className={`sgn-dot ${step > n ? 'is-done' : step === n ? 'is-active' : ''}`}>
+                    {step > n ? <Icon name="check" size={10} stroke={2.8}/> : n}
+                  </div>
+                  {n < TOTAL && <div className={`sgn-line ${step > n ? 'is-done' : ''}`}/>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+
+          {/* ── 1단계: 유형 선택 ── */}
+          {step === 1 && (<>
+            <div className="auth-card-head">
+              <h1>공장매칭 시작하기</h1>
+              <p>어떤 유형으로 가입하실 건가요?</p>
+            </div>
+            <div className="sgn-type-grid">
+              <button className="sgn-type-card" onClick={() => { setUserType('buyer'); setStep(2); }}>
+                <div className="sgn-type-icon sgn-type-buyer">
+                  <Icon name="search" size={26} stroke={1.8}/>
+                </div>
+                <div className="sgn-type-name">바이어</div>
+                <div className="sgn-type-desc">제조사를 찾고<br/>견적을 받고 싶어요</div>
+              </button>
+              <button className="sgn-type-card" onClick={() => { setUserType('manufacturer'); setStep(2); }}>
+                <div className="sgn-type-icon sgn-type-mfr">
+                  <Icon name="factory" size={26} stroke={1.8}/>
+                </div>
+                <div className="sgn-type-name">제조사</div>
+                <div className="sgn-type-desc">공장을 등록하고<br/>바이어를 받고 싶어요</div>
+              </button>
+            </div>
+            <p className="sgn-login-hint">
+              이미 계정이 있으신가요?
+              <button className="sgn-text-btn" onClick={() => onNav('login')}>로그인</button>
+            </p>
+          </>)}
+
+          {/* ── 2단계: 기본 정보 ── */}
+          {step === 2 && (<>
+            <div className="auth-card-head sgn-step-head">
+              <h1>기본 정보 입력</h1>
+              <p>{userType === 'buyer' ? '바이어' : '제조사'} 계정을 만들어 드릴게요</p>
+            </div>
+            <div className="sgn-form">
+              <div className="sgn-field">
+                <span className="auth-field-label">이메일 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.email ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="mail" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="email" placeholder="company@email.com"
+                    value={form.email} onChange={e => upd('email', e.target.value)} autoComplete="email"/>
+                </div>
+                {errors.email && <span className="sgn-err">{errors.email}</span>}
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">비밀번호 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.password ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="lock" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="password" placeholder="8자 이상"
+                    value={form.password} onChange={e => upd('password', e.target.value)} autoComplete="new-password"/>
+                </div>
+                {errors.password && <span className="sgn-err">{errors.password}</span>}
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">비밀번호 확인 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.passwordConfirm ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="lock" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="password" placeholder="비밀번호 재입력"
+                    value={form.passwordConfirm} onChange={e => upd('passwordConfirm', e.target.value)} autoComplete="new-password"/>
+                </div>
+                {errors.passwordConfirm && <span className="sgn-err">{errors.passwordConfirm}</span>}
+              </div>
+              <div className="sgn-sep"/>
+              <div className="sgn-field">
+                <span className="auth-field-label">회사명 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.companyName ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="building" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="text" placeholder="(주)회사명"
+                    value={form.companyName} onChange={e => upd('companyName', e.target.value)}/>
+                </div>
+                {errors.companyName && <span className="sgn-err">{errors.companyName}</span>}
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">사업자번호 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.businessNumber ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="layers" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="text" placeholder="000-00-00000" maxLength={12}
+                    value={form.businessNumber} onChange={e => upd('businessNumber', fmtBiz(e.target.value))}/>
+                </div>
+                {errors.businessNumber && <span className="sgn-err">{errors.businessNumber}</span>}
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">담당자명 <em className="sgn-req">*</em></span>
+                <div className={`auth-input-wrap ${errors.contactName ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="user" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="text" placeholder="홍길동"
+                    value={form.contactName} onChange={e => upd('contactName', e.target.value)}/>
+                </div>
+                {errors.contactName && <span className="sgn-err">{errors.contactName}</span>}
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">연락처</span>
+                <div className="auth-input-wrap">
+                  <Icon name="phone" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="text" placeholder="010-0000-0000" maxLength={13}
+                    value={form.contactPhone} onChange={e => upd('contactPhone', fmtPhone(e.target.value))}/>
+                </div>
+              </div>
+            </div>
+            <button className="btn-primary sgn-btn" onClick={goNext}>
+              다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
+            </button>
+          </>)}
+
+          {/* ── 3단계: 관심분야 / 역량 ── */}
+          {step === 3 && (<>
+            <div className="auth-card-head sgn-step-head">
+              <h1>{userType === 'buyer' ? '필요한 제조 정보' : '보유 공정 & 역량'}</h1>
+              <p>{userType === 'buyer' ? '어떤 제조 서비스가 필요하신가요?' : '보유한 공정과 역량을 선택해주세요'}</p>
+            </div>
+            <div className="sgn-form">
+              {userType === 'buyer' ? (<>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">필요한 가공방식</div>
+                  <div className="sgn-chips">
+                    {PROCESSES.map(p => (
+                      <button key={p.id} className={`sgn-chip ${form.neededProcesses.includes(p.id) ? 'is-on' : ''}`}
+                        onClick={() => upd('neededProcesses', tog(form.neededProcesses, p.id))}>{p.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">주요 소재</div>
+                  <div className="sgn-chips">
+                    {SGN_MATERIALS.map(m => (
+                      <button key={m} className={`sgn-chip ${form.neededMaterials.includes(m) ? 'is-on' : ''}`}
+                        onClick={() => upd('neededMaterials', tog(form.neededMaterials, m))}>{m}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">발주 예상 규모</div>
+                  <div className="sgn-chips">
+                    {SGN_SCALES.map(s => (
+                      <button key={s} className={`sgn-chip ${form.orderScale === s ? 'is-on' : ''}`}
+                        onClick={() => upd('orderScale', form.orderScale === s ? '' : s)}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              </>) : (<>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">보유 공정</div>
+                  <div className="sgn-chips">
+                    {PROCESSES.map(p => (
+                      <button key={p.id} className={`sgn-chip ${form.ownedProcesses.includes(p.id) ? 'is-on' : ''}`}
+                        onClick={() => upd('ownedProcesses', tog(form.ownedProcesses, p.id))}>{p.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">주력 소재</div>
+                  <div className="sgn-chips">
+                    {SGN_MATERIALS.map(m => (
+                      <button key={m} className={`sgn-chip ${form.ownedMaterials.includes(m) ? 'is-on' : ''}`}
+                        onClick={() => upd('ownedMaterials', tog(form.ownedMaterials, m))}>{m}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">보유 인증</div>
+                  <div className="sgn-chips">
+                    {SGN_CERTS.map(c => (
+                      <button key={c} className={`sgn-chip ${form.certs.includes(c) ? 'is-on' : ''}`}
+                        onClick={() => upd('certs', tog(form.certs, c))}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sgn-section">
+                  <div className="sgn-section-ttl">OEM / ODM 가능 여부</div>
+                  <div className="sgn-chips">
+                    <button className={`sgn-chip ${form.oemAvailable ? 'is-on' : ''}`}
+                      onClick={() => upd('oemAvailable', !form.oemAvailable)}>OEM 가능</button>
+                    <button className={`sgn-chip ${form.odmAvailable ? 'is-on' : ''}`}
+                      onClick={() => upd('odmAvailable', !form.odmAvailable)}>ODM 가능</button>
+                  </div>
+                </div>
+              </>)}
+            </div>
+            <button className="btn-primary sgn-btn" onClick={goNext}>
+              다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
+            </button>
+            <button className="sgn-skip-btn" onClick={goNext}>이 단계 건너뛰기</button>
+          </>)}
+
+          {/* ── 4단계: 서류 업로드 ── */}
+          {step === 4 && (<>
+            <div className="auth-card-head sgn-step-head">
+              <h1>서류 업로드</h1>
+              <p>본인 확인을 위해 사업자등록증이 필요합니다</p>
+            </div>
+            <div className="sgn-form">
+              <div className="sgn-upload-block">
+                <div className="sgn-upload-ttl">
+                  사업자등록증
+                  <span className="sgn-badge-req">필수</span>
+                </div>
+                <label className={`sgn-drop-zone ${form.businessDoc ? 'has-file' : ''}`}>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
+                    onChange={e => upd('businessDoc', e.target.files[0] || null)}/>
+                  {form.businessDoc ? (<>
+                    <div className="sgn-dz-icon is-ok"><Icon name="check" size={18} stroke={2.5}/></div>
+                    <div className="sgn-dz-name">{form.businessDoc.name}</div>
+                    <div className="sgn-dz-hint">변경하려면 다시 클릭 · {(form.businessDoc.size/1024).toFixed(0)} KB</div>
+                  </>) : (<>
+                    <div className="sgn-dz-icon"><Icon name="upload" size={18} stroke={1.8}/></div>
+                    <div className="sgn-dz-name">클릭하여 파일 선택</div>
+                    <div className="sgn-dz-hint">PDF, JPG, PNG · 최대 10MB</div>
+                  </>)}
+                </label>
+              </div>
+              {userType === 'manufacturer' && (
+                <div className="sgn-upload-block">
+                  <div className="sgn-upload-ttl">
+                    공장 사진
+                    <span className="sgn-badge-opt">선택</span>
+                  </div>
+                  <label className={`sgn-drop-zone ${form.factoryPhoto ? 'has-file' : ''}`}>
+                    <input type="file" accept=".jpg,.jpeg,.png" style={{ display: 'none' }}
+                      onChange={e => upd('factoryPhoto', e.target.files[0] || null)}/>
+                    {form.factoryPhoto ? (<>
+                      <div className="sgn-dz-icon is-ok"><Icon name="check" size={18} stroke={2.5}/></div>
+                      <div className="sgn-dz-name">{form.factoryPhoto.name}</div>
+                      <div className="sgn-dz-hint">변경하려면 다시 클릭 · {(form.factoryPhoto.size/1024).toFixed(0)} KB</div>
+                    </>) : (<>
+                      <div className="sgn-dz-icon"><Icon name="layers" size={18} stroke={1.8}/></div>
+                      <div className="sgn-dz-name">공장 외관 또는 생산 사진</div>
+                      <div className="sgn-dz-hint">JPG, PNG</div>
+                    </>)}
+                  </label>
+                </div>
+              )}
+              {errors.submit && (
+                <div className="sgn-error-box">
+                  <Icon name="info" size={14} stroke={2}/>
+                  {errors.submit}
+                </div>
+              )}
+            </div>
+            <button className={`btn-primary sgn-btn ${!form.businessDoc || loading ? 'sgn-btn-off' : ''}`}
+              onClick={form.businessDoc && !loading ? handleSubmit : undefined}>
+              {loading
+                ? <><div className="sgn-spin"/>신청 중...</>
+                : <>가입 신청하기 <Icon name="arrow_right" size={14} stroke={2.4}/></>}
+            </button>
+            <p className="sgn-privacy">제출 서류는 본인 확인 목적으로만 사용되며 암호화하여 보관됩니다.</p>
+          </>)}
+
+          {/* ── 5단계: 완료 ── */}
+          {step === 5 && (
+            <div className="sgn-complete">
+              <div className="sgn-complete-ico">
+                <Icon name="shield" size={40} stroke={1.4}/>
+              </div>
+              <h2 className="sgn-complete-ttl">가입 신청이 완료되었습니다</h2>
+              <p className="sgn-complete-sub">
+                검토 후 승인 이메일을 보내드립니다<br/>
+                <strong>영업일 1–2일</strong> 소요됩니다
+              </p>
+              <div className="sgn-complete-card">
+                <div className="sgn-cr"><span className="sgn-ck">이메일</span><span className="sgn-cv">{form.email}</span></div>
+                <div className="sgn-cr"><span className="sgn-ck">유형</span><span className="sgn-cv">{userType === 'buyer' ? '바이어' : '제조사'}</span></div>
+                <div className="sgn-cr"><span className="sgn-ck">상태</span><span className="sgn-cv sgn-pending">검토 중</span></div>
+              </div>
+              <button className="btn-primary sgn-btn" onClick={() => onNav('login')}>
+                로그인 페이지로 이동
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════
 Object.assign(window, {
-  LandingPage, AuthFormPage, VerifyPage, OnboardingPage, WelcomePage,
+  LandingPage, AuthFormPage, VerifyPage, OnboardingPage, WelcomePage, SignupPage,
 });
 
 
