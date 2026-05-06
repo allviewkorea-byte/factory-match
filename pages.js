@@ -1350,8 +1350,11 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
   if (detailLoading) {
     return (
-      <div className="page page-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="list-db-spinner" style={{ fontSize: 14, color: 'var(--ink-3)' }}>공장 정보를 불러오는 중...</div>
+      <div className="page page-detail">
+        <div className="detail-loading">
+          <div className="detail-loading-spinner"/>
+          <span className="detail-loading-text">공장 정보를 불러오는 중...</span>
+        </div>
       </div>
     );
   }
