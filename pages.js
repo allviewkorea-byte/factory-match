@@ -2449,8 +2449,16 @@ function scoreFactory(factory, searchTerms) {
   return score;
 }
 
-function SearchUXPage({ onOpenFactory, onSearch, onNav }) {
-  const [query, setQuery] = useStateSX(() => _sxStateCache?.query ?? '');
+function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
+  // If arriving from home search with a new/different query, wipe stale cache
+  const _shouldAutoSearch = !!initialQuery && (
+    !_sxStateCache || _sxStateCache.query !== initialQuery
+  );
+  if (_shouldAutoSearch) _sxStateCache = null;
+
+  const _autoSearchedRef = useRefSX(false);
+
+  const [query, setQuery] = useStateSX(() => _sxStateCache?.query ?? initialQuery ?? '');
   const [smart, setSmart] = useStateSX(() => _sxStateCache ? (_sxStateCache.smart ?? true) : true);
   const [activeKw, setActiveKw] = useStateSX(() => _sxStateCache?.activeKw ?? null);
   const [focused, setFocused] = useStateSX(false);
@@ -2469,6 +2477,14 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav }) {
 
   // On unmount: save snapshot to module-level cache for next mount
   useEffectSX(() => () => { _sxStateCache = _snapRef.current; }, []);
+
+  // Auto-trigger AI search when navigating here from home page with a query
+  useEffectSX(() => {
+    if (_shouldAutoSearch && !_autoSearchedRef.current) {
+      _autoSearchedRef.current = true;
+      handleSearch();
+    }
+  }, []);
 
   const sorted = useMemoSX(() => {
     const arr = [...SX_ALL_CATEGORIES];

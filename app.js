@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report'];
+const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 // Parse route and factoryId from current URL once at startup
@@ -203,7 +203,7 @@ function App() {
   };
   const handleSearch = (q) => {
     setSearchQ(q);
-    setRoute('list');
+    setRoute('search');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -230,6 +230,14 @@ function App() {
           onSearch={handleSearch}
           density={tweaks.density}
           heroVariant={tweaks.heroVariant}
+        />
+      )}
+      {route === 'search' && (
+        <SearchUXPage
+          initialQuery={searchQ}
+          onOpenFactory={(id) => openFactory(id, 'search')}
+          onSearch={handleSearch}
+          onNav={nav}
         />
       )}
       {route === 'list' && (
