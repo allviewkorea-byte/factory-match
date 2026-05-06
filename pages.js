@@ -1491,7 +1491,7 @@ function useMapsKey() {
   return key;
 }
 
-const MAPS_ENABLED = false; // Set to true when Maps API is authorized
+const MAPS_ENABLED = true; // Set to true when Maps API is authorized
 
 function FactoryMap({ city, name }) {
   const key = useMapsKey();
