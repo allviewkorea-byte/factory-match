@@ -1335,6 +1335,15 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             )}
           </div>
           <h1 className="detail-name">{f.name}</h1>
+          {f.isCorporate && f.businessNumber && (
+            <div className="detail-business-number">
+              <span style={{color:'#555'}}>사업자번호 </span>
+              {f.businessNumber.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3')}
+              {f.businessStatus === 'active' && (
+                <span style={{background:'#e6f4ea',color:'#2d7a3a',borderRadius:'4px',padding:'2px 8px',fontSize:'11px',marginLeft:'8px',fontWeight:'600'}}>영업중</span>
+              )}
+            </div>
+          )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
             <span><Icon name="pin" size={13} stroke={2}/> {f.city}</span>

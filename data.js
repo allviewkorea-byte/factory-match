@@ -309,5 +309,8 @@ window._dbRowToFactory = (row) => ({
   hidden: !!row.hidden,
   summary: row.summary || '',
   image: row.image || '#a8b4c8',
+  businessNumber: row.business_number || '',
+  isCorporate: !!row.is_corporate,
+  businessStatus: row.business_status || '',
 });
 
