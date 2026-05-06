@@ -679,6 +679,15 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
   const [aiResults, setAiResults] = useStateP(null);
   const [consulting, setConsulting] = useStateP(null);
   const [matchedFactoryDetails, setMatchedFactoryDetails] = useStateP([]);
+  const [factoryCount, setFactoryCount] = useStateP(null);
+
+  // Fetch live factory count from Supabase on mount
+  useEffectP(() => {
+    if (!window._sb) return;
+    window._sb.from('factories').select('*', { count: 'exact', head: true })
+      .then(({ count }) => { if (count != null) setFactoryCount(count); })
+      .catch(() => {});
+  }, []);
 
   // Rotate placeholder text while idle
   useEffectP(() => {
@@ -778,7 +787,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
 
         {!hasResults && (
           <div className="home-stats-bar">
-            전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+            전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
           </div>
         )}
       </div>
