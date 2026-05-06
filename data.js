@@ -283,7 +283,7 @@ window.MFG_DATA = {
 // Supabase DB row → JS factory object
 window._dbRowToFactory = (row) => ({
   id: row.id,
-  name: row.name,
+  name: row.name || '',
   en: row.en || '',
   city: row.city || '',
   region: row.region || '',

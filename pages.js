@@ -175,7 +175,7 @@ function getCardKeywords(f) {
     const { PROCESSES } = window.MFG_DATA;
     kws.push(...f.processes.slice(0, 3).map(p => PROCESSES.find(x => x.id === p)?.label || p));
   }
-  return kws.slice(0, 3).join(' · ') || f.name.slice(0, 12);
+  return kws.slice(0, 3).join(' · ') || (f.name || '').slice(0, 12);
 }
 
 const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqIds = [], simplified = false }) => {
@@ -226,7 +226,9 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
                 ))}
               </div>
             )}
-            {f.summary && <p className="mcard-desc">{f.summary}</p>}
+            {(f.summary || f.city) && (
+              <p className="mcard-desc">{f.summary || f.city}</p>
+            )}
           </>
         ) : (
           <>
