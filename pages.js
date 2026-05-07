@@ -1628,6 +1628,80 @@ function FactoryMap({ city, name }) {
   );
 }
 
+// ── 공장 히어로 이미지: Street View → Static Map → 색상 박스 ─────────────────
+const GMAPS_KEY = 'AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY';
+
+const FactoryHeroImg = ({ f }) => {
+  const addr = (f.address || '').trim();
+  const [src,  setSrc]  = React.useState(null);   // null=로딩중
+  const [type, setType] = React.useState(null);   // 'sv'|'map'|'color'
+
+  React.useEffect(() => {
+    if (!addr) { setType('color'); return; }
+    let cancelled = false;
+
+    // Street View 메타데이터로 영상 존재 여부 확인 (무료 API)
+    fetch(
+      `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${GMAPS_KEY}`
+    )
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        if (d.status === 'OK') {
+          setSrc(`https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${encodeURIComponent(addr)}&fov=90&pitch=0&key=${GMAPS_KEY}`);
+          setType('sv');
+        } else {
+          setSrc(`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=800x400&maptype=roadmap&markers=color:0x3b82f6|${encodeURIComponent(addr)}&scale=2&key=${GMAPS_KEY}`);
+          setType('map');
+        }
+      })
+      .catch(() => { if (!cancelled) setType('color'); });
+
+    return () => { cancelled = true; };
+  }, [addr]);
+
+  // Street View 로드 실패 시 지도로 폴백
+  const onImgError = () => {
+    if (type === 'sv') {
+      setSrc(`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=800x400&maptype=roadmap&markers=color:0x3b82f6|${encodeURIComponent(addr)}&scale=2&key=${GMAPS_KEY}`);
+      setType('map');
+    } else {
+      setType('color');
+    }
+  };
+
+  if (type === 'color' || (!addr && type !== 'sv' && type !== 'map')) {
+    return (
+      <div className="detail-hero-img" style={{ background: f.image }}>
+        <div className="mcard-img-stripes"/>
+      </div>
+    );
+  }
+
+  // 로딩 중 (메타데이터 확인 전) — 색상 박스 임시 표시
+  if (!src) {
+    return (
+      <div className="detail-hero-img" style={{ background: f.image }}>
+        <div className="mcard-img-stripes"/>
+      </div>
+    );
+  }
+
+  return (
+    <div className="detail-hero-img" style={{ background: '#e8edf2', padding: 0 }}>
+      <img
+        src={src}
+        alt={f.name}
+        onError={onImgError}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
+      <div className="detail-hero-img-label">
+        {type === 'sv' ? 'STREET VIEW' : '지도'}
+      </div>
+    </div>
+  );
+};
+
 const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
 
@@ -1823,9 +1897,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
       {/* Hero */}
       <section className="detail-hero">
-        <div className="detail-hero-img" style={{ background: f.image }}>
-          <div className="mcard-img-stripes"/>
-        </div>
+        <FactoryHeroImg f={f}/>
         <div className="detail-hero-info">
           <div className="detail-hero-head">
             {f.certs.includes('IATF 16949') && (
