@@ -184,8 +184,8 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   const isCompact = compact || density === 'compact';
   const isInRfq = rfqIds.includes(f.id);
 
-  // Location: region + city 합쳐서 "경기도 수원시" 형태
-  const location = [f.region, f.city].filter(s => s && s.trim()).join(' ');
+  // Location: 원본 한글 지역명(regionRaw) 우선, 없으면 regionId 사용
+  const location = [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ');
 
   // 업종 태그: industries 배열 (KICOX는 raw 한글, 샘플은 영문 id)
   const industryTags = (f.industries || []).map(i => INDUSTRY_LABEL_MAP[i] || i).slice(0, 4);
@@ -1161,15 +1161,21 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
-    // Fetch per-region counts from DB (parallel, 9 queries)
+    // Fetch per-region counts from DB — DB stores Korean names so build reverse map from _REGION_NORM
     const REGION_IDS = ['gyeonggi','busan','gyeongnam','ulsan','daegu','chungcheong','jeonla','gangwon','jeju'];
+    const regionKorMap = {};
+    Object.entries(window._REGION_NORM || {}).forEach(([kor, eng]) => {
+      if (!regionKorMap[eng]) regionKorMap[eng] = [];
+      regionKorMap[eng].push(kor);
+    });
     Promise.all(
-      REGION_IDS.map(r =>
-        window._sb.from('factories')
-          .select('id', { count: 'exact', head: true })
+      REGION_IDS.map(r => {
+        const korVals = regionKorMap[r] || [r];
+        return window._sb.from('factories')
+          .select('id', { count: 'estimated', head: true })
           .eq('hidden', false)
-          .eq('region', r)
-      )
+          .in('region', korVals);
+      })
     ).then(results => {
       if (!mounted) return;
       const counts = {};
@@ -1972,7 +1978,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
-            <span><Icon name="pin" size={13} stroke={2}/> {[f.region, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
+            <span><Icon name="pin" size={13} stroke={2}/> {[(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
               <>
                 <span className="dot">·</span>
@@ -2073,7 +2079,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               <h4>기본 정보</h4>
               <dl className="detail-dl">
                 {(f.address || f.city) && (
-                  <><dt>주소</dt><dd>{f.address || [f.region, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                  <><dt>주소</dt><dd>{f.address || [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
                 {f.founded > 0 && (
@@ -2225,7 +2231,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   )}
                   <div className="fe-ro-item">
                     <span className="fe-ro-label">주소</span>
-                    <span className="fe-ro-value">{f.address || [f.region, f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
+                    <span className="fe-ro-value">{f.address || [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
                   </div>
                 </div>
               </div>
