@@ -1031,7 +1031,9 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
 let _listStateCache = null;
 
 const INDUSTRY_CATS = [
-  { id: 'metal',     label: '금속/기계',   industryId: 'machine',     subs: [
+  { id: 'metal',     label: '금속/기계',   industryId: 'machine',
+    korKws: ['금속', '기계', '장비', '철강', '1차 금속', '주조', '단조', '프레스', '용접', '도장', '도금', '표면처리', '조선', '자동차', '금형'],
+    subs: [
     { id: 'cnc',      label: 'CNC 가공',   pids: ['cnc', 'cutting'] },
     { id: 'press',    label: '프레스',     pids: ['press'] },
     { id: 'welding',  label: '용접',       pids: ['welding'] },
@@ -1040,47 +1042,63 @@ const INDUSTRY_CATS = [
     { id: 'heat',     label: '열처리',     pids: [] },
     { id: 'painting', label: '도장',       pids: ['painting'] },
   ]},
-  { id: 'electronics', label: '전자/PCB', industryId: 'electronics', subs: [
+  { id: 'electronics', label: '전자/PCB', industryId: 'electronics',
+    korKws: ['전자', '반도체', 'PCB', '전기', '전장', '컴퓨터', '영상', '음향', '통신', '광학기기'],
+    subs: [
     { id: 'pcb',      label: 'PCB 조립',  pids: [] },
     { id: 'smt',      label: 'SMT',       pids: [] },
     { id: 'semicon',  label: '반도체',    pids: [] },
     { id: 'eparts',   label: '전장부품',  pids: [] },
   ]},
-  { id: 'plastic',   label: '플라스틱/고무', industryId: null, subs: [
+  { id: 'plastic',   label: '플라스틱/고무', industryId: null,
+    korKws: ['플라스틱', '고무', '합성수지', '사출', '압출', '실리콘', '비금속', '유리', '도자'],
+    subs: [
     { id: 'injection',label: '사출',      pids: ['injection'] },
     { id: 'mold',     label: '금형',      pids: ['mold'] },
     { id: 'extrusion',label: '압출',      pids: [] },
     { id: 'silicone', label: '실리콘',    pids: [] },
   ]},
-  { id: 'textile',   label: '섬유/봉제',  industryId: 'textile',    subs: [
+  { id: 'textile',   label: '섬유/봉제',  industryId: 'textile',
+    korKws: ['섬유', '봉제', '직물', '의류', '의복', '신발', '가죽', '모피', '편직'],
+    subs: [
     { id: 'sewing',   label: '봉제',      pids: [] },
     { id: 'dyeing',   label: '나염',      pids: [] },
     { id: 'embroid',  label: '자수',      pids: [] },
     { id: 'notions',  label: '단추/부자재', pids: [] },
     { id: 'knit',     label: '니트',      pids: [] },
   ]},
-  { id: 'food',      label: '식품',       industryId: 'food',       subs: [
+  { id: 'food',      label: '식품',       industryId: 'food',
+    korKws: ['식료품', '식품', '음료', '주류', '담배', '제과', '도축', '수산'],
+    subs: [
     { id: 'foodproc', label: '식품가공',  pids: [] },
     { id: 'foodpack', label: '포장',      pids: [] },
     { id: 'foodoem',  label: 'OEM식품',   pids: [] },
     { id: 'haccp',    label: 'HACCP',     pids: [] },
   ]},
-  { id: 'chemical',  label: '화학/소재',  industryId: 'chemical',   subs: [
+  { id: 'chemical',  label: '화학/소재',  industryId: 'chemical',
+    korKws: ['화학', '도료', '비료', '의약', '석유', '코크스', '접착', '화장품', '세제'],
+    subs: [
     { id: 'plating',  label: '도금',      pids: [] },
     { id: 'coating',  label: '코팅',      pids: [] },
     { id: 'chemproc', label: '화학처리',  pids: [] },
   ]},
-  { id: 'wood',      label: '목재/가구',  industryId: null, subs: [
+  { id: 'wood',      label: '목재/가구',  industryId: null,
+    korKws: ['목재', '가구', '나무', '종이', '펄프', '인테리어'],
+    subs: [
     { id: 'woodwork', label: '목공',      pids: [] },
     { id: 'furniture',label: '가구',      pids: [] },
     { id: 'interior', label: '인테리어 자재', pids: [] },
   ]},
-  { id: 'print',     label: '인쇄/포장',  industryId: null, subs: [
+  { id: 'print',     label: '인쇄/포장',  industryId: null,
+    korKws: ['인쇄', '출판', '포장', '라벨'],
+    subs: [
     { id: 'printing', label: '인쇄',      pids: [] },
     { id: 'packaging',label: '패키지',    pids: [] },
     { id: 'label',    label: '라벨',      pids: [] },
   ]},
-  { id: 'other',     label: '기타',       industryId: null, subs: [
+  { id: 'other',     label: '기타',       industryId: null,
+    korKws: ['재활용', '폐기물', '수리', '조립'],
+    subs: [
     { id: 'assemblyX',label: '조립',      pids: ['assembly'] },
     { id: 'logistics',label: '물류포장',  pids: [] },
     { id: 'etcX',     label: '기타',      pids: [] },
@@ -1093,6 +1111,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [dbLoading, setDbLoading] = useStateP(true);
   const [dbError, setDbError] = useStateP(null);
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
+  const [regionCounts, setRegionCounts] = useStateP({});
   const mapsKey = useMapsKey();
 
   // Restore filter state from cache, unless this is a fresh search from home
@@ -1142,6 +1161,22 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
+    // Fetch per-region counts from DB (parallel, 9 queries)
+    const REGION_IDS = ['gyeonggi','busan','gyeongnam','ulsan','daegu','chungcheong','jeonla','gangwon','jeju'];
+    Promise.all(
+      REGION_IDS.map(r =>
+        window._sb.from('factories')
+          .select('id', { count: 'exact', head: true })
+          .eq('hidden', false)
+          .eq('region', r)
+      )
+    ).then(results => {
+      if (!mounted) return;
+      const counts = {};
+      REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
+      setRegionCounts(counts);
+    }).catch(() => {});
+
     const loadPage = async (from, acc) => {
       const { data, error } = await window._sb
         .from('factories').select('*').eq('hidden', false)
@@ -1168,18 +1203,25 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   }, []);
 
   const filtered = useMemoP(() => {
-    // Resolve industry filter → set of process IDs (or industry ID) to match
-    let industryPids = null;   // array of process IDs (OR logic)
-    let industryId = null;     // industry string to match in f.industries
+    // Resolve industry filter
+    let industryPids = null;
+    let industryId   = null;
+    let catKorKws    = [];   // 한글 키워드 (KICOX 공장 매칭용)
     if (activeIndustry !== 'all') {
       const cat = INDUSTRY_CATS.find(c => c.id === activeIndustry);
       if (cat) {
         industryPids = cat.subs.flatMap(s => s.pids);
-        industryId = cat.industryId;
+        industryId   = cat.industryId;
+        catKorKws    = cat.korKws || [];
       } else {
         for (const c of INDUSTRY_CATS) {
           const sub = c.subs.find(s => s.id === activeIndustry);
-          if (sub) { industryPids = sub.pids; industryId = null; break; }
+          if (sub) {
+            industryPids = sub.pids;
+            industryId   = null;
+            catKorKws    = c.korKws || [];   // 서브카테고리는 부모 키워드 사용
+            break;
+          }
         }
       }
     }
@@ -1191,10 +1233,18 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       if (f.moq > moqMax) return false;
       if (oemOnly && !f.oem) return false;
       if (exportOnly && !f.export) return false;
-      if (industryPids !== null || industryId !== null) {
-        const pidMatch = industryPids && industryPids.length > 0 && industryPids.some(p => (f.processes || []).includes(p));
+      if (industryPids !== null || industryId !== null || catKorKws.length > 0) {
+        // 1) process ID 매칭 (영문 샘플 공장)
+        const pidMatch = industryPids && industryPids.length > 0
+          && industryPids.some(p => (f.processes || []).includes(p));
+        // 2) industries 영문 ID 매칭 (영문 샘플 공장)
         const indMatch = industryId && (f.industries || []).includes(industryId);
-        if (!pidMatch && !indMatch) return false;
+        // 3) 한글 키워드 매칭: industries 배열 또는 summary 텍스트 (KICOX 공장)
+        const korMatch = catKorKws.length > 0 && (
+          (f.industries || []).some(ind => catKorKws.some(kw => ind.includes(kw))) ||
+          catKorKws.some(kw => (f.summary || '').includes(kw))
+        );
+        if (!pidMatch && !indMatch && !korMatch) return false;
       }
       if (query) {
         const q = query.toLowerCase();
@@ -1290,7 +1340,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                         <span className="filter-radio-dot"/>
                         <span>{r.label}</span>
                         <span className="filter-radio-count">
-                          {r.id === 'all' ? factories.length : factories.filter(f => f.region === r.id).length}
+                          {r.id === 'all'
+                            ? (dbTotalCount ?? factories.length).toLocaleString()
+                            : (regionCounts[r.id] ?? factories.filter(f => f.region === r.id).length).toLocaleString()
+                          }
                         </span>
                       </label>
                     ))}
