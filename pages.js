@@ -2964,7 +2964,7 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
             if (kw.length > 0) {
               q = q.ilike('summary', `%${kw[0]}%`);
             }
-            q = q.order('rating', { ascending: false }).limit(200);
+            q = q.order('enriched_score', { ascending: false, nullsFirst: false }).limit(100);
             const { data: rows } = await q;
             if (rows && rows.length) allFactories = rows.map(window._dbRowToFactory);
           } catch (_) {}
@@ -5587,7 +5587,7 @@ const AdminReportsTab = () => {
         statuses.map(s =>
           window._sb
             .from('factory_reports')
-            .select('id', { count: 'exact', head: true })
+            .select('id', { count: 'estimated', head: true })
             .eq('status', s)
         )
       );
@@ -5831,9 +5831,9 @@ const AdminSignupTab = () => {
     try {
       const statuses = ['pending', 'approved', 'rejected'];
       const [allRes, ...results] = await Promise.all([
-        window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
+        window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }),
         ...statuses.map(s =>
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', s)
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', s)
         ),
       ]);
       const c = { all: allRes.count || 0 };
@@ -6210,7 +6210,7 @@ const AdminAnalyticsTab = () => {
 
         // 전체 누적
         const { count: total } = await window._sb
-          .from('page_views').select('id', { count: 'exact', head: true });
+          .from('page_views').select('id', { count: 'estimated', head: true });
         setTotalViews(total ?? 0);
 
         // 유저 통계
@@ -6219,9 +6219,9 @@ const AdminAnalyticsTab = () => {
           { count: uPending },
           { count: uApproved },
         ] = await Promise.all([
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', 'approved'),
         ]);
         setUserStats({ total: uAll ?? 0, pending: uPending ?? 0, approved: uApproved ?? 0 });
       } catch {}
@@ -6512,7 +6512,7 @@ const AdminPage = ({ onOpenFactory }) => {
     setUploadResult({ ok, fail, failedRows });
     setUploadPhase('result');
     try {
-      const { count } = await window._sb.from('factories').select('*', { count: 'exact', head: true });
+      const { count } = await window._sb.from('factories').select('*', { count: 'estimated', head: true });
       if (count != null) setTotalCount(count);
     } catch (_) {}
   };
