@@ -1847,7 +1847,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
-            <span><Icon name="pin" size={13} stroke={2}/> {f.city}</span>
+            <span><Icon name="pin" size={13} stroke={2}/> {[f.region, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
               <>
                 <span className="dot">·</span>
@@ -1947,11 +1947,14 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div className="detail-side">
               <h4>기본 정보</h4>
               <dl className="detail-dl">
+                {(f.address || f.city) && (
+                  <><dt>주소</dt><dd>{f.address || [f.region, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                )}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
-                {isSample && f.founded > 0 && (
+                {f.founded > 0 && (
                   <><dt>설립</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>
                 )}
-                {isSample && f.employees > 0 && (
+                {f.employees > 0 && (
                   <><dt>직원수</dt><dd>{f.employees}명</dd></>
                 )}
                 {(f.oem || f.odm || f.export) && (
