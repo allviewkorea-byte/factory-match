@@ -346,6 +346,7 @@ window._dbRowToFactory = (row) => {
   reviews: row.reviews || 0,
   responseHr: row.response_hr || 24,
   deals: row.deals || 0,
+  enrichedScore: row.enriched_score || 0,
   hidden: !!row.hidden,
   summary: row.summary || '',
   image: row.image || '#a8b4c8',
