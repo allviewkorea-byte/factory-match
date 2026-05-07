@@ -1638,14 +1638,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   const [detailLoading, setDetailLoading] = useStateP(() => !_fromCacheOrFixture(factoryId));
 
   useEffectP(() => {
-    const cached = _fromCacheOrFixture(factoryId);
-    if (cached) {
-      setResolvedFactory(cached);
-      setDetailLoading(false);
-      return;
-    }
+    // 캐시는 초기 렌더용으로만 사용, 항상 DB에서 최신 데이터 재조회
     let cancelled = false;
-    setDetailLoading(true);
     window._sb.from('factories').select('*').eq('id', factoryId).single()
       .then(({ data, error }) => {
         if (cancelled) return;
@@ -1655,7 +1649,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           window._factoryCache[factoryId] = factory;
           setResolvedFactory(factory);
         } else {
-          setResolvedFactory(FACTORIES[0]);
+          const fallback = _fromCacheOrFixture(factoryId);
+          if (fallback) setResolvedFactory(fallback);
         }
         setDetailLoading(false);
       });
