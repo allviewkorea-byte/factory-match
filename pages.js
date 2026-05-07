@@ -2102,7 +2102,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   )}
                   <div className="fe-ro-item">
                     <span className="fe-ro-label">주소</span>
-                    <span className="fe-ro-value">{f.city}</span>
+                    <span className="fe-ro-value">{f.address || [f.region, f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
                   </div>
                 </div>
               </div>
