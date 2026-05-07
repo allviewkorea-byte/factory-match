@@ -281,13 +281,29 @@ window.MFG_DATA = {
 };
 
 // Supabase DB row → JS factory object
-window._dbRowToFactory = (row) => ({
+window._latLngToSvg = (lat, lng) => {
+  // 실제 위경도(한국 범위) → SVG 0-100 좌표 변환
+  const x = Math.max(0, Math.min(100, (lng - 124.0) / (130.5 - 124.0) * 100));
+  const y = Math.max(0, Math.min(100, (38.6 - lat) / (38.6 - 33.0) * 100));
+  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+};
+
+window._dbRowToFactory = (row) => {
+  // coord_y > 100 이면 실제 경도(위경도 형식), 아니면 SVG 좌표
+  let coord = null;
+  if (row.coord_x != null && row.coord_y != null) {
+    coord = row.coord_y > 100
+      ? window._latLngToSvg(row.coord_x, row.coord_y)
+      : { x: row.coord_x, y: row.coord_y };
+  }
+  return ({
   id: row.id,
   name: row.name || '',
   en: row.en || '',
   city: row.city || '',
   region: row.region || '',
-  coord: (row.coord_x != null && row.coord_y != null) ? { x: row.coord_x, y: row.coord_y } : null,
+  coord,
+  address: row.address || '',
   industries: row.industries || [],
   processes: row.processes || [],
   products: row.products || [],
@@ -312,5 +328,5 @@ window._dbRowToFactory = (row) => ({
   businessNumber: row.business_number || '',
   isCorporate: !!row.is_corporate,
   businessStatus: row.business_status || '',
-});
+}); };
 
