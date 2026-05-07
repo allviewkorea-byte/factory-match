@@ -1676,7 +1676,7 @@ function FactoryMap({ city, name }) {
 }
 
 // ── 공장 히어로 이미지: Street View → Static Map → 색상 박스 ─────────────────
-const GMAPS_KEY = 'AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY';
+const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
 const FactoryHeroImg = ({ f }) => {
   const addr = (f.address || '').trim();

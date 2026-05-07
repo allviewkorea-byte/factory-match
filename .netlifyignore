@@ -1,0 +1,11 @@
+# 배포에서 제외 — 백엔드/데이터 스크립트 (secrets scanning 대상 아님)
+*.py
+*.csv
+*.sql
+*.json
+project/
+chats/
+*.jsx
+*.html.bak
+FactoryMatch.html
+downloader.html
