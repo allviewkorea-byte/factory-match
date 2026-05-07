@@ -1,103 +1,95 @@
 """
-KICOX 원본 데이터로 기존 factories 테이블 UPDATE
+KICOX CSV → Supabase REST API로 factories 테이블 UPDATE
 
 사용법:
-  pip install psycopg2-binary pandas
-  python update_kicox_enriched.py <원본CSV경로>
+  pip install requests pandas
+  python update_kicox_enriched.py <CSV경로>
 
-원본 CSV: data.go.kr/data/15105482 에서 다운로드한 파일
-  예) python update_kicox_enriched.py 전국등록공장현황_20241231.csv
+CSV 컬럼: 순번, 회사명, 단지명, 생산품, 공장주소
 
-동작:
-  - 회사명(name)으로 기존 DB 레코드 매칭
-  - coord_x(위도), coord_y(경도), address, employees, founded 업데이트
-  - summary에 산업단지명 포함
-  - 매칭 안 된 행은 건너뜀
+주의: anon key로 UPDATE가 막히면 Supabase Dashboard > Settings > API >
+      service_role key를 API_KEY에 넣고 재실행하세요.
 """
 
 import sys
-import re
-import pandas as pd
-import psycopg2
-import psycopg2.extras
+import math
 import time
+import pandas as pd
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-DB = dict(
-    host="db.yezxwlzyiqgewpkkyget.supabase.co",
-    port=5432,
-    database="postgres",
-    user="postgres",
-    password="##Wwnanami2407",
-)
+SUPABASE_URL = "https://yezxwlzyiqgewpkkyget.supabase.co"
+API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs"
 
-# ──────────────────────────────────────────
-# 컬럼명 후보 매핑 (data.go.kr CSV 컬럼명 변형 대응)
-# ──────────────────────────────────────────
-COL_CANDIDATES = {
-    "name":      ["업체명", "공장명", "사업체명", "회사명", "업체 명", "법인명"],
-    "address":   ["도로명주소", "주소(도로명)", "도로명 주소", "도로명_주소", "소재지도로명주소", "소재지(도로명)"],
-    "address2":  ["지번주소", "주소(지번)", "지번 주소", "소재지지번주소", "소재지(지번)"],
-    "lat":       ["위도", "위도_좌표", "위도좌표", "lat", "latitude", "y좌표", "Y좌표"],
-    "lng":       ["경도", "경도_좌표", "경도좌표", "lng", "longitude", "x좌표", "X좌표"],
-    "products":  ["주요생산품", "주요제품", "생산품", "제품", "생산품명", "주생산품", "주요 생산품"],
-    "industry":  ["업종명", "업종", "한국표준산업분류명", "표준산업분류명", "업태", "업종코드명"],
-    "employees": ["종업원수", "임직원수", "직원수", "종사자수", "근로자수", "종업원 수"],
-    "founded":   ["공장등록일", "등록일", "등록일자", "사업개시일", "창업일", "설립일", "공장 등록일"],
-    "complex":   ["산업단지명", "단지명", "단지 명", "공장소재지단지명", "소재단지명"],
-    "area":      ["용지면적", "공장부지면적", "대지면적", "부지면적"],
+BASE_HEADERS = {
+    "apikey": API_KEY,
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=minimal",
 }
 
-
-def detect_col(df_cols, candidates):
-    """DataFrame 컬럼 목록에서 후보 중 첫 번째 일치 반환"""
-    cols_lower = {c.strip(): c for c in df_cols}
-    for cand in candidates:
-        if cand in cols_lower:
-            return cols_lower[cand]
-        # 공백 제거 후 비교
-        cand_clean = re.sub(r"\s+", "", cand)
-        for orig, raw in cols_lower.items():
-            if re.sub(r"\s+", "", orig) == cand_clean:
-                return raw
-    return None
+PAGE_SIZE  = 1000   # Supabase 기본 페이지 크기
+MAX_WORKERS = 20    # 동시 PATCH 요청 수
 
 
-def lat_lng_to_svg(lat, lng):
-    """
-    실제 위경도 → SVG 0-100 좌표 변환 (한국 범위 기준)
-    lat: 33.0(제주 남단) ~ 38.6(북방한계선 근처)
-    lng: 124.0(서해) ~ 130.5(동해)
-    """
-    x = (lng - 124.0) / (130.5 - 124.0) * 100
-    y = (38.6 - lat) / (38.6 - 33.0) * 100
-    x = max(0.0, min(100.0, round(x, 2)))
-    y = max(0.0, min(100.0, round(y, 2)))
-    return x, y
+def fetch_all_kicox(session):
+    """DB의 모든 kicox_ 레코드 (id, name) 페이지네이션으로 가져오기"""
+    records = []
+    offset = 0
+    while True:
+        resp = session.get(
+            f"{SUPABASE_URL}/rest/v1/factories",
+            headers=BASE_HEADERS,
+            params={
+                "select": "id,name",
+                "id":     "like.kicox_%",
+                "limit":  PAGE_SIZE,
+                "offset": offset,
+            },
+        )
+        resp.raise_for_status()
+        chunk = resp.json()
+        if not chunk:
+            break
+        records.extend(chunk)
+        print(f"    {len(records):,}개 로드 중...", end="\r")
+        if len(chunk) < PAGE_SIZE:
+            break
+        offset += PAGE_SIZE
+    print()
+    return records
 
 
-def parse_year(val):
-    """날짜 문자열에서 연도 추출. 예: '2005-03-21', '20050321', '2005년 3월' → 2005"""
-    if not val or (isinstance(val, float) and pd.isna(val)):
-        return None
-    s = str(val).strip()
-    m = re.search(r"(\d{4})", s)
-    return int(m.group(1)) if m else None
-
-
-def parse_employees(val):
-    """종업원수를 정수로 변환"""
-    if not val or (isinstance(val, float) and pd.isna(val)):
-        return None
+def patch_one(session, factory_id, payload):
+    """단일 레코드 PATCH. (factory_id, 성공여부, 에러메시지) 반환"""
     try:
-        return int(str(val).replace(",", "").strip())
-    except ValueError:
+        resp = session.patch(
+            f"{SUPABASE_URL}/rest/v1/factories",
+            headers=BASE_HEADERS,
+            params={"id": f"eq.{factory_id}"},
+            json=payload,
+            timeout=15,
+        )
+        if resp.status_code in (200, 204):
+            return factory_id, True, None
+        return factory_id, False, f"{resp.status_code} {resp.text[:120]}"
+    except Exception as e:
+        return factory_id, False, str(e)
+
+
+def str_val(v):
+    """NaN/None/빈값 → None, 나머지 → strip된 문자열"""
+    if v is None:
         return None
+    if isinstance(v, float) and math.isnan(v):
+        return None
+    s = str(v).strip()
+    return s if s and s.lower() != "nan" else None
 
 
 def main():
     if len(sys.argv) < 2:
-        print("사용법: python update_kicox_enriched.py <원본CSV경로>")
-        print("예)    python update_kicox_enriched.py 전국등록공장현황_20241231.csv")
+        print("사용법: python update_kicox_enriched.py <CSV경로>")
         sys.exit(1)
 
     csv_path = sys.argv[1]
@@ -109,54 +101,51 @@ def main():
     except UnicodeDecodeError:
         df = pd.read_csv(csv_path, encoding="cp949", low_memory=False)
     print(f"    총 {len(df):,}행 로드")
+    print(f"    컬럼: {list(df.columns)}")
 
-    # ── 2. 컬럼 감지 ─────────────────────────────────────────
-    print("\n[2] 컬럼 감지 결과:")
-    detected = {}
-    for key, candidates in COL_CANDIDATES.items():
-        col = detect_col(df.columns, candidates)
-        detected[key] = col
-        status = f"✅ '{col}'" if col else "❌ 없음"
-        print(f"    {key:12s} → {status}")
+    # ── 2. 컬럼 매핑 ─────────────────────────────────────────
+    cols = list(df.columns)
+    def find_col(*keywords):
+        for kw in keywords:
+            for c in cols:
+                if kw in c:
+                    return c
+        return None
 
-    print(f"\n    전체 컬럼 목록 ({len(df.columns)}개):")
-    for c in df.columns:
-        print(f"      - {c}")
+    col_name    = find_col("회사명", "업체명", "공장명")
+    col_addr    = find_col("공장주소", "주소")
+    col_prod    = find_col("생산품", "제품")
+    col_complex = find_col("단지명", "단지")
 
-    name_col = detected["name"]
-    if not name_col:
-        print("\n❌ 회사명 컬럼을 찾을 수 없습니다. 스크립트를 종료합니다.")
-        print("   COL_CANDIDATES['name'] 목록에 실제 컬럼명을 추가하세요.")
+    print(f"\n    회사명  → '{col_name}'")
+    print(f"    주소    → '{col_addr}'")
+    print(f"    생산품  → '{col_prod}'")
+    print(f"    단지명  → '{col_complex}'")
+
+    if not col_name:
+        print("\n❌ 회사명 컬럼을 찾을 수 없습니다.")
         sys.exit(1)
 
-    lat_col  = detected["lat"]
-    lng_col  = detected["lng"]
-    addr_col = detected["address"] or detected["address2"]
+    # ── 3. DB에서 kicox_ 레코드 가져오기 ─────────────────────
+    print("\n[2] DB에서 kicox_ 레코드 로딩...")
+    session = requests.Session()
+    try:
+        db_records = fetch_all_kicox(session)
+    except requests.HTTPError as e:
+        print(f"❌ DB 조회 실패: {e}")
+        sys.exit(1)
 
-    print(f"\n    매칭 기준 컬럼: '{name_col}'")
-    print(f"    위도: {lat_col or '없음'}, 경도: {lng_col or '없음'}")
-    print(f"    주소: {addr_col or '없음'}")
-
-    # ── 3. DB 연결 ───────────────────────────────────────────
-    print("\n[3] DB 연결 중...")
-    conn = psycopg2.connect(**DB)
-    conn.autocommit = False
-    cur = conn.cursor()
-
-    # 기존 레코드: name → id 매핑
-    cur.execute("SELECT id, name FROM factories WHERE id LIKE 'kicox_%'")
-    db_rows = cur.fetchall()
-    name_to_id = {row[1].strip(): row[0] for row in db_rows}
+    name_to_id = {r["name"].strip(): r["id"] for r in db_records}
     print(f"    DB 내 kicox_ 레코드: {len(name_to_id):,}개")
 
-    # ── 4. 업데이트 준비 ─────────────────────────────────────
-    print("\n[4] 업데이트 데이터 준비 중...")
-    update_rows = []
+    # ── 4. CSV 매칭 및 페이로드 생성 ─────────────────────────
+    print("\n[3] CSV 매칭 중...")
+    update_list = []   # [(factory_id, payload), ...]
     skipped = 0
 
     for _, row in df.iterrows():
-        name = str(row[name_col]).strip() if name_col else ""
-        if not name or name == "nan":
+        name = str_val(row.get(col_name))
+        if not name:
             skipped += 1
             continue
 
@@ -165,121 +154,72 @@ def main():
             skipped += 1
             continue
 
-        # 위도/경도 → SVG 좌표 변환
-        coord_x = coord_y = None
-        if lat_col and lng_col:
-            try:
-                lat = float(row[lat_col])
-                lng = float(row[lng_col])
-                if 33.0 <= lat <= 39.0 and 124.0 <= lng <= 132.0:
-                    coord_x, coord_y = lat_lng_to_svg(lat, lng)
-            except (ValueError, TypeError):
-                pass
+        payload = {}
 
         # 주소
-        address = ""
-        if addr_col:
-            v = row.get(addr_col, "")
-            address = "" if (not v or (isinstance(v, float) and pd.isna(v))) else str(v).strip()
+        addr = str_val(row.get(col_addr)) if col_addr else None
+        if addr:
+            payload["address"] = addr
 
-        # 종업원수
-        employees = parse_employees(row.get(detected["employees"])) if detected["employees"] else None
+        # summary: 생산품 제조 [단지명]
+        parts = []
+        prod = str_val(row.get(col_prod)) if col_prod else None
+        if prod:
+            parts.append(prod + " 제조")
+        comp = str_val(row.get(col_complex)) if col_complex else None
+        if comp:
+            parts.append(f"[{comp}]")
+        if parts:
+            payload["summary"] = " ".join(parts)
 
-        # 설립연도
-        founded = parse_year(row.get(detected["founded"])) if detected["founded"] else None
+        if payload:
+            update_list.append((factory_id, payload))
+        else:
+            skipped += 1
 
-        # summary: 산업단지명 포함
-        complex_name = ""
-        if detected["complex"]:
-            v = row.get(detected["complex"], "")
-            complex_name = "" if (not v or (isinstance(v, float) and pd.isna(v))) else str(v).strip()
+    print(f"    업데이트 대상: {len(update_list):,}개")
+    print(f"    건너뜀 (미매칭 / 빈값): {skipped:,}개")
 
-        # 주요생산품
-        products_raw = ""
-        if detected["products"]:
-            v = row.get(detected["products"], "")
-            products_raw = "" if (not v or (isinstance(v, float) and pd.isna(v))) else str(v).strip()
-
-        summary_parts = []
-        if products_raw:
-            summary_parts.append(products_raw + " 제조")
-        if complex_name:
-            summary_parts.append(f"[{complex_name}]")
-        summary = " ".join(summary_parts) if summary_parts else None
-
-        update_rows.append({
-            "id":        factory_id,
-            "coord_x":   coord_x,
-            "coord_y":   coord_y,
-            "address":   address,
-            "employees": employees,
-            "founded":   founded,
-            "summary":   summary,
-        })
-
-    print(f"    업데이트 대상: {len(update_rows):,}개")
-    print(f"    매칭 실패 / 건너뜀: {skipped:,}개")
-
-    if not update_rows:
+    if not update_list:
         print("\n⚠️  업데이트할 항목이 없습니다.")
-        conn.close()
         return
 
-    # ── 5. 일괄 UPDATE ───────────────────────────────────────
-    print("\n[5] DB 업데이트 중...")
-    BATCH = 1000
-    total = len(update_rows)
-    total_batches = (total + BATCH - 1) // BATCH
-    updated = 0
-    t0 = time.time()
+    # ── 5. 병렬 PATCH ────────────────────────────────────────
+    print(f"\n[4] DB 업데이트 중 (동시 요청: {MAX_WORKERS}개)...")
+    total   = len(update_list)
+    success = 0
+    errors  = []
+    t0      = time.time()
+    done    = 0
 
-    for b in range(total_batches):
-        chunk = update_rows[b * BATCH:(b + 1) * BATCH]
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(patch_one, session, fid, payload): fid
+            for fid, payload in update_list
+        }
+        for future in as_completed(futures):
+            fid, ok, err = future.result()
+            done += 1
+            if ok:
+                success += 1
+            else:
+                errors.append((fid, err))
+                if len(errors) <= 3:
+                    print(f"\n  ⚠️  {fid}: {err}")
 
-        for r in chunk:
-            fields = []
-            vals   = []
-
-            if r["coord_x"] is not None:
-                fields.append("coord_x = %s"); vals.append(r["coord_x"])
-                fields.append("coord_y = %s"); vals.append(r["coord_y"])
-            if r["address"]:
-                fields.append("address = %s"); vals.append(r["address"])
-            if r["employees"] is not None:
-                fields.append("employees = %s"); vals.append(r["employees"])
-            if r["founded"] is not None:
-                fields.append("founded = %s"); vals.append(r["founded"])
-            if r["summary"]:
-                fields.append("summary = %s"); vals.append(r["summary"])
-
-            if not fields:
-                continue
-
-            sql = f"UPDATE factories SET {', '.join(fields)} WHERE id = %s"
-            vals.append(r["id"])
-            cur.execute(sql, vals)
-
-        conn.commit()
-        updated += len(chunk)
-
-        if (b + 1) % 10 == 0 or (b + 1) == total_batches:
-            elapsed = time.time() - t0
-            pct = (b + 1) / total_batches * 100
-            eta = elapsed / (b + 1) * (total_batches - b - 1)
-            print(f"  {pct:.1f}% | {b+1}/{total_batches}배치 | 경과 {elapsed:.0f}s | 남은 {eta:.0f}s")
-
-    # ── 6. 결과 확인 ─────────────────────────────────────────
-    cur.execute("SELECT COUNT(*) FROM factories WHERE coord_x IS NOT NULL AND id LIKE 'kicox_%'")
-    with_coord = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM factories WHERE address != '' AND id LIKE 'kicox_%'")
-    with_addr = cur.fetchone()[0]
-    conn.close()
+            if done % 500 == 0 or done == total:
+                elapsed = time.time() - t0
+                pct     = done / total * 100
+                rps     = done / elapsed if elapsed > 0 else 0
+                eta     = (total - done) / rps if rps > 0 else 0
+                print(f"  {pct:5.1f}% | {done:,}/{total:,} | {rps:.0f}건/s | 남은 {eta:.0f}s")
 
     elapsed = time.time() - t0
     print(f"\n✅ 완료: {elapsed:.1f}s")
-    print(f"   업데이트 처리: {updated:,}개")
-    print(f"   좌표 있는 kicox 공장: {with_coord:,}개")
-    print(f"   주소 있는 kicox 공장: {with_addr:,}개")
+    print(f"   성공: {success:,}개")
+    if errors:
+        print(f"   실패: {len(errors):,}개 (첫 번째: {errors[0][1]})")
+        print("   → 401/403 오류면 service_role key로 교체 후 재실행하세요.")
 
 
 if __name__ == "__main__":
