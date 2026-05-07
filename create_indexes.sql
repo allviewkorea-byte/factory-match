@@ -6,11 +6,16 @@
 -- 0. trigram 확장 활성화 (summary 인덱스에 필요)
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- 1. hidden 필터 (모든 목록 쿼리에 사용)
+-- 1. hidden 필터
 CREATE INDEX IF NOT EXISTS idx_factories_hidden
   ON factories (hidden);
 
--- 2. hidden + rating 복합 인덱스 (목록 기본 정렬 쿼리 최적화)
+-- 2. hidden=false 부분 인덱스 (가장 중요 — 목록 로드 쿼리 전용)
+--    SELECT * FROM factories WHERE hidden=false ORDER BY id LIMIT n
+CREATE INDEX IF NOT EXISTS idx_factories_visible_id
+  ON factories (id) WHERE hidden = false;
+
+-- 3. hidden + rating 복합 인덱스 (rating 정렬용)
 CREATE INDEX IF NOT EXISTS idx_factories_hidden_rating
   ON factories (hidden, rating DESC NULLS LAST);
 

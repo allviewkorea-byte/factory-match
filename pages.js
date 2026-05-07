@@ -775,7 +775,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
   // Fetch live factory count from Supabase on mount
   useEffectP(() => {
     if (!window._sb) return;
-    window._sb.from('factories').select('*', { count: 'estimated', head: true })
+    window._sb.from('factories').select('id', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setFactoryCount(count); })
       .catch(() => {});
   }, []);
@@ -1154,17 +1154,19 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (!window._sb) { setDbLoading(false); return; }
     let mounted = true;
     const PAGE = 1000;
-    const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
+    const MAX_LOAD = 2000; // 2페이지 로드 (쿼리 횟수 감소)
 
-    // Fetch total DB count separately (not limited by MAX_LOAD)
-    window._sb.from('factories').select('id', { count: 'estimated', head: true }).eq('hidden', false)
+    // Fetch total DB count separately
+    window._sb.from('factories').select('id', { count: 'estimated', head: true })
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
     const loadPage = async (from, acc) => {
+      // WHERE 절 없이 PK 순 정렬 → 플래너가 반드시 PK 인덱스 사용
+      // hidden 필터는 클라이언트에서 처리
       const { data, error } = await window._sb
-        .from('factories').select('*').eq('hidden', false)
-        .order('id', { ascending: true })   // PK 인덱스 → 풀스캔 없음
+        .from('factories').select('*')
+        .order('id', { ascending: true })
         .range(from, from + PAGE - 1);
       if (!mounted) return;
       if (error) { setDbError(error.message); setDbLoading(false); return; }
@@ -1173,10 +1175,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         setDbLoading(false);
         return;
       }
-      const mapped = data.map(window._dbRowToFactory);
+      // hidden=true 클라이언트 필터링
+      const mapped = data.filter(r => !r.hidden).map(window._dbRowToFactory);
       const next = [...acc, ...mapped];
       if (data.length < PAGE || next.length >= MAX_LOAD) {
-        // 클라이언트 정렬: enrichedScore 높은 순 (데이터 품질순)
         const sorted = next.slice().sort((a, b) =>
           (b.enrichedScore || 0) - (a.enrichedScore || 0) || (b.rating || 0) - (a.rating || 0)
         );
@@ -6186,7 +6188,8 @@ const AdminAnalyticsTab = () => {
           .from('page_views')
           .select('path, referrer, created_at')
           .gte('created_at', since)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true })
+          .limit(5000);
 
         if (views) {
           setTodayViews(views.filter(v => v.created_at >= todayStart.toISOString()).length);
