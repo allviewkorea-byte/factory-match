@@ -15,13 +15,17 @@ cmpnyNm 필수 파라미터 대응: 초성별 분할 수집 + 중복 제거
 """
 
 import json, math, os, time, requests
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── API ───────────────────────────────────────────────────────────────────
-API_URL     = "http://apis.data.go.kr/B550624/fctryRegistLndpclInfo/getFctryLndpclService"
+# http / https 모두 시도 — 오류 시 아래 주석 교체
+API_URL     = "https://apis.data.go.kr/B550624/fctryRegistLndpclInfo/getFctryLndpclService"
+# API_URL   = "http://apis.data.go.kr/B550624/fctryRegistLndpclInfo/getFctryLndpclService"
 SERVICE_KEY = "2ca93f3d623e0992d77686cd49e603aa5227eb3bd6ad66243300e10cc6b2b1b7"
 NUM_OF_ROWS = 1000
 DAILY_LIMIT = 1000
+DEBUG       = False   # True 로 바꾸면 첫 응답 500자 출력
 
 # 초성 대표 음절 (ㄱ→가, ㄲ→까, ㄴ→나, ...)  +  숫자  +  영문
 # → 전체 한글 회사명은 반드시 이 중 하나를 포함함
@@ -74,39 +78,53 @@ def save_progress(p):
         json.dump(p, f, ensure_ascii=False, indent=2)
 
 
-# ── API 호출 ─────────────────────────────────────────────────────────────
+# ── API 호출 (XML 파싱) ───────────────────────────────────────────────────
 
 def fetch_page(session, term, page_no):
-    """term으로 검색, page_no 페이지 반환 → (items, total_count)"""
+    """term으로 검색, page_no 페이지 반환 → (items: list[dict], total: int)"""
     params = {
         "serviceKey": SERVICE_KEY,
         "numOfRows":  NUM_OF_ROWS,
         "pageNo":     page_no,
         "cmpnyNm":    term,
-        "resultType": "json",
+        # resultType 파라미터 제거 → 기본 XML 응답 사용
     }
     resp = session.get(API_URL, params=params, timeout=30)
     resp.raise_for_status()
 
-    body = resp.json()
-    res  = body.get("response", {})
-    hdr  = res.get("header", {})
-    code = str(hdr.get("resultCode", ""))
+    raw_text = resp.text.strip()
 
+    if DEBUG or page_no == 1:
+        preview = raw_text[:500].replace("\n", " ")
+        print(f"    [DEBUG 응답 앞 500자]: {preview}")
+
+    if not raw_text:
+        raise ValueError("빈 응답 수신")
+
+    # ── XML 파싱 ──────────────────────────────────────────────────────────
+    try:
+        root = ET.fromstring(raw_text)
+    except ET.ParseError as e:
+        raise ValueError(f"XML 파싱 실패: {e}\n응답: {raw_text[:300]}") from e
+
+    # 오류 코드 확인
+    code_el = root.find(".//resultCode")
+    code    = code_el.text.strip() if code_el is not None else ""
     if code not in ("00", "0000", "000"):
-        msg = hdr.get("resultMsg", "")
+        msg_el = root.find(".//resultMsg")
+        msg    = msg_el.text.strip() if msg_el is not None else ""
         raise ValueError(f"API 오류 [{code}] {msg}")
 
-    raw   = res.get("body", {}).get("items") or {}
-    total = int(res.get("body", {}).get("totalCount", 0))
+    # totalCount
+    tc_el = root.find(".//totalCount")
+    total = int(tc_el.text.strip()) if tc_el is not None else 0
 
-    if isinstance(raw, list):
-        items = raw
-    elif isinstance(raw, dict):
-        inner = raw.get("item", [])
-        items = [inner] if isinstance(inner, dict) else (inner or [])
-    else:
-        items = []
+    # items → list[dict]
+    items = []
+    for item_el in root.findall(".//item"):
+        d = {child.tag: (child.text or "").strip() for child in item_el}
+        if d:
+            items.append(d)
 
     return items, total
 
