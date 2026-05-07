@@ -1157,14 +1157,14 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
 
     // Fetch total DB count separately (not limited by MAX_LOAD)
-    window._sb.from('factories').select('*', { count: 'estimated', head: true }).eq('hidden', false)
+    window._sb.from('factories').select('id', { count: 'estimated', head: true }).eq('hidden', false)
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
     const loadPage = async (from, acc) => {
       const { data, error } = await window._sb
         .from('factories').select('*').eq('hidden', false)
-        .order('enriched_score', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: true })   // PK 인덱스 → 풀스캔 없음
         .range(from, from + PAGE - 1);
       if (!mounted) return;
       if (error) { setDbError(error.message); setDbLoading(false); return; }
@@ -1176,12 +1176,15 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       const mapped = data.map(window._dbRowToFactory);
       const next = [...acc, ...mapped];
       if (data.length < PAGE || next.length >= MAX_LOAD) {
-        setFactories(next);
+        // 클라이언트 정렬: enrichedScore 높은 순 (데이터 품질순)
+        const sorted = next.slice().sort((a, b) =>
+          (b.enrichedScore || 0) - (a.enrichedScore || 0) || (b.rating || 0) - (a.rating || 0)
+        );
+        setFactories(sorted);
         setDbLoading(false);
-        // Update region counts from loaded sample
         if (mounted) {
           const counts = {};
-          next.forEach(f => { if (f.region) counts[f.region] = (counts[f.region] || 0) + 1; });
+          sorted.forEach(f => { if (f.region) counts[f.region] = (counts[f.region] || 0) + 1; });
           setRegionCounts(counts);
         }
       } else {
@@ -2964,7 +2967,7 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
             if (kw.length > 0) {
               q = q.ilike('summary', `%${kw[0]}%`);
             }
-            q = q.order('enriched_score', { ascending: false, nullsFirst: false }).limit(100);
+            q = q.order('id', { ascending: true }).limit(100);
             const { data: rows } = await q;
             if (rows && rows.length) allFactories = rows.map(window._dbRowToFactory);
           } catch (_) {}
