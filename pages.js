@@ -775,7 +775,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
   // Fetch live factory count from Supabase on mount
   useEffectP(() => {
     if (!window._sb) return;
-    window._sb.from('factories').select('*', { count: 'exact', head: true })
+    window._sb.from('factories').select('*', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setFactoryCount(count); })
       .catch(() => {});
   }, []);
@@ -1138,7 +1138,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
 
     // Fetch total DB count separately (not limited by MAX_LOAD)
-    window._sb.from('factories').select('*', { count: 'exact', head: true }).eq('hidden', false)
+    window._sb.from('factories').select('*', { count: 'estimated', head: true }).eq('hidden', false)
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
@@ -6239,7 +6239,7 @@ const AdminPage = ({ onOpenFactory }) => {
 
   useEffect(() => {
     if (!window._sb) return;
-    window._sb.from('factories').select('*', { count: 'exact', head: true })
+    window._sb.from('factories').select('*', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setTotalCount(count); });
   }, []);
   const [q, setQ] = useState('');
