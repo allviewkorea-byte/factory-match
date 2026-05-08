@@ -526,14 +526,15 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
 };
 
 // Google Maps panel for the list page right column
-// coord_x/coord_y are 0-100 SVG-space values matching Korea's geographic layout.
-// Pins are rendered as an absolute-positioned overlay on top of the iframe.
-function ListMapPanel({ factories, selectedFactory, mapsKey, onOpenFactory }) {
+function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory }) {
   const [hoveredPin, setHoveredPin] = React.useState(null);
-  // Only factories with explicit coord data stored in DB
+  // Belt-and-suspenders: coord must exist and be within SVG 0-100 space
+  // (primary bounds check is in _dbRowToFactory; this catches any edge cases)
   const pinFactories = React.useMemo(
-    () => (factories || []).filter(f => f.coord != null),
-    [factories]
+    () => (geoFactories || []).filter(f =>
+      f.coord != null && f.coord.x >= 0 && f.coord.x <= 100 && f.coord.y >= 0 && f.coord.y <= 100
+    ),
+    [geoFactories]
   );
   // Show pins only in Korea overview mode (not when zoomed to a specific factory)
   const showPins = !selectedFactory && pinFactories.length > 0;
@@ -1112,6 +1113,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [dbError, setDbError] = useStateP(null);
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
   const [regionCounts, setRegionCounts] = useStateP({});
+  const [geoFactories, setGeoFactories] = useStateP([]);   // geocoded 공장 지도용
+  const [showAllRegions, setShowAllRegions] = useStateP(false);
   const mapsKey = useMapsKey();
 
   // Restore filter state from cache, unless this is a fresh search from home
@@ -1198,7 +1201,21 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return () => { mounted = false; };
   }, []);
 
-  // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN 기반, 즉시 반환)
+  // geocoded 공장 별도 로드 (지도 핀용, 최대 500개)
+  useEffectP(() => {
+    if (!window._sb) return;
+    window._sb.from('factories')
+      .select('id,name,city,region,coord_x,coord_y,industries,summary,address')
+      .not('coord_x', 'is', null)
+      .not('coord_y', 'is', null)
+      .limit(500)
+      .then(({ data }) => {
+        if (data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
+      })
+      .catch(() => {});
+  }, []);
+
+  // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN, 즉시 반환)
   useEffectP(() => {
     if (!window._sb || !window._REGION_NORM) return;
     const REGION_IDS = ['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju'];
@@ -1247,7 +1264,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     let arr = factories.filter(f => {
       if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
-      if (activeRegion !== 'all' && f.region !== activeRegion) return false;
+      if (activeRegion === 'other') {
+        const known = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
+        if (known.has(f.region)) return false;
+      } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
       if (f.moq > moqMax) return false;
       if (oemOnly && !f.oem) return false;
       if (exportOnly && !f.export) return false;
@@ -1341,26 +1361,37 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 <div className="acc-body-inner">
                   <button className="acc-reset-link" onClick={() => setActiveRegion('all')} disabled={activeRegion === 'all'}>초기화</button>
                   <div className="filters-radios">
-                    {[
-                      { id: 'all',       label: '전국' },
-                      { id: 'seoul',     label: '서울' },
-                      { id: 'gyeonggi', label: '경기' },
-                      { id: 'incheon',   label: '인천' },
-                      { id: 'busan',     label: '부산' },
-                      { id: 'daegu',     label: '대구' },
-                      { id: 'gyeongnam', label: '경남' },
-                      { id: 'gyeongbuk', label: '경북' },
-                      { id: 'chungnam',  label: '충남' },
-                      { id: 'chungbuk',  label: '충북' },
-                      { id: 'daejeon',   label: '대전' },
-                      { id: 'sejong',    label: '세종' },
-                      { id: 'gwangju',   label: '광주' },
-                      { id: 'jeonnam',   label: '전남' },
-                      { id: 'jeonbuk',   label: '전북' },
-                      { id: 'gangwon',   label: '강원' },
-                      { id: 'ulsan',     label: '울산' },
-                      { id: 'jeju',      label: '제주' },
-                    ].map(r => (
+                    {(() => {
+                      const ALL_REGIONS = [
+                        { id: 'all',       label: '전국' },
+                        { id: 'seoul',     label: '서울' },
+                        { id: 'gyeonggi',  label: '경기' },
+                        { id: 'incheon',   label: '인천' },
+                        { id: 'busan',     label: '부산' },
+                        { id: 'daegu',     label: '대구' },
+                        { id: 'gyeongnam', label: '경남' },
+                        { id: 'gyeongbuk', label: '경북' },
+                        { id: 'chungnam',  label: '충남' },
+                        { id: 'chungbuk',  label: '충북' },
+                        { id: 'daejeon',   label: '대전' },
+                        { id: 'sejong',    label: '세종' },
+                        { id: 'gwangju',   label: '광주' },
+                        { id: 'jeonnam',   label: '전남' },
+                        { id: 'jeonbuk',   label: '전북' },
+                        { id: 'gangwon',   label: '강원' },
+                        { id: 'ulsan',     label: '울산' },
+                        { id: 'jeju',      label: '제주' },
+                        { id: 'other',     label: '기타' },
+                      ];
+                      const DEFAULT_COUNT = 6; // 전국 포함 기본 표시 개수
+                      const needExpand = !showAllRegions && !ALL_REGIONS.slice(0, DEFAULT_COUNT).some(r => r.id === activeRegion);
+                      const expanded = showAllRegions || needExpand;
+                      const visible = expanded ? ALL_REGIONS : ALL_REGIONS.slice(0, DEFAULT_COUNT);
+                      const otherCount = dbTotalCount != null
+                        ? Math.max(0, dbTotalCount - Object.values(regionCounts).reduce((s, c) => s + c, 0))
+                        : null;
+                      return (<>
+                        {visible.map(r => (
                       <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
                         <input type="radio" checked={activeRegion === r.id} onChange={() => setActiveRegion(r.id)}/>
                         <span className="filter-radio-dot"/>
@@ -1368,11 +1399,22 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                         <span className="filter-radio-count">
                           {r.id === 'all'
                             ? (dbTotalCount ?? factories.length).toLocaleString()
-                            : (regionCounts[r.id] ?? factories.filter(f => f.region === r.id).length).toLocaleString()
+                            : r.id === 'other'
+                              ? (otherCount ?? '').toLocaleString()
+                              : (regionCounts[r.id] ?? factories.filter(f => f.region === r.id).length).toLocaleString()
                           }
                         </span>
                       </label>
-                    ))}
+                        ))}
+                        <button
+                          className="acc-reset-link"
+                          style={{ marginTop: 4 }}
+                          onClick={() => setShowAllRegions(v => !v)}
+                        >
+                          {expanded ? '접기 ▲' : `더보기 ▼ (${ALL_REGIONS.length - DEFAULT_COUNT}개)`}
+                        </button>
+                      </>);
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1605,7 +1647,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         {/* Right: map */}
         <div className="list-map">
           <ListMapPanel
-            factories={filtered}
+            geoFactories={geoFactories}
             selectedFactory={selectedFactory}
             mapsKey={mapsKey}
             onOpenFactory={onOpenFactory}
