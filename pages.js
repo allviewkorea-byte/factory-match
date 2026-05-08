@@ -151,9 +151,29 @@ const INDUSTRY_BG = {
   food:        'linear-gradient(135deg, #2a7d50 0%, #1a5235 100%)',
   textile:     'linear-gradient(135deg, #a02d4a 0%, #6e1a30 100%)',
 };
+const KO_INDUSTRY_MAP = [
+  { key: 'machine',     kws: ['기계','금속','부품','주조','단조','절삭','가공','금형','프레스'] },
+  { key: 'electronics', kws: ['전자','전기','반도체','회로','LED','PCB','디스플레이','광학'] },
+  { key: 'chemical',    kws: ['화학','소재','플라스틱','고무','도료','수지','합성','도금'] },
+  { key: 'food',        kws: ['식품','음료','패키징','포장','제과','제빵','농산'] },
+  { key: 'textile',     kws: ['섬유','의류','봉제','직물','니트','염색'] },
+];
+function _resolveIndustryKey(f) {
+  const ind = (f.industries || [])[0] || '';
+  if (INDUSTRY_BG[ind]) return ind;
+  for (const { key, kws } of KO_INDUSTRY_MAP) {
+    if (kws.some(kw => ind.includes(kw))) return key;
+  }
+  // 전체 industries 배열도 검색
+  const allInds = (f.industries || []).join(' ');
+  for (const { key, kws } of KO_INDUSTRY_MAP) {
+    if (kws.some(kw => allInds.includes(kw))) return key;
+  }
+  return null;
+}
 function getCardBg(f) {
-  const ind = (f.industries || [])[0];
-  return INDUSTRY_BG[ind] || 'linear-gradient(135deg, #3a5882 0%, #1e3a5f 100%)';
+  const key = _resolveIndustryKey(f);
+  return INDUSTRY_BG[key] || 'linear-gradient(135deg, #3a5882 0%, #1e3a5f 100%)';
 }
 const INDUSTRY_ICONS = {
   machine: (
@@ -214,8 +234,8 @@ const ICON_DEFAULT = (
   </svg>
 );
 function getCardIcon(f) {
-  const ind = (f.industries || [])[0];
-  return INDUSTRY_ICONS[ind] || ICON_DEFAULT;
+  const key = _resolveIndustryKey(f);
+  return INDUSTRY_ICONS[key] || ICON_DEFAULT;
 }
 const INDUSTRY_LABEL_MAP = {
   machine:      '기계/금속',
@@ -277,6 +297,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   return (
     <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
+        <div className="mcard-img-stripes"/>
         <div className="mcard-icon">{getCardIcon(f)}</div>
         <div className="mcard-kw-text">{getCardKeywords(f)}</div>
       </div>
