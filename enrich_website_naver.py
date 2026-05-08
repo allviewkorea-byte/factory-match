@@ -90,6 +90,12 @@ _SKIP_DOMAINS = {
     "goodtel070.co.kr", "weseb.com", "38.co.kr",
     "bizok.incheon.go.kr", "kpi.or.kr", "findcompany.kr",
     "atfis.or.kr", "swadpia.co.kr", "kicrex.kr",
+    # 추가: 무관 사이트 / 관공서 / 공공기관
+    "moneypin.biz", "tradesupport.gwd.go.kr", "grandculture.net",
+    "kwwa.or.kr", "life114.co.kr", "cwip.or.kr", "namyangi.com",
+    "kosre.or.kr", "waterkorea.kr", "k-seafoodtrade.kr",
+    "okgoodfood.com", "wonju.go.kr", "mma.go.kr", "sen.es.kr",
+    "g2b.go.kr", "dh.go.kr",
 }
 
 
