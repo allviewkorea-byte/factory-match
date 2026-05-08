@@ -135,12 +135,14 @@ def sb_update_fields(factory_id, updates):
 # 공장설립 API 호출
 # ─────────────────────────────────────────────────────────
 
-def _api_call(company_name):
-    # type: (str) -> Tuple[list, bool]
+def _api_call(company_name, attempt=1):
+    # type: (str, int) -> Tuple[list, bool]
     """
     공장설립 API 단일 호출.
     반환: (items 리스트, 오류여부)
+    timeout=(connect_sec, read_sec) 튜플로 분리해 무한 대기 방지.
     """
+    print("    [API] 호출 시작 (시도 {0}): '{1}'".format(attempt, company_name))
     try:
         r = requests.get(
             API_URL,
@@ -151,8 +153,9 @@ def _api_call(company_name):
                 "numOfRows":  "5",
                 "type":       "json",
             },
-            timeout=15,
+            timeout=(10, 20),  # (connect 10초, read 20초) 분리
         )
+        print("    [API] 응답 수신: HTTP {0}".format(r.status_code))
         if r.status_code != 200:
             return [], True
 
@@ -165,6 +168,7 @@ def _api_call(company_name):
                 .get("resultCode", "")
         )
         if result_code not in ("00", "000", ""):
+            print("    [API] 결과코드: {0} (결과 없음)".format(result_code))
             return [], False  # 정상 응답이나 결과 없음
 
         items = (
@@ -176,19 +180,25 @@ def _api_call(company_name):
         # 단일 결과는 dict로 반환되는 경우 처리
         if isinstance(items, dict):
             items = [items]
-        return (items if isinstance(items, list) else []), False
+        result = items if isinstance(items, list) else []
+        print("    [API] 결과 {0}건".format(len(result)))
+        return result, False
 
-    except Exception:
+    except requests.exceptions.Timeout:
+        print("    [API] 타임아웃 (시도 {0})".format(attempt))
+        return [], True
+    except Exception as e:
+        print("    [API] 오류 (시도 {0}): {1}".format(attempt, e))
         return [], True  # 네트워크/파싱 오류
 
 
 def _api_call_with_retry(company_name):
     # type: (str) -> Tuple[list, bool]
     """_api_call 래퍼 — 오류 시 1회 재시도 (2초 대기)"""
-    items, error = _api_call(company_name)
+    items, error = _api_call(company_name, attempt=1)
     if error:
         time.sleep(2)
-        items, error = _api_call(company_name)
+        items, error = _api_call(company_name, attempt=2)
     return items, error
 
 
@@ -316,6 +326,7 @@ def main():
                 continue
 
             # API 호출
+            print("  [{0:>6}] 조회 중: '{1}'".format(total_processed + 1, name[:40]))
             api_info, api_err = find_factory_info(name)
             today_api_calls += 1
             total_api_calls += 1
