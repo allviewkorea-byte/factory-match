@@ -78,7 +78,10 @@ _SKIP_DOMAINS = {
     "smartstore.naver.com", "storefarm.naver.com",
     "coupang.com",
 }
-
+"myfactory.co.kr", "114.co.kr", "ok114.co.kr", "ksm114.co.kr",
+"goodtel070.co.kr", "weseb.com", "38.co.kr",
+"bizok.incheon.go.kr", "kpi.or.kr", "findcompany.kr",
+"atfis.or.kr", "swadpia.co.kr", "kicrex.kr",
 
 # ─────────────────────────────────────────────────────────
 # Supabase 헬퍼
