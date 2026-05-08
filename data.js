@@ -310,16 +310,17 @@ window._REGION_NORM = {
 };
 
 window._dbRowToFactory = (row) => {
-  // coord_y > 100 이면 실제 경도(위경도 형식), 아니면 SVG 좌표
   let coord = null;
+  let geoLat = null;
+  let geoLng = null;
   if (row.coord_x != null && row.coord_y != null) {
     // enrich_geocode.py 기준: coord_x=경도(lng), coord_y=위도(lat)
     const lat = Number(row.coord_y);
     const lng = Number(row.coord_x);
-    // 한국 영토 범위 벗어나는 좌표(북한·해외 오geocode) 무시
     const inKorea = lat >= 33.0 && lat <= 38.9 && lng >= 124.5 && lng <= 132.0;
     if (inKorea) {
-      // lng > 100 이면 실제 위경도 → SVG 0-100 변환, 아니면 이미 SVG 좌표
+      geoLat = lat;
+      geoLng = lng;
       coord = lng > 100
         ? window._latLngToSvg(lat, lng)
         : { x: lng, y: lat };
@@ -335,6 +336,8 @@ window._dbRowToFactory = (row) => {
   region: regionId,       // 영문 필터 ID (gyeonggi, busan 등)
   regionRaw: rawRegion,   // 원본 한글 (카드 표시용)
   coord,
+  lat: geoLat,
+  lng: geoLng,
   address: row.address || '',
   industries: row.industries || [],
   processes: row.processes || [],

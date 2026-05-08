@@ -525,68 +525,115 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
   );
 };
 
-// Google Maps panel for the list page right column
+// Singleton loader for Google Maps JS API
+let _mapsApiPromise = null;
+function _loadMapsApi(key) {
+  if (_mapsApiPromise) return _mapsApiPromise;
+  _mapsApiPromise = new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) { resolve(); return; }
+    window.__gmapsCallback = resolve;
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=__gmapsCallback&language=ko`;
+    s.async = true;
+    s.onerror = () => { _mapsApiPromise = null; reject(new Error('Maps API load failed')); };
+    document.head.appendChild(s);
+  });
+  return _mapsApiPromise;
+}
+
+// Google Maps JS API panel — native Markers (follow pan/zoom)
 function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory }) {
-  const [hoveredPin, setHoveredPin] = React.useState(null);
-  // Belt-and-suspenders: coord must exist and be within SVG 0-100 space
-  // (primary bounds check is in _dbRowToFactory; this catches any edge cases)
-  const pinFactories = React.useMemo(
-    () => (geoFactories || []).filter(f =>
-      f.coord != null && f.coord.x >= 0 && f.coord.x <= 100 && f.coord.y >= 0 && f.coord.y <= 100
-    ),
-    [geoFactories]
-  );
-  // Show pins only in Korea overview mode (not when zoomed to a specific factory)
-  const showPins = !selectedFactory && pinFactories.length > 0;
+  const mapDivRef = React.useRef(null);
+  const mapRef = React.useRef(null);
+  const markersRef = React.useRef([]);
+  const infoWindowRef = React.useRef(null);
+  const onOpenRef = React.useRef(onOpenFactory);
+  const [mapReady, setMapReady] = React.useState(false);
 
-  const mapSrc = !MAPS_ENABLED || !mapsKey ? null
-    : selectedFactory
-      ? `https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(selectedFactory.name + ' ' + selectedFactory.city)}&language=ko`
-      : `https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=36.5,127.5&zoom=7&maptype=roadmap&language=ko`;
+  React.useEffect(() => { onOpenRef.current = onOpenFactory; }, [onOpenFactory]);
 
-  return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {mapSrc ? (
-        <iframe
-          key={mapSrc}
-          src={mapSrc}
-          style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title={selectedFactory ? `${selectedFactory.name} 위치` : '한국 제조사 지도'}
-        />
-      ) : (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13, background: 'var(--bg-soft)' }}>
-          <Icon name="pin" size={20} stroke={1.6}/>
-          <span>지도 준비 중</span>
-        </div>
-      )}
-      {showPins && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {pinFactories.slice(0, 200).map(f => {
-            const isHov = hoveredPin === f.id;
-            return (
-              <button
-                key={f.id}
-                className={`map-pin${isHov ? ' is-hovered' : ''}`}
-                style={{ left: `${f.coord.x}%`, top: `${f.coord.y}%`, pointerEvents: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                onMouseEnter={() => setHoveredPin(f.id)}
-                onMouseLeave={() => setHoveredPin(null)}
-                onClick={() => {
-                  if (!window._factoryCache) window._factoryCache = {};
-                  window._factoryCache[f.id] = f;
-                  onOpenFactory(f.id);
-                }}
-              >
-                <span className="map-pin-dot" />
-                <span className="map-pin-label">{f.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  // Load API once, init map
+  React.useEffect(() => {
+    if (!MAPS_ENABLED || !mapsKey) return;
+    _loadMapsApi(mapsKey).then(() => {
+      if (!mapDivRef.current || mapRef.current) return;
+      mapRef.current = new google.maps.Map(mapDivRef.current, {
+        center: { lat: 36.5, lng: 127.5 },
+        zoom: 7,
+        gestureHandling: 'greedy',
+      });
+      infoWindowRef.current = new google.maps.InfoWindow();
+      setMapReady(true);
+    }).catch(() => {});
+  }, [mapsKey]);
+
+  // Sync markers with geoFactories
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+    window.__omf = (id) => onOpenRef.current(id);
+    (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
+      const marker = new google.maps.Marker({
+        position: { lat: f.lat, lng: f.lng },
+        map: mapRef.current,
+        title: f.name,
+      });
+      marker.addListener('click', () => {
+        if (!window._factoryCache) window._factoryCache = {};
+        window._factoryCache[f.id] = f;
+        const safeId = f.id.toString().replace(/'/g, "\\'");
+        infoWindowRef.current.setContent(
+          `<div style="font-family:sans-serif;padding:4px 6px;min-width:140px">` +
+          `<div style="font-weight:600;font-size:13px;margin-bottom:2px">${f.name}</div>` +
+          `<div style="font-size:12px;color:#555;margin-bottom:6px">${f.city}</div>` +
+          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
+          `</div>`
+        );
+        infoWindowRef.current.open(mapRef.current, marker);
+      });
+      markersRef.current.push(marker);
+    });
+    return () => {
+      markersRef.current.forEach(m => m.setMap(null));
+      markersRef.current = [];
+    };
+  }, [mapReady, geoFactories]);
+
+  // Pan/zoom to selected factory
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    if (selectedFactory) {
+      if (selectedFactory.lat != null && selectedFactory.lng != null) {
+        mapRef.current.panTo({ lat: selectedFactory.lat, lng: selectedFactory.lng });
+        mapRef.current.setZoom(14);
+      } else {
+        new google.maps.Geocoder().geocode(
+          { address: `${selectedFactory.name} ${selectedFactory.city}` },
+          (res, status) => {
+            if (status === 'OK' && res[0]) {
+              mapRef.current.panTo(res[0].geometry.location);
+              mapRef.current.setZoom(14);
+            }
+          }
+        );
+      }
+    } else {
+      mapRef.current.panTo({ lat: 36.5, lng: 127.5 });
+      mapRef.current.setZoom(7);
+    }
+  }, [mapReady, selectedFactory]);
+
+  if (!MAPS_ENABLED || !mapsKey) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13, background: 'var(--bg-soft)' }}>
+        <Icon name="pin" size={20} stroke={1.6}/>
+        <span>지도 준비 중</span>
+      </div>
+    );
+  }
+
+  return <div ref={mapDivRef} style={{ width: '100%', height: '100%' }} />;
 }
 
 Object.assign(window, { Icon, Header, Badge, Chip, ManufacturerCard, KoreaMap });
