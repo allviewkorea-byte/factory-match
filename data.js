@@ -327,7 +327,13 @@ window._dbRowToFactory = (row) => {
     }
   }
   const rawRegion = row.region || '';
-  const regionId  = window._REGION_NORM[rawRegion] || rawRegion;
+  let regionId = window._REGION_NORM[rawRegion];
+  if (!regionId && rawRegion) {
+    // prefix match: "경상남도 창원시" → startsWith("경상남도 ") → 'gyeongnam'
+    const keys = Object.keys(window._REGION_NORM).sort((a, b) => b.length - a.length);
+    const hit = keys.find(k => rawRegion.startsWith(k + ' '));
+    regionId = hit ? window._REGION_NORM[hit] : rawRegion;
+  }
   return ({
   id: row.id,
   name: row.name || '',

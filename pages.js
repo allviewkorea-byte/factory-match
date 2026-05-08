@@ -1259,7 +1259,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   useEffectP(() => {
     if (!window._sb) return;
     window._sb.from('factories')
-      .select('id,name,city,region,coord_x,coord_y,industries,summary,address,road_address')
+      .select('*')
       .not('coord_x', 'is', null)
       .not('coord_y', 'is', null)
       .limit(500)
@@ -1279,11 +1279,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       korMap[eng].push(kor);
     });
     Promise.all(
-      REGION_IDS.map(r =>
-        window._sb.from('factories')
+      REGION_IDS.map(r => {
+        const prefixes = korMap[r] || [r];
+        const orFilter = prefixes.map(p => `region.ilike.${p}%`).join(',');
+        return window._sb.from('factories')
           .select('id', { count: 'estimated', head: true })
-          .in('region', korMap[r] || [r])
-      )
+          .or(orFilter);
+      })
     ).then(results => {
       const counts = {};
       REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
