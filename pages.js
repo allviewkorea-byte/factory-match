@@ -534,6 +534,8 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
 
 // Singleton loader for Google Maps JS API
 let _mapsApiPromise = null;
+// Module-level geocode cache: address string → {lat, lng} | null
+const _geocodeCache = new Map();
 function _loadMapsApi(key) {
   if (_mapsApiPromise) return _mapsApiPromise;
   _mapsApiPromise = new Promise((resolve, reject) => {
@@ -549,10 +551,11 @@ function _loadMapsApi(key) {
 }
 
 // Google Maps JS API panel — native Markers (follow pan/zoom)
-function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory }) {
+function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, onOpenFactory }) {
   const mapDivRef = React.useRef(null);
   const mapRef = React.useRef(null);
-  const markersRef = React.useRef([]);
+  const markersRef = React.useRef([]);      // pre-geocoded (geoFactories)
+  const dynMarkersRef = React.useRef([]);   // dynamically geocoded (pagedFactories)
   const infoWindowRef = React.useRef(null);
   const onOpenRef = React.useRef(onOpenFactory);
   const [mapReady, setMapReady] = React.useState(false);
@@ -606,6 +609,75 @@ function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory })
       markersRef.current = [];
     };
   }, [mapReady, geoFactories]);
+
+  // Dynamic geocoding — pagedFactories without pre-geocoded coords
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    dynMarkersRef.current.forEach(m => m.setMap(null));
+    dynMarkersRef.current = [];
+    if (!pagedFactories || !pagedFactories.length) return;
+
+    // Skip factories already covered by geoFactories markers
+    const geoIds = new Set((geoFactories || []).map(f => f.id));
+    const toCode = pagedFactories.filter(f =>
+      !geoIds.has(f.id) && f.lat == null && (f.roadAddress || f.address)
+    );
+    if (!toCode.length) return;
+
+    const geocoder = new google.maps.Geocoder();
+    const addDyn = (f, lat, lng) => {
+      if (!mapRef.current) return;
+      const marker = new google.maps.Marker({
+        position: { lat, lng }, map: mapRef.current, title: f.name,
+      });
+      marker.addListener('click', () => {
+        if (!window._factoryCache) window._factoryCache = {};
+        window._factoryCache[f.id] = f;
+        const safeId = f.id.toString().replace(/'/g, "\\'");
+        infoWindowRef.current.setContent(
+          `<div style="font-family:sans-serif;padding:4px 6px;min-width:140px">` +
+          `<div style="font-weight:600;font-size:13px;margin-bottom:2px">${f.name}</div>` +
+          `<div style="font-size:12px;color:#555;margin-bottom:6px">${_addrCity(f.roadAddress) || f.city}</div>` +
+          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
+          `</div>`
+        );
+        infoWindowRef.current.open(mapRef.current, marker);
+      });
+      dynMarkersRef.current.push(marker);
+    };
+
+    toCode.forEach((f, i) => {
+      const addr = f.roadAddress || f.address;
+      if (_geocodeCache.has(addr)) {
+        const cached = _geocodeCache.get(addr);
+        if (cached) addDyn(f, cached.lat, cached.lng);
+        return;
+      }
+      // Throttle: 200ms per request to stay within Maps API rate limit
+      setTimeout(() => {
+        geocoder.geocode({ address: addr }, (results, status) => {
+          if (status === 'OK' && results[0]) {
+            const lat = results[0].geometry.location.lat();
+            const lng = results[0].geometry.location.lng();
+            // Validate Korea bounds before using
+            if (lat >= 33.0 && lat <= 38.9 && lng >= 124.5 && lng <= 132.0) {
+              _geocodeCache.set(addr, { lat, lng });
+              addDyn(f, lat, lng);
+            } else {
+              _geocodeCache.set(addr, null);
+            }
+          } else {
+            _geocodeCache.set(addr, null);
+          }
+        });
+      }, i * 200);
+    });
+
+    return () => {
+      dynMarkersRef.current.forEach(m => m.setMap(null));
+      dynMarkersRef.current = [];
+    };
+  }, [mapReady, pagedFactories, geoFactories]);
 
   // Pan/zoom to selected factory
   React.useEffect(() => {
@@ -1703,6 +1775,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         <div className="list-map">
           <ListMapPanel
             geoFactories={filteredGeoFactories}
+            pagedFactories={paginated}
             selectedFactory={selectedFactory}
             mapsKey={mapsKey}
             onOpenFactory={onOpenFactory}
