@@ -554,6 +554,7 @@ function _loadMapsApi(key) {
 function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, onOpenFactory }) {
   const mapDivRef = React.useRef(null);
   const mapRef = React.useRef(null);
+  const clustererRef = React.useRef(null);  // MarkerClusterer instance
   const markersRef = React.useRef([]);      // pre-geocoded (geoFactories)
   const dynMarkersRef = React.useRef([]);   // dynamically geocoded (pagedFactories)
   const infoWindowRef = React.useRef(null);
@@ -577,16 +578,24 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     }).catch(() => {});
   }, [mapsKey]);
 
-  // Sync markers with geoFactories
+  // Sync markers with geoFactories — apply MarkerClusterer
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
+
+    // Destroy previous clusterer and clear markers
+    if (clustererRef.current) {
+      clustererRef.current.clearMarkers();
+      clustererRef.current = null;
+    }
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
+
     window.__omf = (id) => onOpenRef.current(id);
+    const newMarkers = [];
     (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
+      // No 'map' prop — clusterer manages visibility
       const marker = new google.maps.Marker({
         position: { lat: f.lat, lng: f.lng },
-        map: mapRef.current,
         title: f.name,
       });
       marker.addListener('click', () => {
@@ -602,9 +611,25 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         );
         infoWindowRef.current.open(mapRef.current, marker);
       });
-      markersRef.current.push(marker);
+      newMarkers.push(marker);
     });
+    markersRef.current = newMarkers;
+
+    if (newMarkers.length > 0) {
+      const MC = window.markerClusterer?.MarkerClusterer;
+      if (MC) {
+        clustererRef.current = new MC({ map: mapRef.current, markers: newMarkers });
+      } else {
+        // Fallback if CDN not yet loaded
+        newMarkers.forEach(m => m.setMap(mapRef.current));
+      }
+    }
+
     return () => {
+      if (clustererRef.current) {
+        clustererRef.current.clearMarkers();
+        clustererRef.current = null;
+      }
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
     };
@@ -1361,7 +1386,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (!window._sb) return;
     let mounted = true;
     let gq = window._sb.from('factories').select('*')
-      .not('coord_x', 'is', null).not('coord_y', 'is', null).limit(500);
+      .not('coord_x', 'is', null).not('coord_y', 'is', null).limit(1000);
     if (activeRegion !== 'all') gq = _applyRegionFilter(gq, activeRegion);
     gq.then(({ data }) => {
       if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
