@@ -16,6 +16,10 @@ enrich_website_naver.py
 실패(네트워크 오류) 시 1회 재시도, 결과 없으면 NULL 유지
 """
 
+import sys
+print("Python " + sys.version)
+print("시작...")
+
 import json
 import re
 import time
@@ -396,4 +400,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("\n[오류 발생]")
+        traceback.print_exc()
+        input("\nEnter 키를 누르면 종료합니다...")
