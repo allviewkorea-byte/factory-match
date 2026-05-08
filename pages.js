@@ -159,13 +159,15 @@ const KO_INDUSTRY_MAP = [
   { key: 'textile',     kws: ['섬유','의류','봉제','직물','니트','염색'] },
 ];
 function _resolveIndustryKey(f) {
-  const ind = (f.industries || [])[0] || '';
-  if (INDUSTRY_BG[ind]) return ind;
-  for (const { key, kws } of KO_INDUSTRY_MAP) {
-    if (kws.some(kw => ind.includes(kw))) return key;
-  }
-  // 전체 industries 배열도 검색
-  const allInds = (f.industries || []).join(' ');
+  // industries가 문자열로 올 경우 배열로 정규화
+  const inds = Array.isArray(f.industries)
+    ? f.industries
+    : (f.industries ? [String(f.industries)] : []);
+  const allInds = inds.join(' ');
+  // 영문 id 직접 매핑
+  const first = inds[0] || '';
+  if (INDUSTRY_BG[first]) return first;
+  // 한글 키워드 포함 여부로 판단
   for (const { key, kws } of KO_INDUSTRY_MAP) {
     if (kws.some(kw => allInds.includes(kw))) return key;
   }
