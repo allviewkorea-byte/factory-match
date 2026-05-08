@@ -1269,28 +1269,17 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       .catch(() => {});
   }, []);
 
-  // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN, 즉시 반환)
+  // 지역별 카운트 — get_region_counts() RPC 함수 단일 호출 (정확한 집계)
   useEffectP(() => {
-    if (!window._sb || !window._REGION_NORM) return;
-    const REGION_IDS = ['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju'];
-    const korMap = {};
-    Object.entries(window._REGION_NORM).forEach(([kor, eng]) => {
-      if (!korMap[eng]) korMap[eng] = [];
-      korMap[eng].push(kor);
-    });
-    Promise.all(
-      REGION_IDS.map(r => {
-        const prefixes = korMap[r] || [r];
-        const orFilter = prefixes.map(p => `region.ilike.${p}%`).join(',');
-        return window._sb.from('factories')
-          .select('id', { count: 'estimated', head: true })
-          .or(orFilter);
+    if (!window._sb) return;
+    window._sb.rpc('get_region_counts')
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const counts = {};
+        data.forEach(row => { counts[row.region_id] = Number(row.cnt); });
+        setRegionCounts(counts);
       })
-    ).then(results => {
-      const counts = {};
-      REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
-      setRegionCounts(counts);
-    }).catch(() => {});
+      .catch(() => {});
   }, []);
 
   const filtered = useMemoP(() => {
@@ -1353,6 +1342,16 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     else arr.sort((a, b) => (b.rating * 50 + b.deals / 10) - (a.rating * 50 + a.deals / 10));
     return arr;
   }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
+
+  // 지도 핀용 — activeRegion 필터 적용 (전체일 때는 전체 geoFactories 표시)
+  const filteredGeoFactories = useMemoP(() => {
+    if (activeRegion === 'all') return geoFactories;
+    if (activeRegion === 'other') {
+      const known = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
+      return geoFactories.filter(f => !known.has(f.region));
+    }
+    return geoFactories.filter(f => f.region === activeRegion);
+  }, [geoFactories, activeRegion]);
 
   useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
@@ -1703,7 +1702,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         {/* Right: map */}
         <div className="list-map">
           <ListMapPanel
-            geoFactories={geoFactories}
+            geoFactories={filteredGeoFactories}
             selectedFactory={selectedFactory}
             mapsKey={mapsKey}
             onOpenFactory={onOpenFactory}
