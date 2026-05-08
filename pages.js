@@ -145,15 +145,77 @@ const Chip = ({ active, onClick, children, count }) => (
 // Manufacturer card (used in list, recommended, RFQ)
 // ──────────────────────────────────────────────────────────
 const INDUSTRY_BG = {
-  food:        '#2a7d50',
-  machine:     '#1a5fa3',
-  electronics: '#5236a0',
-  chemical:    '#b85c0f',
-  textile:     '#a02d4a',
+  machine:     'linear-gradient(135deg, #1a5fa3 0%, #0d3d6e 100%)',
+  electronics: 'linear-gradient(135deg, #5236a0 0%, #2d1a6e 100%)',
+  chemical:    'linear-gradient(135deg, #b85c0f 0%, #7a3a08 100%)',
+  food:        'linear-gradient(135deg, #2a7d50 0%, #1a5235 100%)',
+  textile:     'linear-gradient(135deg, #a02d4a 0%, #6e1a30 100%)',
 };
 function getCardBg(f) {
   const ind = (f.industries || [])[0];
-  return INDUSTRY_BG[ind] || '#3a5882';
+  return INDUSTRY_BG[ind] || 'linear-gradient(135deg, #3a5882 0%, #1e3a5f 100%)';
+}
+const INDUSTRY_ICONS = {
+  machine: (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="10" stroke="white" strokeWidth="4"/>
+      <circle cx="32" cy="32" r="4" fill="white"/>
+      {[0,45,90,135,180,225,270,315].map(deg => {
+        const r = Math.PI * deg / 180;
+        const x1 = 32 + 14 * Math.cos(r); const y1 = 32 + 14 * Math.sin(r);
+        const x2 = 32 + 22 * Math.cos(r); const y2 = 32 + 22 * Math.sin(r);
+        return <rect key={deg} x={x1-3} y={y1-3} width="6" height="8"
+          transform={`rotate(${deg} ${x1} ${y1})`} rx="1.5" fill="white"/>;
+      })}
+    </svg>
+  ),
+  electronics: (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="14,38 24,38 28,22 34,50 40,26 44,38 50,38" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="14" cy="38" r="3" fill="white"/>
+      <circle cx="50" cy="38" r="3" fill="white"/>
+    </svg>
+  ),
+  chemical: (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 10 L24 30 L12 50 Q10 54 14 56 L50 56 Q54 54 52 50 L40 30 L40 10 Z" stroke="white" strokeWidth="3.5" strokeLinejoin="round"/>
+      <line x1="22" y1="18" x2="42" y2="18" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+      <circle cx="24" cy="44" r="4" fill="white" opacity="0.7"/>
+      <circle cx="36" cy="48" r="3" fill="white" opacity="0.5"/>
+      <circle cx="44" cy="43" r="2.5" fill="white" opacity="0.6"/>
+    </svg>
+  ),
+  food: (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="24" width="44" height="30" rx="3" stroke="white" strokeWidth="3.5"/>
+      <polyline points="10,30 32,16 54,30" stroke="white" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round"/>
+      <line x1="32" y1="24" x2="32" y2="54" stroke="white" strokeWidth="2.5" strokeDasharray="3 3"/>
+      <line x1="10" y1="40" x2="54" y2="40" stroke="white" strokeWidth="2.5" strokeDasharray="3 3"/>
+    </svg>
+  ),
+  textile: (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="20" cy="32" rx="8" ry="18" stroke="white" strokeWidth="3.5"/>
+      <ellipse cx="44" cy="32" rx="8" ry="18" stroke="white" strokeWidth="3.5"/>
+      <path d="M20 14 Q32 22 44 14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M20 50 Q32 42 44 50" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="20" y1="32" x2="44" y2="32" stroke="white" strokeWidth="2" strokeDasharray="4 3"/>
+    </svg>
+  ),
+};
+const ICON_DEFAULT = (
+  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="28" width="48" height="28" rx="2" stroke="white" strokeWidth="3.5"/>
+    <polyline points="4,32 32,12 60,32" stroke="white" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round"/>
+    <rect x="22" y="40" width="8" height="16" rx="1" fill="white" opacity="0.6"/>
+    <rect x="34" y="40" width="8" height="16" rx="1" fill="white" opacity="0.6"/>
+    <rect x="14" y="34" width="6" height="6" rx="1" fill="white" opacity="0.4"/>
+    <rect x="44" y="34" width="6" height="6" rx="1" fill="white" opacity="0.4"/>
+  </svg>
+);
+function getCardIcon(f) {
+  const ind = (f.industries || [])[0];
+  return INDUSTRY_ICONS[ind] || ICON_DEFAULT;
 }
 const INDUSTRY_LABEL_MAP = {
   machine:      '기계/금속',
@@ -215,6 +277,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   return (
     <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
+        <div className="mcard-icon">{getCardIcon(f)}</div>
         <div className="mcard-kw-text">{getCardKeywords(f)}</div>
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
@@ -2040,7 +2103,8 @@ const FactoryHeroImg = ({ f }) => {
 
   if (type === 'color' || (!addr && type !== 'sv' && type !== 'map')) {
     return (
-      <div className="detail-hero-img" style={{ background: f.image }}>
+      <div className="detail-hero-img" style={{ background: getCardBg(f) }}>
+        <div className="mcard-icon detail-hero-icon">{getCardIcon(f)}</div>
         <div className="mcard-img-stripes"/>
       </div>
     );
@@ -2049,7 +2113,8 @@ const FactoryHeroImg = ({ f }) => {
   // 로딩 중 (메타데이터 확인 전) — 색상 박스 임시 표시
   if (!src) {
     return (
-      <div className="detail-hero-img" style={{ background: f.image }}>
+      <div className="detail-hero-img" style={{ background: getCardBg(f) }}>
+        <div className="mcard-icon detail-hero-icon">{getCardIcon(f)}</div>
         <div className="mcard-img-stripes"/>
       </div>
     );
