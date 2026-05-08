@@ -290,23 +290,31 @@ window._latLngToSvg = (lat, lng) => {
 
 // DB에 저장된 한글 지역명 → 영문 필터 ID 변환 (시/도 단위 세분화)
 window._REGION_NORM = {
-  '서울': 'seoul',   '서울특별시': 'seoul',
-  '경기': 'gyeonggi','경기도': 'gyeonggi',
-  '인천': 'incheon', '인천광역시': 'incheon',
-  '부산': 'busan',   '부산광역시': 'busan',
-  '대구': 'daegu',   '대구광역시': 'daegu',
-  '경남': 'gyeongnam','경상남도': 'gyeongnam',
-  '경북': 'gyeongbuk','경상북도': 'gyeongbuk',
-  '충남': 'chungnam', '충청남도': 'chungnam',
-  '충북': 'chungbuk', '충청북도': 'chungbuk',
-  '대전': 'daejeon',  '대전광역시': 'daejeon',
-  '세종': 'sejong',   '세종특별자치시': 'sejong',
-  '광주': 'gwangju',  '광주광역시': 'gwangju',
-  '전남': 'jeonnam',  '전라남도': 'jeonnam',
-  '전북': 'jeonbuk',  '전라북도': 'jeonbuk',
-  '강원': 'gangwon',  '강원도': 'gangwon', '강원특별자치도': 'gangwon',
-  '울산': 'ulsan',    '울산광역시': 'ulsan',
-  '제주': 'jeju',     '제주도': 'jeju', '제주특별자치도': 'jeju',
+  // ── 실제 DB 저장값 (정확 매칭) ──────────────────────────────
+  '서울특별시':     'seoul',
+  '경기도':         'gyeonggi',
+  '인천광역시':     'incheon',
+  '부산광역시':     'busan',
+  '대구광역시':     'daegu',
+  '경상남도':       'gyeongnam',
+  '경상북도':       'gyeongbuk',
+  '충청남도':       'chungnam',
+  '충청북도':       'chungbuk',
+  '대전광역시':     'daejeon',
+  '세종특별자치시': 'sejong',
+  '광주광역시':     'gwangju',
+  '전라남도':       'jeonnam',
+  '전북특별자치도': 'jeonbuk',   // 구 전라북도 → 2023년 특별자치도로 개편
+  '강원특별자치도': 'gangwon',
+  '울산광역시':     'ulsan',
+  '제주특별자치도': 'jeju',
+  // ── DB에 소수 존재하는 레거시 영문 값 ────────────────────────
+  'gyeonggi':       'gyeonggi',
+  'gyeongnam':      'gyeongnam',
+  // ── 구 행정명 (데이터 혼재 대비) ─────────────────────────────
+  '전라북도':       'jeonbuk',
+  '강원도':         'gangwon',
+  '제주도':         'jeju',
 };
 
 window._dbRowToFactory = (row) => {
@@ -329,11 +337,12 @@ window._dbRowToFactory = (row) => {
   const rawRegion = row.region || '';
   let regionId = window._REGION_NORM[rawRegion];
   if (!regionId && rawRegion) {
-    // prefix match: "경상남도 창원시" → startsWith("경상남도 ") → 'gyeongnam'
+    // 혹시 "경기도 수원시" 형태로 저장된 경우 프리픽스 매칭 (안전망)
     const keys = Object.keys(window._REGION_NORM).sort((a, b) => b.length - a.length);
     const hit = keys.find(k => rawRegion.startsWith(k + ' '));
-    regionId = hit ? window._REGION_NORM[hit] : rawRegion;
+    regionId = hit ? window._REGION_NORM[hit] : '';  // 미매핑 → '' (기타)
   }
+  regionId = regionId || '';  // null/undefined → '' (기타)
   return ({
   id: row.id,
   name: row.name || '',

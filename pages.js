@@ -1378,12 +1378,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       }
     }
 
+    const KNOWN_REGIONS = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
     let arr = factories.filter(f => {
       if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
       if (activeRegion === 'other') {
-        const known = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
-        if (known.has(f.region)) return false;
+        // 기타 = region IS NULL 또는 미매핑 (f.region = '')
+        if (KNOWN_REGIONS.has(f.region)) return false;
       } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
       if (f.moq > moqMax) return false;
       if (oemOnly && !f.oem) return false;
