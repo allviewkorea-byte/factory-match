@@ -382,5 +382,8 @@ window._dbRowToFactory = (row) => {
   businessNumber: row.business_number || '',
   isCorporate: !!row.is_corporate,
   businessStatus: row.business_status || '',
+  representative: row.representative || '',
+  industrial_complex: row.industrial_complex || '',
+  building_area: row.building_area ?? null,
 }); };
 

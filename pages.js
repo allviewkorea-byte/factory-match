@@ -2394,6 +2394,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
+                {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
+                {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
+                {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
                 {f.employees > 0 && <><dt>직원수</dt><dd>{f.employees}명</dd></>}
                 {f.founded > 0 && <><dt>설립연도</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
