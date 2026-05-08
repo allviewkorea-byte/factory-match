@@ -185,7 +185,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   const isInRfq = rfqIds.includes(f.id);
 
   // Location: 원본 한글 지역명(regionRaw) 우선, 없으면 regionId 사용
-  const location = [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ');
+  const location = [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '';
 
   // 업종 태그: industries 배열 (KICOX는 raw 한글, 샘플은 영문 id)
   const industryTags = (f.industries || []).map(i => INDUSTRY_LABEL_MAP[i] || i).slice(0, 4);
@@ -525,67 +525,115 @@ const KoreaMap = ({ factories, selectedId, onPin, hoveredId }) => {
   );
 };
 
-// Google Maps panel for the list page right column
-// coord_x/coord_y are 0-100 SVG-space values matching Korea's geographic layout.
-// Pins are rendered as an absolute-positioned overlay on top of the iframe.
-function ListMapPanel({ factories, selectedFactory, mapsKey, onOpenFactory }) {
-  const [hoveredPin, setHoveredPin] = React.useState(null);
-  // Only factories with explicit coord data stored in DB
-  const pinFactories = React.useMemo(
-    () => (factories || []).filter(f => f.coord != null),
-    [factories]
-  );
-  // Show pins only in Korea overview mode (not when zoomed to a specific factory)
-  const showPins = !selectedFactory && pinFactories.length > 0;
+// Singleton loader for Google Maps JS API
+let _mapsApiPromise = null;
+function _loadMapsApi(key) {
+  if (_mapsApiPromise) return _mapsApiPromise;
+  _mapsApiPromise = new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) { resolve(); return; }
+    window.__gmapsCallback = resolve;
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=__gmapsCallback&language=ko`;
+    s.async = true;
+    s.onerror = () => { _mapsApiPromise = null; reject(new Error('Maps API load failed')); };
+    document.head.appendChild(s);
+  });
+  return _mapsApiPromise;
+}
 
-  const mapSrc = !MAPS_ENABLED || !mapsKey ? null
-    : selectedFactory
-      ? `https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(selectedFactory.name + ' ' + selectedFactory.city)}&language=ko`
-      : `https://www.google.com/maps/embed/v1/view?key=${mapsKey}&center=36.5,127.5&zoom=7&maptype=roadmap&language=ko`;
+// Google Maps JS API panel — native Markers (follow pan/zoom)
+function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory }) {
+  const mapDivRef = React.useRef(null);
+  const mapRef = React.useRef(null);
+  const markersRef = React.useRef([]);
+  const infoWindowRef = React.useRef(null);
+  const onOpenRef = React.useRef(onOpenFactory);
+  const [mapReady, setMapReady] = React.useState(false);
 
-  return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {mapSrc ? (
-        <iframe
-          key={mapSrc}
-          src={mapSrc}
-          style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title={selectedFactory ? `${selectedFactory.name} 위치` : '한국 제조사 지도'}
-        />
-      ) : (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13, background: 'var(--bg-soft)' }}>
-          <Icon name="pin" size={20} stroke={1.6}/>
-          <span>지도 준비 중</span>
-        </div>
-      )}
-      {showPins && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {pinFactories.slice(0, 200).map(f => {
-            const isHov = hoveredPin === f.id;
-            return (
-              <button
-                key={f.id}
-                className={`map-pin${isHov ? ' is-hovered' : ''}`}
-                style={{ left: `${f.coord.x}%`, top: `${f.coord.y}%`, pointerEvents: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                onMouseEnter={() => setHoveredPin(f.id)}
-                onMouseLeave={() => setHoveredPin(null)}
-                onClick={() => {
-                  if (!window._factoryCache) window._factoryCache = {};
-                  window._factoryCache[f.id] = f;
-                  onOpenFactory(f.id);
-                }}
-              >
-                <span className="map-pin-dot" />
-                <span className="map-pin-label">{f.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  React.useEffect(() => { onOpenRef.current = onOpenFactory; }, [onOpenFactory]);
+
+  // Load API once, init map
+  React.useEffect(() => {
+    if (!MAPS_ENABLED || !mapsKey) return;
+    _loadMapsApi(mapsKey).then(() => {
+      if (!mapDivRef.current || mapRef.current) return;
+      mapRef.current = new google.maps.Map(mapDivRef.current, {
+        center: { lat: 36.5, lng: 127.5 },
+        zoom: 7,
+        gestureHandling: 'greedy',
+      });
+      infoWindowRef.current = new google.maps.InfoWindow();
+      setMapReady(true);
+    }).catch(() => {});
+  }, [mapsKey]);
+
+  // Sync markers with geoFactories
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+    window.__omf = (id) => onOpenRef.current(id);
+    (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
+      const marker = new google.maps.Marker({
+        position: { lat: f.lat, lng: f.lng },
+        map: mapRef.current,
+        title: f.name,
+      });
+      marker.addListener('click', () => {
+        if (!window._factoryCache) window._factoryCache = {};
+        window._factoryCache[f.id] = f;
+        const safeId = f.id.toString().replace(/'/g, "\\'");
+        infoWindowRef.current.setContent(
+          `<div style="font-family:sans-serif;padding:4px 6px;min-width:140px">` +
+          `<div style="font-weight:600;font-size:13px;margin-bottom:2px">${f.name}</div>` +
+          `<div style="font-size:12px;color:#555;margin-bottom:6px">${f.city}</div>` +
+          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
+          `</div>`
+        );
+        infoWindowRef.current.open(mapRef.current, marker);
+      });
+      markersRef.current.push(marker);
+    });
+    return () => {
+      markersRef.current.forEach(m => m.setMap(null));
+      markersRef.current = [];
+    };
+  }, [mapReady, geoFactories]);
+
+  // Pan/zoom to selected factory
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    if (selectedFactory) {
+      if (selectedFactory.lat != null && selectedFactory.lng != null) {
+        mapRef.current.panTo({ lat: selectedFactory.lat, lng: selectedFactory.lng });
+        mapRef.current.setZoom(14);
+      } else {
+        new google.maps.Geocoder().geocode(
+          { address: `${selectedFactory.name} ${selectedFactory.city}` },
+          (res, status) => {
+            if (status === 'OK' && res[0]) {
+              mapRef.current.panTo(res[0].geometry.location);
+              mapRef.current.setZoom(14);
+            }
+          }
+        );
+      }
+    } else {
+      mapRef.current.panTo({ lat: 36.5, lng: 127.5 });
+      mapRef.current.setZoom(7);
+    }
+  }, [mapReady, selectedFactory]);
+
+  if (!MAPS_ENABLED || !mapsKey) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--ink-3)', fontSize: 13, background: 'var(--bg-soft)' }}>
+        <Icon name="pin" size={20} stroke={1.6}/>
+        <span>지도 준비 중</span>
+      </div>
+    );
+  }
+
+  return <div ref={mapDivRef} style={{ width: '100%', height: '100%' }} />;
 }
 
 Object.assign(window, { Icon, Header, Badge, Chip, ManufacturerCard, KoreaMap });
@@ -775,7 +823,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
   // Fetch live factory count from Supabase on mount
   useEffectP(() => {
     if (!window._sb) return;
-    window._sb.from('factories').select('*', { count: 'estimated', head: true })
+    window._sb.from('factories').select('id', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setFactoryCount(count); })
       .catch(() => {});
   }, []);
@@ -1112,6 +1160,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [dbError, setDbError] = useStateP(null);
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
   const [regionCounts, setRegionCounts] = useStateP({});
+  const [geoFactories, setGeoFactories] = useStateP([]);   // geocoded 공장 지도용
+  const [showAllRegions, setShowAllRegions] = useStateP(false);
   const mapsKey = useMapsKey();
 
   // Restore filter state from cache, unless this is a fresh search from home
@@ -1154,39 +1204,19 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (!window._sb) { setDbLoading(false); return; }
     let mounted = true;
     const PAGE = 1000;
-    const MAX_LOAD = 3000; // cap: enough to browse/filter without OOM
+    const MAX_LOAD = 2000; // 2페이지 로드 (쿼리 횟수 감소)
 
-    // Fetch total DB count separately (not limited by MAX_LOAD)
-    window._sb.from('factories').select('*', { count: 'estimated', head: true }).eq('hidden', false)
+    // Fetch total DB count separately
+    window._sb.from('factories').select('id', { count: 'estimated', head: true })
       .then(({ count }) => { if (mounted && count != null) setDbTotalCount(count); })
       .catch(() => {});
 
-    // Fetch per-region counts from DB — DB stores Korean names so build reverse map from _REGION_NORM
-    const REGION_IDS = ['gyeonggi','busan','gyeongnam','ulsan','daegu','chungcheong','jeonla','gangwon','jeju'];
-    const regionKorMap = {};
-    Object.entries(window._REGION_NORM || {}).forEach(([kor, eng]) => {
-      if (!regionKorMap[eng]) regionKorMap[eng] = [];
-      regionKorMap[eng].push(kor);
-    });
-    Promise.all(
-      REGION_IDS.map(r => {
-        const korVals = regionKorMap[r] || [r];
-        return window._sb.from('factories')
-          .select('id', { count: 'estimated', head: true })
-          .eq('hidden', false)
-          .in('region', korVals);
-      })
-    ).then(results => {
-      if (!mounted) return;
-      const counts = {};
-      REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
-      setRegionCounts(counts);
-    }).catch(() => {});
-
     const loadPage = async (from, acc) => {
+      // WHERE 절 없이 PK 순 정렬 → 플래너가 반드시 PK 인덱스 사용
+      // hidden 필터는 클라이언트에서 처리
       const { data, error } = await window._sb
-        .from('factories').select('*').eq('hidden', false)
-        .order('rating', { ascending: false })
+        .from('factories').select('*')
+        .order('id', { ascending: true })
         .range(from, from + PAGE - 1);
       if (!mounted) return;
       if (error) { setDbError(error.message); setDbLoading(false); return; }
@@ -1195,10 +1225,20 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         setDbLoading(false);
         return;
       }
-      const next = [...acc, ...data.map(window._dbRowToFactory)];
+      // hidden=true 클라이언트 필터링
+      const mapped = data.filter(r => !r.hidden).map(window._dbRowToFactory);
+      const next = [...acc, ...mapped];
       if (data.length < PAGE || next.length >= MAX_LOAD) {
-        setFactories(next);
+        const sorted = next.slice().sort((a, b) =>
+          (b.enrichedScore || 0) - (a.enrichedScore || 0) || (b.rating || 0) - (a.rating || 0)
+        );
+        setFactories(sorted);
         setDbLoading(false);
+        if (mounted) {
+          const counts = {};
+          sorted.forEach(f => { if (f.region) counts[f.region] = (counts[f.region] || 0) + 1; });
+          setRegionCounts(counts);
+        }
       } else {
         loadPage(from + PAGE, next);
       }
@@ -1206,6 +1246,42 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
     loadPage(0, []);
     return () => { mounted = false; };
+  }, []);
+
+  // geocoded 공장 별도 로드 (지도 핀용, 최대 500개)
+  useEffectP(() => {
+    if (!window._sb) return;
+    window._sb.from('factories')
+      .select('id,name,city,region,coord_x,coord_y,industries,summary,address')
+      .not('coord_x', 'is', null)
+      .not('coord_y', 'is', null)
+      .limit(500)
+      .then(({ data }) => {
+        if (data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
+      })
+      .catch(() => {});
+  }, []);
+
+  // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN, 즉시 반환)
+  useEffectP(() => {
+    if (!window._sb || !window._REGION_NORM) return;
+    const REGION_IDS = ['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju'];
+    const korMap = {};
+    Object.entries(window._REGION_NORM).forEach(([kor, eng]) => {
+      if (!korMap[eng]) korMap[eng] = [];
+      korMap[eng].push(kor);
+    });
+    Promise.all(
+      REGION_IDS.map(r =>
+        window._sb.from('factories')
+          .select('id', { count: 'estimated', head: true })
+          .in('region', korMap[r] || [r])
+      )
+    ).then(results => {
+      const counts = {};
+      REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
+      setRegionCounts(counts);
+    }).catch(() => {});
   }, []);
 
   const filtered = useMemoP(() => {
@@ -1235,7 +1311,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     let arr = factories.filter(f => {
       if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
-      if (activeRegion !== 'all' && f.region !== activeRegion) return false;
+      if (activeRegion === 'other') {
+        const known = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
+        if (known.has(f.region)) return false;
+      } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
       if (f.moq > moqMax) return false;
       if (oemOnly && !f.oem) return false;
       if (exportOnly && !f.export) return false;
@@ -1329,18 +1408,37 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 <div className="acc-body-inner">
                   <button className="acc-reset-link" onClick={() => setActiveRegion('all')} disabled={activeRegion === 'all'}>초기화</button>
                   <div className="filters-radios">
-                    {[
-                      { id: 'all', label: '전국' },
-                      { id: 'gyeonggi', label: '수도권 (서울·경기·인천)' },
-                      { id: 'busan', label: '부산' },
-                      { id: 'gyeongnam', label: '경남' },
-                      { id: 'ulsan', label: '울산' },
-                      { id: 'daegu', label: '대구·경북' },
-                      { id: 'chungcheong', label: '충청 (충남·충북·대전·세종)' },
-                      { id: 'jeonla', label: '광주·전남·전북' },
-                      { id: 'gangwon', label: '강원' },
-                      { id: 'jeju', label: '제주' },
-                    ].map(r => (
+                    {(() => {
+                      const ALL_REGIONS = [
+                        { id: 'all',       label: '전국' },
+                        { id: 'seoul',     label: '서울' },
+                        { id: 'gyeonggi',  label: '경기' },
+                        { id: 'incheon',   label: '인천' },
+                        { id: 'busan',     label: '부산' },
+                        { id: 'daegu',     label: '대구' },
+                        { id: 'gyeongnam', label: '경남' },
+                        { id: 'gyeongbuk', label: '경북' },
+                        { id: 'chungnam',  label: '충남' },
+                        { id: 'chungbuk',  label: '충북' },
+                        { id: 'daejeon',   label: '대전' },
+                        { id: 'sejong',    label: '세종' },
+                        { id: 'gwangju',   label: '광주' },
+                        { id: 'jeonnam',   label: '전남' },
+                        { id: 'jeonbuk',   label: '전북' },
+                        { id: 'gangwon',   label: '강원' },
+                        { id: 'ulsan',     label: '울산' },
+                        { id: 'jeju',      label: '제주' },
+                        { id: 'other',     label: '기타' },
+                      ];
+                      const DEFAULT_COUNT = 6; // 전국 포함 기본 표시 개수
+                      const needExpand = !showAllRegions && !ALL_REGIONS.slice(0, DEFAULT_COUNT).some(r => r.id === activeRegion);
+                      const expanded = showAllRegions || needExpand;
+                      const visible = expanded ? ALL_REGIONS : ALL_REGIONS.slice(0, DEFAULT_COUNT);
+                      const otherCount = dbTotalCount != null
+                        ? Math.max(0, dbTotalCount - Object.values(regionCounts).reduce((s, c) => s + c, 0))
+                        : null;
+                      return (<>
+                        {visible.map(r => (
                       <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
                         <input type="radio" checked={activeRegion === r.id} onChange={() => setActiveRegion(r.id)}/>
                         <span className="filter-radio-dot"/>
@@ -1348,11 +1446,22 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                         <span className="filter-radio-count">
                           {r.id === 'all'
                             ? (dbTotalCount ?? factories.length).toLocaleString()
-                            : (regionCounts[r.id] ?? factories.filter(f => f.region === r.id).length).toLocaleString()
+                            : r.id === 'other'
+                              ? (otherCount ?? '').toLocaleString()
+                              : (regionCounts[r.id] ?? factories.filter(f => f.region === r.id).length).toLocaleString()
                           }
                         </span>
                       </label>
-                    ))}
+                        ))}
+                        <button
+                          className="acc-reset-link"
+                          style={{ marginTop: 4 }}
+                          onClick={() => setShowAllRegions(v => !v)}
+                        >
+                          {expanded ? '접기 ▲' : `더보기 ▼ (${ALL_REGIONS.length - DEFAULT_COUNT}개)`}
+                        </button>
+                      </>);
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1585,7 +1694,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         {/* Right: map */}
         <div className="list-map">
           <ListMapPanel
-            factories={filtered}
+            geoFactories={geoFactories}
             selectedFactory={selectedFactory}
             mapsKey={mapsKey}
             onOpenFactory={onOpenFactory}
@@ -1688,7 +1797,7 @@ function FactoryMap({ city, name }) {
 }
 
 // ── 공장 히어로 이미지: Street View → Static Map → 색상 박스 ─────────────────
-const GMAPS_KEY = 'AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY';
+const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
 const FactoryHeroImg = ({ f }) => {
   const addr = (f.address || '').trim();
@@ -1978,7 +2087,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
-            <span><Icon name="pin" size={13} stroke={2}/> {[(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
+            <span><Icon name="pin" size={13} stroke={2}/> {[f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
               <>
                 <span className="dot">·</span>
@@ -2079,7 +2188,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               <h4>기본 정보</h4>
               <dl className="detail-dl">
                 {(f.address || f.city) && (
-                  <><dt>주소</dt><dd>{f.address || [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                  <><dt>주소</dt><dd>{f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
                 {f.founded > 0 && (
@@ -2231,7 +2340,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   )}
                   <div className="fe-ro-item">
                     <span className="fe-ro-label">주소</span>
-                    <span className="fe-ro-value">{f.address || [(f.regionRaw || f.region), f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
+                    <span className="fe-ro-value">{f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
                   </div>
                 </div>
               </div>
@@ -2979,7 +3088,7 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
             if (kw.length > 0) {
               q = q.ilike('summary', `%${kw[0]}%`);
             }
-            q = q.order('rating', { ascending: false }).limit(200);
+            q = q.order('id', { ascending: true }).limit(100);
             const { data: rows } = await q;
             if (rows && rows.length) allFactories = rows.map(window._dbRowToFactory);
           } catch (_) {}
@@ -5602,7 +5711,7 @@ const AdminReportsTab = () => {
         statuses.map(s =>
           window._sb
             .from('factory_reports')
-            .select('id', { count: 'exact', head: true })
+            .select('id', { count: 'estimated', head: true })
             .eq('status', s)
         )
       );
@@ -5846,9 +5955,9 @@ const AdminSignupTab = () => {
     try {
       const statuses = ['pending', 'approved', 'rejected'];
       const [allRes, ...results] = await Promise.all([
-        window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
+        window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }),
         ...statuses.map(s =>
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', s)
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', s)
         ),
       ]);
       const c = { all: allRes.count || 0 };
@@ -6198,7 +6307,8 @@ const AdminAnalyticsTab = () => {
           .from('page_views')
           .select('path, referrer, created_at')
           .gte('created_at', since)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: true })
+          .limit(5000);
 
         if (views) {
           setTodayViews(views.filter(v => v.created_at >= todayStart.toISOString()).length);
@@ -6225,7 +6335,7 @@ const AdminAnalyticsTab = () => {
 
         // 전체 누적
         const { count: total } = await window._sb
-          .from('page_views').select('id', { count: 'exact', head: true });
+          .from('page_views').select('id', { count: 'estimated', head: true });
         setTotalViews(total ?? 0);
 
         // 유저 통계
@@ -6234,9 +6344,9 @@ const AdminAnalyticsTab = () => {
           { count: uPending },
           { count: uApproved },
         ] = await Promise.all([
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }),
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          window._sb.from('user_profiles').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
+          window._sb.from('user_profiles').select('id', { count: 'estimated', head: true }).eq('status', 'approved'),
         ]);
         setUserStats({ total: uAll ?? 0, pending: uPending ?? 0, approved: uApproved ?? 0 });
       } catch {}
@@ -6527,7 +6637,7 @@ const AdminPage = ({ onOpenFactory }) => {
     setUploadResult({ ok, fail, failedRows });
     setUploadPhase('result');
     try {
-      const { count } = await window._sb.from('factories').select('*', { count: 'exact', head: true });
+      const { count } = await window._sb.from('factories').select('*', { count: 'estimated', head: true });
       if (count != null) setTotalCount(count);
     } catch (_) {}
   };

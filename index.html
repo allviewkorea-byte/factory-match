@@ -15,15 +15,16 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="env-config.js"></script>
 <script>
 window._sb = window.supabase.createClient(
-  'https://yezxwlzyiqgewpkkyget.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs'
+  window._env.SUPABASE_URL,
+  window._env.SUPABASE_ANON_KEY
 );
 </script>
 
-<script type="text/babel" src="data.js?v=7"></script>
-<script type="text/babel" src="pages.js?v=33"></script>
+<script type="text/babel" src="data.js?v=11"></script>
+<script type="text/babel" src="pages.js?v=42"></script>
 <script type="text/babel" src="app.js?v=8"></script>
 </body>
 </html>
