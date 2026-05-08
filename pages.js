@@ -2390,13 +2390,13 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 {(f.roadAddress || f.address || f.city) && (
                   <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
+                {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
+                {f.website && (
+                  <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
+                )}
+                {f.employees > 0 && <><dt>직원수</dt><dd>{f.employees}명</dd></>}
+                {f.founded > 0 && <><dt>설립연도</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
-                {f.founded > 0 && (
-                  <><dt>설립</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>
-                )}
-                {f.employees > 0 && (
-                  <><dt>직원수</dt><dd>{f.employees}명</dd></>
-                )}
                 {(f.oem || f.odm || f.export) && (
                   <><dt>거래 형태</dt>
                   <dd>
