@@ -60,10 +60,11 @@ DELAY_MAX      = 1.0
 # (API 응답 필드, Supabase 컬럼, 필수여부)
 # 필수=False 컬럼은 테이블에 없으면 스킵
 FIELD_MAP = [
-    ("rnAdres",    "address",            True),
-    ("cmpnyTelno", "phone",              True),
-    ("rprsntvNm",  "representative",     False),
-    ("irsttNm",    "industrial_complex", False),
+    ("rnAdres",        "address",            True),
+    ("cmpnyTelno",     "phone",              True),
+    ("rprsntvNm",      "representative",     False),
+    ("irsttNm",        "industrial_complex", False),
+    ("fctryDongBuldAr","building_area",      False),
 ]  # type: List[Tuple[str, str, bool]]
 
 
