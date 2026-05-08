@@ -6668,13 +6668,251 @@ const AdminAnalyticsTab = () => {
   );
 };
 
+// AdminFactoriesTab — 제조사 관리 (서버사이드 페이지네이션 + 검색 + 편집)
+const AdminFactoriesTab = ({ onOpenFactory }) => {
+  const PAGE_SIZE = 50;
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [filterVisible, setFilterVisible] = useState('all'); // all|public|private
+  const [filterWebsite, setFilterWebsite] = useState('all'); // all|yes|no
+  const [filterContact, setFilterContact] = useState('all'); // all|yes|no
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState([]);
+  const [totalCount, setTotalCount] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editDraft, setEditDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 400);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => { setPage(1); }, [debouncedQ, filterVisible, filterWebsite, filterContact]);
+
+  useEffect(() => {
+    if (!window._sb) return;
+    let mounted = true;
+    setLoading(true);
+    let sq = window._sb.from('factories').select('*', { count: 'exact' });
+    if (debouncedQ) sq = sq.or(`name.ilike.%${debouncedQ}%,city.ilike.%${debouncedQ}%`);
+    if (filterVisible === 'public')  sq = sq.eq('hidden', false);
+    if (filterVisible === 'private') sq = sq.eq('hidden', true);
+    if (filterWebsite === 'yes') sq = sq.not('website', 'is', null);
+    if (filterWebsite === 'no')  sq = sq.is('website', null);
+    if (filterContact === 'yes') sq = sq.not('phone', 'is', null);
+    if (filterContact === 'no')  sq = sq.is('phone', null);
+    const from = (page - 1) * PAGE_SIZE;
+    sq.order('id', { ascending: true }).range(from, from + PAGE_SIZE - 1)
+      .then(({ data, count, error }) => {
+        if (!mounted) return;
+        if (!error) { setRows(data || []); setTotalCount(count); }
+        setLoading(false);
+      }).catch(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [page, debouncedQ, filterVisible, filterWebsite, filterContact]);
+
+  const openEdit = (row) => {
+    setEditTarget(row);
+    setEditDraft({
+      name:      row.name || '',
+      summary:   row.summary || '',
+      region:    row.region || '',
+      city:      row.city || '',
+      phone:     row.phone || '',
+      website:   row.website || '',
+      employees: row.employees ?? '',
+      founded:   row.founded ?? '',
+      hidden:    !!row.hidden,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget || saving) return;
+    setSaving(true);
+    const updates = {
+      name:      editDraft.name.trim(),
+      summary:   editDraft.summary.trim(),
+      region:    editDraft.region.trim(),
+      city:      editDraft.city.trim(),
+      phone:     editDraft.phone.trim() || null,
+      website:   editDraft.website.trim() || null,
+      employees: editDraft.employees === '' ? null : Number(editDraft.employees),
+      founded:   editDraft.founded === '' ? null : Number(editDraft.founded),
+      hidden:    editDraft.hidden,
+    };
+    const { error } = await window._sb.from('factories').update(updates).eq('id', editTarget.id);
+    setSaving(false);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    setRows(prev => prev.map(r => r.id === editTarget.id ? { ...r, ...updates } : r));
+    setEditTarget(null);
+  };
+
+  const pageCount = totalCount != null ? Math.ceil(totalCount / PAGE_SIZE) : 0;
+
+  const EDIT_FIELDS = [
+    { key: 'name',      label: '회사명',     type: 'text'   },
+    { key: 'city',      label: '도시/주소',   type: 'text'   },
+    { key: 'region',    label: '지역 (DB값)', type: 'text'   },
+    { key: 'phone',     label: '연락처',      type: 'text'   },
+    { key: 'website',   label: '웹사이트',    type: 'text'   },
+    { key: 'employees', label: '임직원 수',   type: 'number' },
+    { key: 'founded',   label: '설립연도',    type: 'number' },
+  ];
+
+  return (
+    <section className="admin-panel">
+      <div className="admin-toolbar">
+        <div className="admin-search">
+          <Icon name="search" size={14} stroke={2}/>
+          <input placeholder="제조사명, 도시로 검색" value={q} onChange={e => setQ(e.target.value)}/>
+          {q && <button className="ls-clear" onClick={() => setQ('')}><Icon name="close" size={12} stroke={2}/></button>}
+        </div>
+        <div className="admin-segmented">
+          {[{id:'all',label:'전체'},{id:'public',label:'공개'},{id:'private',label:'비공개'}].map(s => (
+            <button key={s.id} className={'seg-btn '+(filterVisible===s.id?'is-active':'')} onClick={() => setFilterVisible(s.id)}>{s.label}</button>
+          ))}
+        </div>
+        <div className="admin-segmented">
+          {[{id:'all',label:'웹사이트'},{id:'yes',label:'있음'},{id:'no',label:'없음'}].map(s => (
+            <button key={s.id} className={'seg-btn '+(filterWebsite===s.id?'is-active':'')} onClick={() => setFilterWebsite(s.id)}>{s.label}</button>
+          ))}
+        </div>
+        <div className="admin-segmented">
+          {[{id:'all',label:'연락처'},{id:'yes',label:'있음'},{id:'no',label:'없음'}].map(s => (
+            <button key={s.id} className={'seg-btn '+(filterContact===s.id?'is-active':'')} onClick={() => setFilterContact(s.id)}>{s.label}</button>
+          ))}
+        </div>
+        <span className="admin-toolbar-count">{loading ? '…' : (totalCount ?? 0).toLocaleString()}곳</span>
+      </div>
+
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>제조사명</th>
+              <th>도시</th>
+              <th>연락처</th>
+              <th>웹사이트</th>
+              <th>공개</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan="6" className="admin-table-empty">로딩 중…</td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan="6" className="admin-table-empty">검색 결과가 없습니다</td></tr>
+            ) : rows.map(f => (
+              <tr key={f.id}>
+                <td>
+                  <div className="admin-name">
+                    <div className="admin-name-dot"/>
+                    <strong>{f.name}</strong>
+                    <span className="mono">#{String(f.id).slice(0, 12)}</span>
+                  </div>
+                </td>
+                <td>{f.city || '—'}</td>
+                <td>{f.phone || '—'}</td>
+                <td>
+                  {f.website
+                    ? <span className="admin-link-cell" title={f.website}>{f.website.replace(/^https?:\/\//, '').slice(0, 28)}</span>
+                    : '—'}
+                </td>
+                <td>
+                  <span className={'admin-visible-badge ' + (f.hidden ? 'is-hidden' : 'is-public')}>
+                    {f.hidden ? '비공개' : '공개'}
+                  </span>
+                </td>
+                <td>
+                  <div className="admin-row-actions">
+                    <button className="link-btn" onClick={() => openEdit(f)}>수정</button>
+                    <button className="link-btn" onClick={() => onOpenFactory && onOpenFactory(f.id)}>보기</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {pageCount > 1 && (
+        <div className="admin-pagination">
+          <button className="pg-btn" onClick={() => setPage(1)} disabled={page === 1}>«</button>
+          <button className="pg-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1}>‹</button>
+          {(() => {
+            const start = Math.max(1, Math.min(page - 3, pageCount - 6));
+            const end = Math.min(pageCount, start + 6);
+            return Array.from({ length: end - start + 1 }, (_, i) => start + i).map(n => (
+              <button key={n} className={'pg-num ' + (page === n ? 'is-active' : '')} onClick={() => setPage(n)}>{n}</button>
+            ));
+          })()}
+          <button className="pg-btn" onClick={() => setPage(p => p + 1)} disabled={page === pageCount}>›</button>
+          <button className="pg-btn" onClick={() => setPage(pageCount)} disabled={page === pageCount}>»</button>
+          <span className="admin-page-info">{page.toLocaleString()} / {pageCount.toLocaleString()} 페이지</span>
+        </div>
+      )}
+
+      {editTarget && (
+        <div className="admin-modal-overlay" onClick={() => setEditTarget(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>제조사 편집</h3>
+              <button className="admin-modal-close" onClick={() => setEditTarget(null)}>×</button>
+            </div>
+            <div className="admin-modal-body">
+              {EDIT_FIELDS.map(({ key, label, type }) => (
+                <div key={key} className="admin-form-row">
+                  <label className="admin-form-label">{label}</label>
+                  <input
+                    className="admin-form-input"
+                    type={type}
+                    value={editDraft[key]}
+                    onChange={e => setEditDraft(d => ({ ...d, [key]: e.target.value }))}
+                  />
+                </div>
+              ))}
+              <div className="admin-form-row">
+                <label className="admin-form-label">한줄 소개</label>
+                <textarea
+                  className="admin-form-input"
+                  rows={3}
+                  value={editDraft.summary}
+                  onChange={e => setEditDraft(d => ({ ...d, summary: e.target.value }))}
+                />
+              </div>
+              <div className="admin-form-row">
+                <label className="admin-form-label">공개 여부</label>
+                <label className="admin-form-check">
+                  <input
+                    type="checkbox"
+                    checked={!editDraft.hidden}
+                    onChange={e => setEditDraft(d => ({ ...d, hidden: !e.target.checked }))}
+                  />
+                  <span>공개 (체크 해제 시 비공개)</span>
+                </label>
+              </div>
+            </div>
+            <div className="admin-modal-footer">
+              <button className="btn btn-secondary" onClick={() => setEditTarget(null)}>취소</button>
+              <button className="btn btn-primary" onClick={saveEdit} disabled={saving}>
+                {saving ? '저장 중…' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
   const [authed, setAuthed] = useState(() => {
     try { return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'; } catch { return false; }
   });
-  const [data, setData] = useState(ADMIN_FACTORIES);
   const [totalCount, setTotalCount] = useState(null);
   const [tab, setTab] = useState('factories');
 
@@ -6683,8 +6921,6 @@ const AdminPage = ({ onOpenFactory }) => {
     window._sb.from('factories').select('*', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setTotalCount(count); });
   }, []);
-  const [q, setQ] = useState('');
-  const [filter, setFilter] = useState('all');
   const [showUpload, setShowUpload] = useState(false);
 
   // Upload flow phases: idle → mapping → preview → uploading → result
@@ -6842,21 +7078,8 @@ const AdminPage = ({ onOpenFactory }) => {
     } catch (_) {}
   };
 
-  const togglePublic = (id) => {
-    setData(d => d.map(x => x.id === id ? { ...x, public: !x.public } : x));
-  };
-
-  const filtered = data.filter(f => {
-    if (filter === 'public'  && !f.public) return false;
-    if (filter === 'private' &&  f.public) return false;
-    if (q && !(f.name.includes(q) || (f.city || '').includes(q))) return false;
-    return true;
-  });
-
   const stats = {
-    total: totalCount ?? data.length,
-    pub:   data.filter(f => f.public).length,
-    priv:  data.filter(f => !f.public).length,
+    total: totalCount ?? 0,
     rfq: 248, chat: 89, users: 1342,
   };
 
@@ -6905,8 +7128,6 @@ const AdminPage = ({ onOpenFactory }) => {
 
       <section className="admin-stats">
         <div className="astat"><div className="astat-k">전체 제조사</div><div className="astat-v">{stats.total}</div></div>
-        <div className="astat astat-emerald"><div className="astat-k">공개중</div><div className="astat-v">{stats.pub}</div></div>
-        <div className="astat astat-amber"><div className="astat-k">비공개</div><div className="astat-v">{stats.priv}</div></div>
         <div className="astat"><div className="astat-k">전체 사용자</div><div className="astat-v">{stats.users.toLocaleString()}</div></div>
         <div className="astat"><div className="astat-k">RFQ (이번달)</div><div className="astat-v">{stats.rfq}</div></div>
         <div className="astat"><div className="astat-k">활성 채팅</div><div className="astat-v">{stats.chat}</div></div>
@@ -6932,95 +7153,7 @@ const AdminPage = ({ onOpenFactory }) => {
         ))}
       </nav>
 
-      {tab === 'factories' && (
-        <section className="admin-panel">
-          <div className="admin-toolbar">
-            <div className="admin-search">
-              <Icon name="search" size={14} stroke={2}/>
-              <input placeholder="제조사명, 도시로 검색" value={q} onChange={(e) => setQ(e.target.value)}/>
-            </div>
-            <div className="admin-segmented">
-              {[
-                { id: 'all',     label: '전체' },
-                { id: 'public',  label: '공개' },
-                { id: 'private', label: '비공개' },
-              ].map(s => (
-                <button key={s.id} className={'seg-btn ' + (filter === s.id ? 'is-active' : '')} onClick={() => setFilter(s.id)}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <span className="admin-toolbar-count">{filtered.length}곳</span>
-          </div>
-
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th><input type="checkbox"/></th>
-                  <th>제조사명</th>
-                  <th>도시</th>
-                  <th>공정</th>
-                  <th>인증</th>
-                  <th>등록일</th>
-                  <th>출처</th>
-                  <th>공개</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(f => (
-                  <tr key={f.id}>
-                    <td><input type="checkbox"/></td>
-                    <td>
-                      <div className="admin-name">
-                        <div className="admin-name-dot"/>
-                        <strong>{f.name}</strong>
-                        <span className="mono">#{f.id}</span>
-                      </div>
-                    </td>
-                    <td>{f.city}</td>
-                    <td>
-                      <div className="admin-tag-row">
-                        {(f.processes || []).slice(0, 2).map(pid => (
-                          <span key={pid} className="mtag mtag-sm">{PROCESSES_AC.find(p => p.id === pid)?.label || pid}</span>
-                        ))}
-                        {(f.processes || []).length > 2 && <span className="admin-more">+{f.processes.length - 2}</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="admin-tag-row">
-                        {(f.certs || []).slice(0, 2).map(c => <span key={c} className="mtag mtag-sm mtag-emerald">{c}</span>)}
-                        {(f.certs || []).length === 0 && <span className="admin-empty">—</span>}
-                      </div>
-                    </td>
-                    <td className="mono">{f.registered}</td>
-                    <td><span className="admin-source">{f.source}</span></td>
-                    <td>
-                      <button
-                        className={'toggle-pill ' + (f.public ? 'is-on' : '')}
-                        onClick={() => togglePublic(f.id)}
-                        aria-label={f.public ? '공개중' : '비공개'}
-                      >
-                        <span className="toggle-pill-thumb"/>
-                        <span className="toggle-pill-label">{f.public ? '공개' : '비공개'}</span>
-                      </button>
-                    </td>
-                    <td>
-                      <div className="admin-row-actions">
-                        <button className="link-btn" onClick={() => onOpenFactory && onOpenFactory(f.id)}>
-                          <Icon name="eye" size={12} stroke={2}/> 미리보기
-                        </button>
-                        <button className="link-btn link-danger">삭제</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+      {tab === 'factories' && <AdminFactoriesTab onOpenFactory={onOpenFactory}/>}
 
       {tab === 'users' && (
         <section className="admin-panel admin-placeholder">
