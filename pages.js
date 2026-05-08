@@ -1198,6 +1198,28 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return () => { mounted = false; };
   }, []);
 
+  // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN 기반, 즉시 반환)
+  useEffectP(() => {
+    if (!window._sb || !window._REGION_NORM) return;
+    const REGION_IDS = ['gyeonggi','busan','gyeongnam','ulsan','daegu','chungcheong','jeonla','gangwon','jeju'];
+    const korMap = {};
+    Object.entries(window._REGION_NORM).forEach(([kor, eng]) => {
+      if (!korMap[eng]) korMap[eng] = [];
+      korMap[eng].push(kor);
+    });
+    Promise.all(
+      REGION_IDS.map(r =>
+        window._sb.from('factories')
+          .select('id', { count: 'estimated', head: true })
+          .in('region', korMap[r] || [r])
+      )
+    ).then(results => {
+      const counts = {};
+      REGION_IDS.forEach((r, i) => { counts[r] = results[i].count ?? 0; });
+      setRegionCounts(counts);
+    }).catch(() => {});
+  }, []);
+
   const filtered = useMemoP(() => {
     // Resolve industry filter
     let industryPids = null;

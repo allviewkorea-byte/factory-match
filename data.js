@@ -313,8 +313,10 @@ window._dbRowToFactory = (row) => {
   // coord_y > 100 이면 실제 경도(위경도 형식), 아니면 SVG 좌표
   let coord = null;
   if (row.coord_x != null && row.coord_y != null) {
-    coord = row.coord_y > 100
-      ? window._latLngToSvg(row.coord_x, row.coord_y)
+    // coord_x = 경도(124-131), coord_y = 위도(33-38)
+    // 경도가 100 초과이면 실제 위경도 → SVG 변환 필요
+    coord = row.coord_x > 100
+      ? window._latLngToSvg(row.coord_y, row.coord_x)   // (lat, lng) 순서
       : { x: row.coord_x, y: row.coord_y };
   }
   const rawRegion = row.region || '';
