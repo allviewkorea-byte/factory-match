@@ -1232,6 +1232,33 @@ const INDUSTRY_CATS = [
   ]},
 ];
 
+// Region ID → DB region column values (for Supabase server-side filter)
+const _REGION_TO_DB_VALS = {
+  seoul:     ['서울특별시'],
+  gyeonggi:  ['경기도', 'gyeonggi'],
+  incheon:   ['인천광역시'],
+  busan:     ['부산광역시'],
+  daegu:     ['대구광역시'],
+  gyeongnam: ['경상남도', 'gyeongnam'],
+  gyeongbuk: ['경상북도'],
+  chungnam:  ['충청남도'],
+  chungbuk:  ['충청북도'],
+  daejeon:   ['대전광역시'],
+  sejong:    ['세종특별자치시'],
+  gwangju:   ['광주광역시'],
+  jeonnam:   ['전라남도'],
+  jeonbuk:   ['전북특별자치도', '전라북도'],
+  gangwon:   ['강원특별자치도', '강원도'],
+  ulsan:     ['울산광역시'],
+  jeju:      ['제주특별자치도', '제주도'],
+};
+const _applyRegionFilter = (q, regionId) => {
+  if (regionId === 'other') return q.is('region', null);
+  const vals = _REGION_TO_DB_VALS[regionId];
+  if (!vals) return q;
+  return vals.length === 1 ? q.eq('region', vals[0]) : q.in('region', vals);
+};
+
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
   const [factories, setFactories] = useStateP(window.MFG_DATA.FACTORIES);
@@ -1240,6 +1267,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
   const [regionCounts, setRegionCounts] = useStateP({});
   const [geoFactories, setGeoFactories] = useStateP([]);   // geocoded 공장 지도용
+  const [regionRows, setRegionRows] = useStateP([]);         // 지역 선택 시 서버사이드 로드
+  const [regionLoading, setRegionLoading] = useStateP(false);
   const [showAllRegions, setShowAllRegions] = useStateP(false);
   const mapsKey = useMapsKey();
 
@@ -1327,19 +1356,55 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return () => { mounted = false; };
   }, []);
 
-  // geocoded 공장 별도 로드 (지도 핀용, 최대 500개)
+  // 지도 핀 로드 — activeRegion 변경 시 해당 지역 coord 보유 공장 최대 500개 재쿼리
   useEffectP(() => {
     if (!window._sb) return;
-    window._sb.from('factories')
-      .select('*')
-      .not('coord_x', 'is', null)
-      .not('coord_y', 'is', null)
-      .limit(500)
-      .then(({ data }) => {
-        if (data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
-      })
-      .catch(() => {});
-  }, []);
+    let mounted = true;
+    let gq = window._sb.from('factories').select('*')
+      .not('coord_x', 'is', null).not('coord_y', 'is', null).limit(500);
+    if (activeRegion !== 'all') gq = _applyRegionFilter(gq, activeRegion);
+    gq.then(({ data }) => {
+      if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, [activeRegion]);
+
+  // 지역 필터 선택 시 서버사이드 데이터 로드 (최대 5,000개)
+  useEffectP(() => {
+    if (!window._sb || activeRegion === 'all') {
+      setRegionRows([]);
+      setRegionLoading(false);
+      return;
+    }
+    let mounted = true;
+    setRegionLoading(true);
+    setRegionRows([]);
+    const PAGE = 1000;
+    const MAX = 5000;
+    const loadPage = async (from, acc) => {
+      let q = window._sb.from('factories').select('*')
+        .eq('hidden', false)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      q = _applyRegionFilter(q, activeRegion);
+      const { data, error } = await q;
+      if (!mounted) return;
+      if (error || !data || data.length === 0) {
+        setRegionRows(acc.map(window._dbRowToFactory));
+        setRegionLoading(false);
+        return;
+      }
+      const next = [...acc, ...data];
+      if (data.length < PAGE || next.length >= MAX) {
+        setRegionRows(next.map(window._dbRowToFactory));
+        setRegionLoading(false);
+      } else {
+        loadPage(from + PAGE, next);
+      }
+    };
+    loadPage(0, []);
+    return () => { mounted = false; };
+  }, [activeRegion]);
 
   // 지역별 카운트 — get_region_counts() RPC 함수 단일 호출 (정확한 집계)
   useEffectP(() => {
@@ -1379,11 +1444,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     }
 
     const KNOWN_REGIONS = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
-    let arr = factories.filter(f => {
+    // 지역 선택 시 서버사이드 로드된 regionRows 사용, 전체는 클라이언트 캐시 factories 사용
+    const source = activeRegion !== 'all' ? regionRows : factories;
+    let arr = source.filter(f => {
       if (f.hidden) return false;
       if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
       if (activeRegion === 'other') {
-        // 기타 = region IS NULL 또는 미매핑 (f.region = '')
         if (KNOWN_REGIONS.has(f.region)) return false;
       } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
       if (f.moq > moqMax) return false;
@@ -1414,17 +1480,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     else if (sort === 'deals') arr.sort((a, b) => b.deals - a.deals);
     else arr.sort((a, b) => (b.rating * 50 + b.deals / 10) - (a.rating * 50 + a.deals / 10));
     return arr;
-  }, [factories, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
+  }, [factories, regionRows, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
-  // 지도 핀용 — activeRegion 필터 적용 (전체일 때는 전체 geoFactories 표시)
-  const filteredGeoFactories = useMemoP(() => {
-    if (activeRegion === 'all') return geoFactories;
-    if (activeRegion === 'other') {
-      const known = new Set(['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju']);
-      return geoFactories.filter(f => !known.has(f.region));
-    }
-    return geoFactories.filter(f => f.region === activeRegion);
-  }, [geoFactories, activeRegion]);
+  // 지도 핀: geo 쿼리가 이미 activeRegion 필터를 적용했으므로 그대로 사용
+  const filteredGeoFactories = geoFactories;
 
   useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
@@ -1437,7 +1496,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const selectedFactory = selected ? filtered.find(f => f.id === selected) : null;
 
   const hasFilter = !!(query || activeProcess !== 'all' || activeRegion !== 'all' || oemOnly || exportOnly || activeIndustry !== 'all');
-  const displayTotal = hasFilter ? filtered.length : (dbTotalCount ?? factories.length);
+  const otherFiltersActive = !!(query || activeProcess !== 'all' || oemOnly || exportOnly || activeIndustry !== 'all');
+  // 지역만 선택됐을 때 → RPC 집계 카운트 표시 (DB 전체 기준)
+  // 지역 + 다른 필터 → 클라이언트 필터된 카운트
+  const displayTotal = (activeRegion !== 'all' && !otherFiltersActive)
+    ? (regionCounts[activeRegion] ?? filtered.length)
+    : hasFilter ? filtered.length : (dbTotalCount ?? factories.length);
 
   return (
     <div className="page page-list">
@@ -1690,7 +1754,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             <div className="list-results-head">
               <div>
-                <strong>{dbLoading ? '…' : displayTotal.toLocaleString()}</strong>개 중{' '}
+                <strong>{(dbLoading || regionLoading) ? '…' : displayTotal.toLocaleString()}</strong>개 중{' '}
                 <span className="results-range">
                   {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)}
                 </span>
