@@ -58,10 +58,11 @@ const Icon = ({ name, size = 16, className = '', stroke = 1.6 }) => {
 // ──────────────────────────────────────────────────────────
 const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
   const navItems = [
-    { id: 'home', label: '홈' },
-    { id: 'list', label: '제조사 탐색' },
-    { id: 'rfq', label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
-    { id: 'chat', label: '채팅' },
+    { id: 'home',  label: '홈' },
+    { id: 'ai',    label: 'AI 상담' },
+    { id: 'list',  label: '제조사 탐색' },
+    { id: 'rfq',   label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
+    { id: 'chat',  label: '채팅' },
   ];
   const isCompact = density === 'compact';
   return (
@@ -7904,6 +7905,179 @@ const PrivacyPage = () => {
 };
 
 // ReportPage — 정정·삭제 요청 / 신고 / 일반 문의
+// ──────────────────────────────────────────────────────────
+// AI 상담 페이지
+// ──────────────────────────────────────────────────────────
+const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만들고 싶으신가요? 편하게 말씀해 주세요.' };
+
+const AiConsultPage = ({ onOpenFactory }) => {
+  const [messages, setMessages] = React.useState([AI_INIT_MSG]);
+  const [input, setInput] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [factories, setFactories] = React.useState([]);
+  const [resolvedFactories, setResolvedFactories] = React.useState([]);
+  const msgsEndRef = React.useRef(null);
+
+  React.useEffect(() => {
+    msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  // 매칭된 factory id 목록이 바뀌면 Supabase에서 상세 조회
+  React.useEffect(() => {
+    if (factories.length === 0) { setResolvedFactories([]); return; }
+    const ids = factories.map(f => f.id);
+    window._sb.from('factories').select('*').in('id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const ordered = ids
+          .map(id => data.find(r => r.id === id))
+          .filter(Boolean)
+          .map(r => window._dbRowToFactory(r));
+        setResolvedFactories(ordered);
+      });
+  }, [factories]);
+
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput('');
+    const userMsg = { role: 'user', text };
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
+    setLoading(true);
+
+    // messages 배열을 Claude API 형식으로 변환 (ai→assistant, user→user)
+    const apiMessages = nextMessages
+      .filter(m => m.role !== 'ai' || m !== AI_INIT_MSG)
+      .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
+    // AI 첫 메시지는 assistant 메시지로 포함
+    const fullApiMessages = [
+      { role: 'assistant', content: AI_INIT_MSG.text },
+      ...apiMessages,
+    ];
+
+    try {
+      const resp = await fetch('/.netlify/functions/ai-consult', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: fullApiMessages }),
+      });
+      const data = await resp.json();
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+      }
+      if (data.matchedFactories && data.matchedFactories.length > 0) {
+        setFactories(data.matchedFactories);
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'ai', text: '오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }]);
+    }
+    setLoading(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  };
+
+  return (
+    <div className="aic-page">
+      {/* 좌측: 채팅 */}
+      <div className="aic-chat">
+        <div className="aic-chat-head">
+          <div className="aic-ai-avatar">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="currentColor" opacity="0.3"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div className="aic-chat-title">공장매칭 AI 컨설턴트</div>
+            <div className="aic-chat-subtitle">제품 정보를 알려주시면 최적의 공장을 찾아드립니다</div>
+          </div>
+        </div>
+
+        <div className="aic-messages">
+          {messages.map((m, i) => (
+            <div key={i} className={`aic-msg ${m.role === 'user' ? 'aic-msg-user' : 'aic-msg-ai'}`}>
+              {m.role === 'ai' && (
+                <div className="aic-msg-avatar">AI</div>
+              )}
+              <div className="aic-msg-bubble">{m.text}</div>
+            </div>
+          ))}
+          {loading && (
+            <div className="aic-msg aic-msg-ai">
+              <div className="aic-msg-avatar">AI</div>
+              <div className="aic-msg-bubble aic-typing">
+                <span/><span/><span/>
+              </div>
+            </div>
+          )}
+          <div ref={msgsEndRef}/>
+        </div>
+
+        <div className="aic-input-row">
+          <textarea
+            className="aic-input"
+            placeholder="제품명, 소재, 수량 등을 입력하세요…"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+          />
+          <button
+            className="aic-send-btn"
+            onClick={sendMessage}
+            disabled={!input.trim() || loading}
+            aria-label="전송"
+          >
+            <Icon name="arrow_right" size={18} stroke={2.2}/>
+          </button>
+        </div>
+      </div>
+
+      {/* 우측: 추천 공장 */}
+      <div className="aic-results">
+        <div className="aic-results-head">
+          <Icon name="buildings" size={16} stroke={1.8}/>
+          <span>추천 제조사</span>
+          {resolvedFactories.length > 0 && (
+            <span className="aic-results-count">{resolvedFactories.length}곳</span>
+          )}
+        </div>
+        {resolvedFactories.length === 0 ? (
+          <div className="aic-results-empty">
+            <div className="aic-empty-icon">
+              <Icon name="search" size={32} stroke={1.2}/>
+            </div>
+            <p>AI와 대화하면<br/>적합한 공장을 찾아드립니다</p>
+          </div>
+        ) : (
+          <div className="aic-cards">
+            {resolvedFactories.map((f, i) => {
+              const match = factories.find(x => x.id === f.id);
+              return (
+                <div key={f.id} className="aic-card-wrap">
+                  {match && (
+                    <div className="aic-match-badge">{match.matchPct}% 매칭</div>
+                  )}
+                  <ManufacturerCard
+                    f={f}
+                    onOpen={() => onOpenFactory?.(f.id)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { AiConsultPage });
+
 // ──────────────────────────────────────────────────────────
 const ReportPage = ({ params, onNav }) => {
   const factoryId = params?.factoryId || '';

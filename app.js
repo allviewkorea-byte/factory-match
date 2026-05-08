@@ -6,7 +6,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
+const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
 const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 // Parse route and factoryId from current URL once at startup
@@ -230,6 +230,11 @@ function App() {
           onSearch={handleSearch}
           density={tweaks.density}
           heroVariant={tweaks.heroVariant}
+        />
+      )}
+      {route === 'ai' && (
+        <AiConsultPage
+          onOpenFactory={(id) => openFactory(id, 'ai')}
         />
       )}
       {route === 'search' && (
