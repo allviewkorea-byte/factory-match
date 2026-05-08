@@ -77,11 +77,13 @@ _SKIP_DOMAINS = {
     "11st.co.kr", "gmarket.co.kr", "auction.co.kr",
     "smartstore.naver.com", "storefarm.naver.com",
     "coupang.com",
+    # 공장 디렉토리 / 전화번호부 / 관공서 포털 (공식 홈페이지 아님)
+    "myfactory.co.kr", "114.co.kr", "ok114.co.kr", "ksm114.co.kr",
+    "goodtel070.co.kr", "weseb.com", "38.co.kr",
+    "bizok.incheon.go.kr", "kpi.or.kr", "findcompany.kr",
+    "atfis.or.kr", "swadpia.co.kr", "kicrex.kr",
 }
-"myfactory.co.kr", "114.co.kr", "ok114.co.kr", "ksm114.co.kr",
-"goodtel070.co.kr", "weseb.com", "38.co.kr",
-"bizok.incheon.go.kr", "kpi.or.kr", "findcompany.kr",
-"atfis.or.kr", "swadpia.co.kr", "kicrex.kr",
+
 
 # ─────────────────────────────────────────────────────────
 # Supabase 헬퍼
@@ -299,8 +301,6 @@ def main():
     quota_exceeded  = False
 
     while today_api_calls < DAILY_API_LIMIT and not quota_exceeded:
-        # ID 커서 방식으로 다음 배치 조회
-        # (UPDATE된 행은 website IS NULL 조건에서 자동 제외됨)
         try:
             batch = sb_fetch_nullwebsite(last_id)
         except Exception as e:
@@ -321,7 +321,7 @@ def main():
             fid     = factory.get("id", "")
             name    = (factory.get("name") or "").strip()
             city    = (factory.get("city") or "").strip()
-            last_id = fid  # 커서 전진 (결과 없어도 ID 기록)
+            last_id = fid
 
             if not name:
                 total_not_found += 1
@@ -360,7 +360,6 @@ def main():
             print("  [{0:>6}] {1}{2}  ->  {3}".format(
                 total_processed, name, loc, status))
 
-            # 100건마다 진행 저장 + 요약
             if total_processed % 100 == 0:
                 prog.update({
                     "processed": total_processed,
@@ -379,7 +378,6 @@ def main():
 
             time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
 
-    # 최종 저장
     prog.update({
         "processed": total_processed,
         "updated":   total_updated,
