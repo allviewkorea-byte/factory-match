@@ -1381,16 +1381,45 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return () => { mounted = false; };
   }, []);
 
-  // 지도 핀 로드 — activeRegion 변경 시 해당 지역 coord 보유 공장 최대 500개 재쿼리
+  // 지도 핀 로드 — activeRegion 변경 시 재쿼리
+  // 지역 선택: region + coord_x IS NOT NULL 조건으로 전체 페이지네이션 (제한 없음)
+  // 전체 보기: 1,000개 제한 (전체 DB 규모 대비 합리적 샘플)
   useEffectP(() => {
     if (!window._sb) return;
     let mounted = true;
-    let gq = window._sb.from('factories').select('*')
-      .not('coord_x', 'is', null).not('coord_y', 'is', null).limit(1000);
-    if (activeRegion !== 'all') gq = _applyRegionFilter(gq, activeRegion);
-    gq.then(({ data }) => {
-      if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
-    }).catch(() => {});
+    setGeoFactories([]);
+
+    if (activeRegion === 'all') {
+      window._sb.from('factories').select('*')
+        .not('coord_x', 'is', null).not('coord_y', 'is', null)
+        .limit(1000)
+        .then(({ data }) => {
+          if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
+        }).catch(() => {});
+    } else {
+      const GEO_PAGE = 1000;
+      const loadGeoPage = async (from, acc) => {
+        let q = window._sb.from('factories').select('*')
+          .not('coord_x', 'is', null).not('coord_y', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, from + GEO_PAGE - 1);
+        q = _applyRegionFilter(q, activeRegion);
+        const { data, error } = await q;
+        if (!mounted) return;
+        if (error || !data || data.length === 0) {
+          setGeoFactories(acc.map(window._dbRowToFactory).filter(f => f.coord != null));
+          return;
+        }
+        const next = [...acc, ...data];
+        if (data.length < GEO_PAGE) {
+          setGeoFactories(next.map(window._dbRowToFactory).filter(f => f.coord != null));
+        } else {
+          loadGeoPage(from + GEO_PAGE, next);
+        }
+      };
+      loadGeoPage(0, []);
+    }
+
     return () => { mounted = false; };
   }, [activeRegion]);
 
