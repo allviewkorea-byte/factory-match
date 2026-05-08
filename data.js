@@ -339,6 +339,7 @@ window._dbRowToFactory = (row) => {
   lat: geoLat,
   lng: geoLng,
   address: row.address || '',
+  roadAddress: row.road_address || '',
   industries: row.industries || [],
   processes: row.processes || [],
   products: row.products || [],

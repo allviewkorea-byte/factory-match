@@ -178,6 +178,13 @@ function getCardKeywords(f) {
   return kws.slice(0, 3).join(' · ') || (f.name || '').slice(0, 12);
 }
 
+// 도로명주소에서 도/특별시 + 시/군/구 추출 ("경기도 파주시 문산읍..." → "경기도 파주시")
+function _addrCity(addr) {
+  if (!addr) return '';
+  const parts = addr.trim().split(/\s+/);
+  return parts.length >= 2 ? parts[0] + ' ' + parts[1] : parts[0];
+}
+
 const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqIds = [], simplified = false }) => {
   const { PROCESSES } = window.MFG_DATA;
   const procLabels = (f.processes || []).map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
@@ -185,7 +192,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
   const isInRfq = rfqIds.includes(f.id);
 
   // Location: 원본 한글 지역명(regionRaw) 우선, 없으면 regionId 사용
-  const location = [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '';
+  const location = _addrCity(f.roadAddress) || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '';
 
   // 업종 태그: industries 배열 (KICOX는 raw 한글, 샘플은 영문 id)
   const industryTags = (f.industries || []).map(i => INDUSTRY_LABEL_MAP[i] || i).slice(0, 4);
@@ -609,7 +616,7 @@ function ListMapPanel({ geoFactories, selectedFactory, mapsKey, onOpenFactory })
         mapRef.current.setZoom(14);
       } else {
         new google.maps.Geocoder().geocode(
-          { address: `${selectedFactory.name} ${selectedFactory.city}` },
+          { address: selectedFactory.roadAddress || selectedFactory.address || `${selectedFactory.name} ${selectedFactory.city}` },
           (res, status) => {
             if (status === 'OK' && res[0]) {
               mapRef.current.panTo(res[0].geometry.location);
@@ -1252,7 +1259,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   useEffectP(() => {
     if (!window._sb) return;
     window._sb.from('factories')
-      .select('id,name,city,region,coord_x,coord_y,industries,summary,address')
+      .select('id,name,city,region,coord_x,coord_y,industries,summary,address,road_address')
       .not('coord_x', 'is', null)
       .not('coord_y', 'is', null)
       .limit(500)
@@ -1713,7 +1720,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 </div>
                 <p className="map-side-sub">
                   <Icon name="pin" size={11} stroke={2}/>
-                  {selectedFactory.city}
+                  {_addrCity(selectedFactory.roadAddress) || selectedFactory.city}
                 </p>
                 <p className="map-side-desc">{selectedFactory.summary || '견적 문의 가능한 제조사입니다'}</p>
                 <div className="map-side-stats">
@@ -1772,10 +1779,10 @@ function useMapsKey() {
 
 const MAPS_ENABLED = true; // Set to true when Maps API is authorized
 
-function FactoryMap({ city, name }) {
+function FactoryMap({ addr, name }) {
   const key = useMapsKey();
   if (MAPS_ENABLED && key) {
-    const q = encodeURIComponent(`${name} ${city}`);
+    const q = encodeURIComponent(addr || name);
     return (
       <div className="factory-map">
         <iframe
@@ -2087,7 +2094,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
           <div className="detail-hero-meta">
-            <span><Icon name="pin" size={13} stroke={2}/> {[f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
+            <span><Icon name="pin" size={13} stroke={2}/> {_addrCity(f.roadAddress) || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
               <>
                 <span className="dot">·</span>
@@ -2187,8 +2194,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div className="detail-side">
               <h4>기본 정보</h4>
               <dl className="detail-dl">
-                {(f.address || f.city) && (
-                  <><dt>주소</dt><dd>{f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                {(f.roadAddress || f.address || f.city) && (
+                  <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
                 {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
                 {f.founded > 0 && (
@@ -2206,7 +2213,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   </dd></>
                 )}
               </dl>
-              <FactoryMap city={f.city} name={f.name} />
+              <FactoryMap addr={f.roadAddress || f.address} name={f.name} />
             </div>
           </div>
         </section>
@@ -2340,7 +2347,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   )}
                   <div className="fe-ro-item">
                     <span className="fe-ro-label">주소</span>
-                    <span className="fe-ro-value">{f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
+                    <span className="fe-ro-value">{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || '—'}</span>
                   </div>
                 </div>
               </div>
