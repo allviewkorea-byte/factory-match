@@ -288,36 +288,42 @@ window._latLngToSvg = (lat, lng) => {
   return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
 };
 
-// DB에 저장된 한글 지역명 → 영문 필터 ID 변환
+// DB에 저장된 한글 지역명 → 영문 필터 ID 변환 (시/도 단위 세분화)
 window._REGION_NORM = {
-  '서울': 'gyeonggi', '서울특별시': 'gyeonggi',
-  '경기': 'gyeonggi', '경기도': 'gyeonggi',
-  '인천': 'gyeonggi', '인천광역시': 'gyeonggi',
-  '부산': 'busan', '부산광역시': 'busan',
-  '경남': 'gyeongnam', '경상남도': 'gyeongnam',
-  '울산': 'ulsan', '울산광역시': 'ulsan',
-  '대구': 'daegu', '대구광역시': 'daegu',
-  '경북': 'daegu', '경상북도': 'daegu',
-  '충남': 'chungcheong', '충청남도': 'chungcheong',
-  '충북': 'chungcheong', '충청북도': 'chungcheong',
-  '대전': 'chungcheong', '대전광역시': 'chungcheong',
-  '세종': 'chungcheong', '세종특별자치시': 'chungcheong',
-  '전남': 'jeonla', '전라남도': 'jeonla',
-  '전북': 'jeonla', '전라북도': 'jeonla',
-  '광주': 'jeonla', '광주광역시': 'jeonla',
-  '강원': 'gangwon', '강원도': 'gangwon', '강원특별자치도': 'gangwon',
-  '제주': 'jeju', '제주도': 'jeju', '제주특별자치도': 'jeju',
+  '서울': 'seoul',   '서울특별시': 'seoul',
+  '경기': 'gyeonggi','경기도': 'gyeonggi',
+  '인천': 'incheon', '인천광역시': 'incheon',
+  '부산': 'busan',   '부산광역시': 'busan',
+  '대구': 'daegu',   '대구광역시': 'daegu',
+  '경남': 'gyeongnam','경상남도': 'gyeongnam',
+  '경북': 'gyeongbuk','경상북도': 'gyeongbuk',
+  '충남': 'chungnam', '충청남도': 'chungnam',
+  '충북': 'chungbuk', '충청북도': 'chungbuk',
+  '대전': 'daejeon',  '대전광역시': 'daejeon',
+  '세종': 'sejong',   '세종특별자치시': 'sejong',
+  '광주': 'gwangju',  '광주광역시': 'gwangju',
+  '전남': 'jeonnam',  '전라남도': 'jeonnam',
+  '전북': 'jeonbuk',  '전라북도': 'jeonbuk',
+  '강원': 'gangwon',  '강원도': 'gangwon', '강원특별자치도': 'gangwon',
+  '울산': 'ulsan',    '울산광역시': 'ulsan',
+  '제주': 'jeju',     '제주도': 'jeju', '제주특별자치도': 'jeju',
 };
 
 window._dbRowToFactory = (row) => {
   // coord_y > 100 이면 실제 경도(위경도 형식), 아니면 SVG 좌표
   let coord = null;
   if (row.coord_x != null && row.coord_y != null) {
-    // coord_x = 경도(124-131), coord_y = 위도(33-38)
-    // 경도가 100 초과이면 실제 위경도 → SVG 변환 필요
-    coord = row.coord_x > 100
-      ? window._latLngToSvg(row.coord_y, row.coord_x)   // (lat, lng) 순서
-      : { x: row.coord_x, y: row.coord_y };
+    // enrich_geocode.py 기준: coord_x=경도(lng), coord_y=위도(lat)
+    const lat = Number(row.coord_y);
+    const lng = Number(row.coord_x);
+    // 한국 영토 범위 벗어나는 좌표(북한·해외 오geocode) 무시
+    const inKorea = lat >= 33.0 && lat <= 38.9 && lng >= 124.5 && lng <= 132.0;
+    if (inKorea) {
+      // lng > 100 이면 실제 위경도 → SVG 0-100 변환, 아니면 이미 SVG 좌표
+      coord = lng > 100
+        ? window._latLngToSvg(lat, lng)
+        : { x: lng, y: lat };
+    }
   }
   const rawRegion = row.region || '';
   const regionId  = window._REGION_NORM[rawRegion] || rawRegion;

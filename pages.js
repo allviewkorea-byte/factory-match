@@ -1201,7 +1201,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   // 지역별 카운트 — DB에서 직접 집계 (estimated → EXPLAIN 기반, 즉시 반환)
   useEffectP(() => {
     if (!window._sb || !window._REGION_NORM) return;
-    const REGION_IDS = ['gyeonggi','busan','gyeongnam','ulsan','daegu','chungcheong','jeonla','gangwon','jeju'];
+    const REGION_IDS = ['seoul','gyeonggi','incheon','busan','daegu','gyeongnam','gyeongbuk','chungnam','chungbuk','daejeon','sejong','gwangju','jeonnam','jeonbuk','gangwon','ulsan','jeju'];
     const korMap = {};
     Object.entries(window._REGION_NORM).forEach(([kor, eng]) => {
       if (!korMap[eng]) korMap[eng] = [];
@@ -1342,16 +1342,24 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   <button className="acc-reset-link" onClick={() => setActiveRegion('all')} disabled={activeRegion === 'all'}>초기화</button>
                   <div className="filters-radios">
                     {[
-                      { id: 'all', label: '전국' },
-                      { id: 'gyeonggi', label: '수도권 (서울·경기·인천)' },
-                      { id: 'busan', label: '부산' },
+                      { id: 'all',       label: '전국' },
+                      { id: 'seoul',     label: '서울' },
+                      { id: 'gyeonggi', label: '경기' },
+                      { id: 'incheon',   label: '인천' },
+                      { id: 'busan',     label: '부산' },
+                      { id: 'daegu',     label: '대구' },
                       { id: 'gyeongnam', label: '경남' },
-                      { id: 'ulsan', label: '울산' },
-                      { id: 'daegu', label: '대구·경북' },
-                      { id: 'chungcheong', label: '충청 (충남·충북·대전·세종)' },
-                      { id: 'jeonla', label: '광주·전남·전북' },
-                      { id: 'gangwon', label: '강원' },
-                      { id: 'jeju', label: '제주' },
+                      { id: 'gyeongbuk', label: '경북' },
+                      { id: 'chungnam',  label: '충남' },
+                      { id: 'chungbuk',  label: '충북' },
+                      { id: 'daejeon',   label: '대전' },
+                      { id: 'sejong',    label: '세종' },
+                      { id: 'gwangju',   label: '광주' },
+                      { id: 'jeonnam',   label: '전남' },
+                      { id: 'jeonbuk',   label: '전북' },
+                      { id: 'gangwon',   label: '강원' },
+                      { id: 'ulsan',     label: '울산' },
+                      { id: 'jeju',      label: '제주' },
                     ].map(r => (
                       <label key={r.id} className={`filter-radio ${activeRegion === r.id ? 'is-active' : ''}`}>
                         <input type="radio" checked={activeRegion === r.id} onChange={() => setActiveRegion(r.id)}/>
