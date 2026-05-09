@@ -8018,9 +8018,9 @@ a { color: inherit; text-decoration: none; }
 .grants-filter-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  flex-wrap: wrap;
+  padding: 4px 0;
+  overflow: hidden;
 }
 .grants-filter-label {
   font-size: 13px;
@@ -8028,6 +8028,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-3);
   white-space: nowrap;
   min-width: 28px;
+  flex-shrink: 0;
 }
 .grants-extra-row {
   justify-content: space-between;
@@ -8037,9 +8038,13 @@ a { color: inherit; text-decoration: none; }
 .grants-cat-tabs {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
 }
+.grants-cat-tabs::-webkit-scrollbar { display: none; }
 .grants-cat-tab {
   font-size: 14px;
   font-weight: 500;
