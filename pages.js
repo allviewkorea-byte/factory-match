@@ -1410,18 +1410,26 @@ function _stripHtml(html) {
 }
 
 function _biz(item) {
+  // 날짜 자동 탐지: YYYYMMDD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
+  const dateFlds = Object.entries(item)
+    .filter(([, v]) => v && /^\d{8}$/.test(String(v)))
+    .sort(([, a], [, b]) => a < b ? -1 : 1);
+  const autoStt = dateFlds[0]?.[1] || '';
+  const autoEnd = dateFlds[dateFlds.length - 1]?.[1] || '';
+
   return {
-    title:    item.pblancNm    || item.pbancNm      || item.bizNm       || item.sprtBizNm   || '(제목 없음)',
-    org:      item.mnofcDeptNm || item.jrsdInsttNm  || item.instNm      || item.sprtInsttNm || '',
-    execOrg:  item.rcvAcptInsttNm || item.prgrsInsttNm || item.operInsttNm || '',
-    cat:      item.bizSectCdNm || item.sprtFldNm    || item.lclasNm     || item.sectNm      || '',
-    desc:     item.bsnsSumryCn || item.pblancDtlCn  || item.smryCn      || item.bizDtlCn   || '',
-    method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || '',
-    contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm     || '',
-    target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || '',
-    sttDate:  item.rcptSttDate || item.sprtSttDate  || item.applyStDt   || '',
-    endDate:  item.rcptEndDate || item.sprtEndDate  || item.applyEdDt   || item.pbancEndDt  || '',
-    applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl   || '',
+    title:    item.pblancNm    || item.pbancNm      || item.bizNm       || item.sprtBizNm   || item.pblancNm  || '',
+    org:      item.mnofcDeptNm || item.jrsdInsttNm  || item.instNm      || item.sprtInsttNm || item.orgnNm    || item.deptNm || '',
+    execOrg:  item.rcvAcptInsttNm || item.prgrsInsttNm || item.operInsttNm || item.execInsttNm || '',
+    cat:      item.bizSectCdNm || item.sprtFldNm    || item.lclasNm     || item.lclasSe     || item.sectNm    || item.fldNm || item.ctgryNm || '',
+    desc:     item.bsnsSumryCn || item.pblancDtlCn  || item.smryCn      || item.bizDtlCn    || item.dtlCn     || item.bizOvrvcCn || '',
+    method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || item.applyMthd   || '',
+    contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm      || item.telNm       || item.cntcTelno || '',
+    target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || item.sprtTrget   || '',
+    // 신청기간: 알려진 필드명 모두 + 자동 탐지 폴백
+    sttDate:  item.rcptSttDate || item.sprtSttDate  || item.applyBgngDe || item.applyStDt   || item.rcptBgngDe || item.pbancBgngDe || item.bizApplyBgngDe || autoStt,
+    endDate:  item.rcptEndDate || item.sprtEndDate  || item.applyEndDe  || item.applyEdDt   || item.rcptEndDe  || item.pbancEndDt  || item.pbancEndDe    || item.bizApplyEndDe || autoEnd,
+    applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || '',
   };
@@ -1514,8 +1522,8 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '' } =
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const body = json?.response?.body;
-  // 공공데이터포털 API는 items.item 또는 items 배열 두 가지 구조를 모두 사용
-  const raw = body?.items;
+  // body.items.item / body.items / body.item 세 가지 구조 모두 처리
+  const raw = body?.items ?? body?.item;
   let items = [];
   if (Array.isArray(raw)) {
     items = raw;
@@ -1524,7 +1532,11 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '' } =
   } else if (raw && typeof raw === 'object') {
     items = [raw];
   }
-  if (items.length > 0) console.log('[BizInfo] 첫 번째 item 필드:', Object.keys(items[0]), items[0]);
+  if (items.length > 0) {
+    window._bizInfoRaw = items[0]; // 브라우저 콘솔: _bizInfoRaw 로 확인
+    console.log('[BizInfo] 필드명:', Object.keys(items[0]));
+    console.log('[BizInfo] 첫 아이템:', items[0]);
+  }
   return { total: Number(body?.totalCount ?? 0), items };
 }
 
@@ -9204,7 +9216,7 @@ const GrantsPage = ({ onNav, authed }) => {
                     ? { label: '마감', cls: 'status-closed' }
                     : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
                     : { label: '진행중', cls: 'status-active' };
-                  const rowNum = (pageNo - 1) * numOfRows + i + 1;
+                  const rowNum = total ? total - (pageNo - 1) * numOfRows - i : (pageNo - 1) * numOfRows + i + 1;
                   const period = f.sttDate && f.endDate
                     ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
                     : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '-';
