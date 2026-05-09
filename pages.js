@@ -857,6 +857,22 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
       selectedMarkerRef.current = null;
     }
 
+    const hideAllMarkers = () => {
+      if (clustererRef.current) clustererRef.current.clearMarkers();
+      markersRef.current.forEach(m => m.setMap(null));
+      dynMarkersRef.current.forEach(m => m.setMap(null));
+    };
+
+    const showAllMarkers = () => {
+      const MC = window.markerClusterer?.MarkerClusterer;
+      if (MC && clustererRef.current && markersRef.current.length) {
+        clustererRef.current.addMarkers(markersRef.current);
+      } else {
+        markersRef.current.forEach(m => m.setMap(mapRef.current));
+      }
+      dynMarkersRef.current.forEach(m => m.setMap(mapRef.current));
+    };
+
     const placeSelectedPin = (lat, lng) => {
       selectedMarkerRef.current = new google.maps.Marker({
         position: { lat, lng },
@@ -868,6 +884,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     };
 
     if (selectedFactory) {
+      hideAllMarkers();
       if (selectedFactory.lat != null && selectedFactory.lng != null) {
         mapRef.current.panTo({ lat: selectedFactory.lat, lng: selectedFactory.lng });
         mapRef.current.setZoom(14);
@@ -886,6 +903,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         );
       }
     } else {
+      showAllMarkers();
       mapRef.current.panTo({ lat: 36.5, lng: 127.5 });
       mapRef.current.setZoom(7);
     }
