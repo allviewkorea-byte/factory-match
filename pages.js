@@ -9250,7 +9250,7 @@ const GrantsPage = ({ onNav, authed }) => {
   const [rgnIdx, setRgnIdx] = React.useState(0);
   const [pageNo, setPageNo] = React.useState(1);
   const [total, setTotal] = React.useState(0);
-  const [statusFilter, setStatusFilter] = React.useState('active');
+  const [statusFilter, setStatusFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('smart');
   const [searchQuery, setSearchQuery] = React.useState('');
   const numOfRows = 20;
@@ -9285,34 +9285,38 @@ const GrantsPage = ({ onNav, authed }) => {
     });
   }
 
+  // 탭 필터 (진행중/마감임박/마감 탭 선택시)
   if (statusFilter !== 'all') {
     displayItems = displayItems.filter(item => {
       const dday = calcDday(_biz(item).endDate);
-      if (statusFilter === 'active') return dday && !dday.expired && !dday.urgent;
+      if (statusFilter === 'active') return dday && !dday.expired;       // 진행중 = 진행중+마감임박 모두
       if (statusFilter === 'urgent') return dday && !dday.expired && dday.urgent;
       if (statusFilter === 'closed') return !dday || dday.expired;
       return true;
     });
   }
 
-  // 정렬
+  // 정렬: 항상 진행중/임박이 상단 고정, 마감은 하단
   displayItems = [...displayItems].sort((a, b) => {
     const fa = _biz(a), fb = _biz(b);
     const da = calcDday(fa.endDate), db = calcDday(fb.endDate);
 
+    const score = (f, d) => {
+      if (!d || d.expired) return 100000 + (99999999 - (parseInt(f.endDate) || 0)); // 마감: 최신순으로
+      if (d.label === 'D-day') return 0;
+      if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
+      return 1000 + (parseInt(f.endDate) || 99999999); // 진행중: 마감일 가까운순
+    };
+
     if (sortBy === 'smart') {
-      // 임박순: D-day → 마감임박(남은일수) → 진행중(마감일순) → 마감
-      const score = (f, d) => {
-        if (!d || d.expired) return 9999;
-        if (d.label === 'D-day') return 0;
-        if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
-        return 100 + (parseInt(f.endDate) || 99999999);
-      };
       return score(fa, da) - score(fb, db);
     } else {
-      // 최신순: regDate 또는 no 기준 내림차순
-      const ra = fa.regDate || fa.no || '';
-      const rb = fb.regDate || fb.no || '';
+      // 최신순: no 기준 내림차순 (단, 진행중은 여전히 마감 위)
+      const aExpired = !da || da.expired;
+      const bExpired = !db || db.expired;
+      if (aExpired !== bExpired) return aExpired ? 1 : -1;
+      const ra = fa.no || '';
+      const rb = fb.no || '';
       return rb > ra ? 1 : rb < ra ? -1 : 0;
     }
   });
@@ -9418,7 +9422,7 @@ const GrantsPage = ({ onNav, authed }) => {
                         : '-';
                   const views = _hashViews(f.no).toLocaleString();
                   return (
-                    <tr key={f.no || i} className="grants-table-row" onClick={() => setSelectedItem(item)}>
+                    <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => setSelectedItem(item)}>
                       <td className="gt-no">{rowNum}</td>
                       <td className="gt-cat">
                         {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>}
