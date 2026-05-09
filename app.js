@@ -6,8 +6,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
-const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
+const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search', 'landing'];
+const AUTH_ROUTES = ['login', 'signup', 'verify', 'onboarding', 'welcome'];
 
 // Parse route and factoryId from current URL once at startup
 function _parseInitialUrl() {
@@ -20,8 +20,8 @@ function _parseInitialUrl() {
   if (AUTH_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
   if (APP_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
   try {
-    return { route: localStorage.getItem('fm-authed') === '1' ? 'home' : 'landing', factoryId: null };
-  } catch { return { route: 'landing', factoryId: null }; }
+    return { route: 'home', factoryId: null };
+  } catch { return { route: 'home', factoryId: null }; }
 }
 
 // Parse route/factoryId from any hash string
@@ -176,7 +176,7 @@ function App() {
     } catch {}
     setAuthed(false);
     setProfile(null);
-    nav('landing');
+    nav('home');
   };
   const [detailFrom, setDetailFrom] = useState('list');
   const [chatTarget, setChatTarget] = useState(null);
@@ -210,7 +210,6 @@ function App() {
   if (AUTH_ROUTES.includes(route)) {
     return (
       <>
-        {route === 'landing' && <LandingPage onNav={nav}/>}
         {route === 'login' && <AuthFormPage mode="login" onNav={nav} onSubmit={handleAuthSubmit}/>}
         {route === 'signup' && <SignupPage onNav={nav}/>}
         {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
@@ -223,6 +222,7 @@ function App() {
   return (
     <>
       <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed} rfqCount={rfqIds.length}/>
+      {route === 'landing' && <LandingPage onNav={nav}/>}
       {route === 'home' && (
         <HomePage
           onNav={nav}

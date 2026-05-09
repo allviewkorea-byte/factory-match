@@ -62,7 +62,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
     { id: 'ai',    label: 'AI 상담' },
     { id: 'list',  label: '제조사 탐색' },
     { id: 'rfq',   label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
-    { id: 'chat',  label: '채팅' },
+    // { id: 'chat',  label: '채팅' },  // 채팅 탭 — 추후 활성화
   ];
   const isCompact = density === 'compact';
   return (
@@ -95,26 +95,35 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
           </nav>
         </div>
         <div className="hdr-right">
-          <div className="hdr-divider"/>
-          <button
-            className={'hdr-icon-btn hdr-admin' + (route === 'admin' ? ' is-active' : '')}
-            onClick={() => onNav('admin')}
-            aria-label="운영자 콘솔"
-            title="운영자 콘솔"
-          >
-            <Icon name="shield" size={16} stroke={1.8}/>
-          </button>
-          <button className="hdr-user" onClick={() => onNav('mypage')}>
-            <span className="hdr-avatar">윤</span>
-            <span className="hdr-user-meta">
-              <span className="hdr-user-name">윤도현 · Buyer</span>
-              <span className="hdr-user-org">YD Innovations</span>
-            </span>
-          </button>
-          {onLogout && (
-            <button className="hdr-icon-btn hdr-logout" onClick={onLogout} aria-label="로그아웃" title="로그아웃">
-              <Icon name="arrow_right" size={16} stroke={2}/>
-            </button>
+          {authed ? (
+            <>
+              <div className="hdr-divider"/>
+              <button
+                className={'hdr-icon-btn hdr-admin' + (route === 'admin' ? ' is-active' : '')}
+                onClick={() => onNav('admin')}
+                aria-label="운영자 콘솔"
+                title="운영자 콘솔"
+              >
+                <Icon name="shield" size={16} stroke={1.8}/>
+              </button>
+              <button className="hdr-user" onClick={() => onNav('mypage')}>
+                <span className="hdr-avatar">윤</span>
+                <span className="hdr-user-meta">
+                  <span className="hdr-user-name">윤도현 · Buyer</span>
+                  <span className="hdr-user-org">YD Innovations</span>
+                </span>
+              </button>
+              {onLogout && (
+                <button className="hdr-icon-btn hdr-logout" onClick={onLogout} aria-label="로그아웃" title="로그아웃">
+                  <Icon name="arrow_right" size={16} stroke={2}/>
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button className="hdr-login-btn" onClick={() => onNav('login')}>로그인</button>
+              <button className="hdr-signup-btn" onClick={() => onNav('signup')}>무료로 시작하기</button>
+            </>
           )}
         </div>
       </div>
