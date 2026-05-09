@@ -9348,7 +9348,7 @@ const GrantsPage = ({ onNav, authed }) => {
             ))}
           </div>
           <select className="grants-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            <option value="smart">추천순 (진행중 우선)</option>
+            <option value="smart">임박순</option>
             <option value="latest">최신순</option>
           </select>
         </div>
