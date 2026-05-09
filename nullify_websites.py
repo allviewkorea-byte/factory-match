@@ -74,6 +74,17 @@ RULES = [
     ("linktr.ee 포함",                 {"website": "ilike.*linktr.ee*"}),
     ("rrf.seoul.go.kr 포함",           {"website": "ilike.*rrf.seoul.go.kr*"}),
     ("cu.bgfretail.com 포함",          {"website": "ilike.*cu.bgfretail.com*"}),
+    ("biztop.co.kr 포함",              {"website": "ilike.*biztop.co.kr*"}),
+    ("marketbz.com 포함",              {"website": "ilike.*marketbz.com*"}),
+    ("life114.co.kr 포함",             {"website": "ilike.*life114.co.kr*"}),
+    ("worker.co.kr 포함",              {"website": "ilike.*worker.co.kr*"}),
+    ("poolixhub.io 포함",              {"website": "ilike.*poolixhub.io*"}),
+    ("ksnara.or.kr 포함",              {"website": "ilike.*ksnara.or.kr*"}),
+    ("smes.go.kr 포함",                {"website": "ilike.*smes.go.kr*"}),
+    ("sajo.co.kr 포함",                {"website": "ilike.*sajo.co.kr*"}),
+    ("book.mcst.go.kr 포함",           {"website": "ilike.*book.mcst.go.kr*"}),
+    ("kukak21.com 포함",               {"website": "ilike.*kukak21.com*"}),
+    ("dept.yeonsung.ac.kr 포함",       {"website": "ilike.*dept.yeonsung.ac.kr*"}),
 ]
 
 

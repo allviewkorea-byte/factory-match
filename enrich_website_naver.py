@@ -97,6 +97,10 @@ _SKIP_DOMAINS = {
     "okgoodfood.com", "wonju.go.kr", "mma.go.kr", "sen.es.kr",
     "g2b.go.kr", "dh.go.kr",
     "happycampus.com", "sankun.com", "jobplanet.co.kr",
+    "biztop.co.kr", "marketbz.com", "worker.co.kr", "poolixhub.io",
+    "ksnara.or.kr", "smes.go.kr", "sajo.co.kr", "thevc.kr",
+    "book.mcst.go.kr", "kukak21.com", "dept.yeonsung.ac.kr",
+    "bigmycn.com", "thinkzon.com",
 }
 
 
