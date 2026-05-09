@@ -1472,14 +1472,14 @@ const GrantsHomeSection = ({ onNav, authed, compact }) => {
     <section className={`grants-home-section${compact ? ' is-compact' : ''}`}>
       <div className="grants-home-inner">
         <div className="grants-home-head">
-          <div>
-            <h2 className="grants-home-title">이달의 지원사업</h2>
-            <p className="grants-home-sub">제조기업을 위한 정부지원금 · 보조금 정보</p>
-          </div>
-          <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
+          <h2 className="grants-home-title">이달의 지원사업</h2>
+          <p className="grants-home-sub">제조기업을 위한 정부지원금 · 보조금 정보</p>
         </div>
         <div className="grants-card-grid">
           {grants.map(g => <GrantCard key={g.id} g={g} authed={authed} onNav={onNav} />)}
+        </div>
+        <div className="grants-all-wrap">
+          <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
         </div>
       </div>
     </section>
