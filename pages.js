@@ -9264,29 +9264,45 @@ const GrantsPage = ({ onNav, authed }) => {
     setPinnedItems([]);
     const fetchAllActive = async () => {
       const collected = [];
-      for (let p = 1; p <= 5; p++) {
-        try {
-          const { items } = await fetchBizInfo({ pageNo: p, numOfRows: 20, searchLclasId: cat.id, searchRgnCode: rgn.code });
-          const active = items.filter(item => {
+      // 1페이지로 전체 건수 파악
+      let totalPages = 1;
+      try {
+        const first = await fetchBizInfo({ pageNo: 1, numOfRows: 20, searchLclasId: cat.id, searchRgnCode: rgn.code });
+        totalPages = Math.ceil(first.total / 20) || 1;
+        first.items.forEach(item => {
+          const d = calcDday(_biz(item).endDate);
+          if (d && !d.expired) collected.push(item);
+        });
+      } catch(e) { return; }
+
+      // 나머지 페이지 병렬로 순회 (5개씩 묶어서)
+      for (let p = 2; p <= totalPages; p += 5) {
+        const batch = [];
+        for (let i = p; i < p + 5 && i <= totalPages; i++) {
+          batch.push(fetchBizInfo({ pageNo: i, numOfRows: 20, searchLclasId: cat.id, searchRgnCode: rgn.code }).catch(() => ({ items: [] })));
+        }
+        const results = await Promise.all(batch);
+        results.forEach(({ items }) => {
+          items.forEach(item => {
             const d = calcDday(_biz(item).endDate);
-            return d && !d.expired;
+            if (d && !d.expired) collected.push(item);
           });
-          collected.push(...active);
-          if (active.length < items.length) break; // 마감 섞이기 시작하면 중단
-        } catch(e) { break; }
+        });
+        // 수집될 때마다 실시간 반영
+        if (collected.length > 0) {
+          const sorted = [...collected].sort((a, b) => {
+            const da = calcDday(_biz(a).endDate), db = calcDday(_biz(b).endDate);
+            const score = d => {
+              if (!d || d.expired) return 9999;
+              if (d.label === 'D-day') return 0;
+              if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
+              return 1000 + (parseInt(_biz(a).endDate) || 99999999);
+            };
+            return score(da) - score(db);
+          });
+          setPinnedItems([...sorted]);
+        }
       }
-      // 임박순 정렬
-      collected.sort((a, b) => {
-        const da = calcDday(_biz(a).endDate), db = calcDday(_biz(b).endDate);
-        const score = d => {
-          if (!d || d.expired) return 9999;
-          if (d.label === 'D-day') return 0;
-          if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
-          return 1000 + (parseInt(_biz(a).endDate) || 99999999);
-        };
-        return score(da) - score(db);
-      });
-      setPinnedItems(collected);
     };
     fetchAllActive();
   }, [catIdx, rgnIdx]);
