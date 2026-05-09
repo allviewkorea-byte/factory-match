@@ -281,7 +281,7 @@ def main():
                                "seen_names": list(seen_names),
                                "done_ids":   list(done_ids)})
 
-            time.sleep(0.05)
+            time.sleep(1.0)  # 429 방지: 초당 1회 제한
 
         done_terms.add(term)
         progress["cur_page"] = 0
