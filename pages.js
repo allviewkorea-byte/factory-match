@@ -1590,6 +1590,15 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '', se
     console.log('[BizInfo] 필드명:', Object.keys(items[0]));
     console.log('[BizInfo] 첫 아이템:', items[0]);
   }
+  // pbancEndDt 기준 내림차순 정렬: 진행중(미래) 공고가 먼저, 마감(과거) 공고가 나중
+  items.sort((a, b) => {
+    const ea = a.pbancEndDt || a.rcptEndDate || a.sprtEndDate || '';
+    const eb = b.pbancEndDt || b.rcptEndDate || b.sprtEndDate || '';
+    if (!ea && !eb) return 0;
+    if (!ea) return 1;
+    if (!eb) return -1;
+    return ea > eb ? -1 : 1;
+  });
   return { total: Number(body?.totalCount ?? 0), items };
 }
 
@@ -9238,7 +9247,10 @@ const GrantsPage = ({ onNav, authed }) => {
   // 지역 필터: 소관기관명에 지역명 포함 여부로 필터
   if (rgnIdx > 0) {
     const rgnLabel = BIZINFO_RGNS[rgnIdx].label;
-    displayItems = displayItems.filter(item => (_biz(item).org || '').includes(rgnLabel));
+    displayItems = displayItems.filter(item => {
+      const f = _biz(item);
+      return (f.org || '').includes(rgnLabel) || (f.title || '').includes(rgnLabel);
+    });
   }
   if (statusFilter !== 'all') {
     displayItems = displayItems.filter(item => {
