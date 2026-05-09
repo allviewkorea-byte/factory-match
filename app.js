@@ -239,8 +239,8 @@ function App() {
   return (
     <>
       <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed} rfqCount={rfqIds.length}/>
-      {route === 'landing' && <LandingPage onNav={nav}/>}
-      {route === 'home' && (
+      {(route === 'landing' || (route === 'home' && !authed)) && <LandingPage onNav={nav}/>}
+      {route === 'home' && authed && (
         <HomePage
           onNav={nav}
           onOpenFactory={(id) => openFactory(id, 'home')}

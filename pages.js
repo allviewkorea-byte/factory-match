@@ -4003,7 +4003,7 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
       <div className="auth-shell-inner">
         <header className="auth-mini-hdr">
           <AuthLogo size={32}/>
-          <button className="auth-back-btn" onClick={() => onNav('landing')}>
+          <button className="auth-back-btn" onClick={() => onNav('home')}>
             <Icon name="close" size={14} stroke={2}/>
           </button>
         </header>
@@ -4913,7 +4913,7 @@ function SignupPage({ onNav }) {
   };
   const goBack = () => {
     if (step > 1 && step < 5) setStep(s => s - 1);
-    else onNav('landing');
+    else onNav('home');
   };
 
   const handleSubmit = async () => {
