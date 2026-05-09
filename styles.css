@@ -7794,9 +7794,21 @@ a { color: inherit; text-decoration: none; }
   border-top: 1px solid var(--line-2);
   padding: 48px 24px 56px;
 }
+/* compact: hero 안에 인라인으로 표시될 때 */
+.grants-home-section.is-compact {
+  background: transparent;
+  border-top: none;
+  padding: 28px 0 0;
+  width: 100%;
+  max-width: 680px;
+}
 .grants-home-inner {
   max-width: 960px;
   margin: 0 auto;
+}
+.grants-home-section.is-compact .grants-home-inner {
+  max-width: 100%;
+  margin: 0;
 }
 .grants-home-head {
   display: flex;
@@ -8051,3 +8063,79 @@ a { color: inherit; text-decoration: none; }
   .grants-page-controls { padding: 0 16px 16px; }
   .grants-page-grid { padding: 0 16px 60px; }
 }
+
+/* ─── Grant 비로그인 게이트 모달 ─────────────────────── */
+.grant-gate-veil {
+  position: fixed;
+  inset: 0;
+  background: oklch(0 0 0 / 0.52);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+.grant-gate-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 32px 32px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px oklch(0 0 0 / 0.3);
+}
+.grant-gate-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 30px; height: 30px;
+  border: none; border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 13px;
+  display: grid; place-items: center;
+  transition: background 0.15s;
+}
+.grant-gate-close:hover { background: var(--bdr); }
+.grant-gate-icon {
+  font-size: 32px;
+  margin-bottom: 14px;
+}
+.grant-gate-msg {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-1);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+.grant-gate-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.grant-gate-signup {
+  height: 44px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.grant-gate-signup:hover { background: oklch(0.44 0.21 250); }
+.grant-gate-login {
+  height: 40px;
+  border: 1.5px solid var(--bdr);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.grant-gate-login:hover { border-color: var(--brand); color: var(--brand); }

@@ -239,7 +239,7 @@ function App() {
   return (
     <>
       <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed} rfqCount={rfqIds.length}/>
-      {(route === 'landing' || (route === 'home' && !authed)) && <LandingPage onNav={nav}/>}
+      {(route === 'landing' || (route === 'home' && !authed)) && <LandingPage onNav={nav} authed={authed}/>}
       {route === 'home' && authed && (
         <HomePage
           onNav={nav}
@@ -317,7 +317,7 @@ function App() {
       {route === 'admin' && (
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
       )}
-      {route === 'grants' && <GrantsPage onNav={nav}/>}
+      {route === 'grants' && <GrantsPage onNav={nav} authed={authed}/>}
       {route === 'terms' && <TermsPage />}
       {route === 'privacy' && <PrivacyPage />}
       {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}

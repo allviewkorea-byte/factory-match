@@ -1240,6 +1240,9 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
             전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
           </div>
         )}
+        {!hasResults && !loading && (
+          <GrantsHomeSection onNav={onNav} authed={authed} compact />
+        )}
       </div>
 
       {hasResults && (
@@ -1372,7 +1375,6 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
           )}
         </div>
       )}
-      <GrantsHomeSection onNav={onNav} />
     </div>
   );
 };
@@ -1400,9 +1402,11 @@ function calcDday(deadline) {
   return { label: `D-${diff}`, urgent: diff <= 7, expired: false };
 }
 
-const GrantCard = ({ g }) => {
+const GrantCard = ({ g, authed, onNav }) => {
   const dday = calcDday(g.deadline);
   const catStyle = GRANT_CAT_COLOR[g.category] || GRANT_CAT_COLOR['기타'];
+  const [gateOpen, setGateOpen] = React.useState(false);
+
   return (
     <div className="grant-card">
       <div className="grant-card-head">
@@ -1421,15 +1425,31 @@ const GrantCard = ({ g }) => {
             <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
           )}
           {g.url && (
-            <a href={g.url} target="_blank" rel="noreferrer" className="grant-link-btn">자세히 보기</a>
+            authed
+              ? <a href={g.url} target="_blank" rel="noreferrer" className="grant-link-btn">자세히 보기</a>
+              : <button className="grant-link-btn" onClick={() => setGateOpen(true)}>자세히 보기</button>
           )}
         </div>
       </div>
+
+      {gateOpen && (
+        <div className="grant-gate-veil" onClick={() => setGateOpen(false)}>
+          <div className="grant-gate-card" onClick={e => e.stopPropagation()}>
+            <button className="grant-gate-close" onClick={() => setGateOpen(false)}>✕</button>
+            <div className="grant-gate-icon">🔒</div>
+            <p className="grant-gate-msg">지원사업 상세 정보는<br/>회원만 확인 가능합니다</p>
+            <div className="grant-gate-btns">
+              <button className="grant-gate-signup" onClick={() => { setGateOpen(false); onNav?.('signup'); }}>무료로 시작하기</button>
+              <button className="grant-gate-login"  onClick={() => { setGateOpen(false); onNav?.('login');  }}>로그인</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const GrantsHomeSection = ({ onNav }) => {
+const GrantsHomeSection = ({ onNav, authed, compact }) => {
   const [grants, setGrants] = React.useState([]);
   const [loaded, setLoaded] = React.useState(false);
 
@@ -1449,7 +1469,7 @@ const GrantsHomeSection = ({ onNav }) => {
   if (!loaded || grants.length === 0) return null;
 
   return (
-    <section className="grants-home-section">
+    <section className={`grants-home-section${compact ? ' is-compact' : ''}`}>
       <div className="grants-home-inner">
         <div className="grants-home-head">
           <div>
@@ -1459,7 +1479,7 @@ const GrantsHomeSection = ({ onNav }) => {
           <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
         </div>
         <div className="grants-card-grid">
-          {grants.map(g => <GrantCard key={g.id} g={g} />)}
+          {grants.map(g => <GrantCard key={g.id} g={g} authed={authed} onNav={onNav} />)}
         </div>
       </div>
     </section>
@@ -4046,7 +4066,7 @@ const AuthLogo = ({ size = 36 }) => (
 // ═══════════════════════════════════════════════════════════
 // 1) LANDING (로그아웃 상태)
 // ═══════════════════════════════════════════════════════════
-function LandingPage({ onNav }) {
+function LandingPage({ onNav, authed }) {
   const [q, setQ] = useAuthState('');
   const [showModal, setShowModal] = useAuthState(false);
 
@@ -4092,9 +4112,8 @@ function LandingPage({ onNav }) {
         <div className="ldg2-stats">
           전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
         </div>
+        <GrantsHomeSection onNav={onNav} authed={false} compact />
       </main>
-
-      <GrantsHomeSection onNav={onNav} />
 
       {showModal && (
         <div className="ldg2-modal-overlay">
@@ -8878,7 +8897,7 @@ const ReportPage = ({ params, onNav }) => {
 // ══════════════════════════════════════════════════════════
 // GRANTS PAGE — 정부지원사업 전체 목록
 // ══════════════════════════════════════════════════════════
-const GrantsPage = ({ onNav }) => {
+const GrantsPage = ({ onNav, authed }) => {
   const [grants, setGrants] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [cat, setCat] = React.useState('전체');
@@ -8928,7 +8947,7 @@ const GrantsPage = ({ onNav }) => {
           ? <div className="grants-empty">해당 카테고리의 지원사업이 없습니다.</div>
           : (
             <div className="grants-card-grid grants-page-grid">
-              {filtered.map(g => <GrantCard key={g.id} g={g} />)}
+              {filtered.map(g => <GrantCard key={g.id} g={g} authed={authed} onNav={onNav} />)}
             </div>
           )
       }
