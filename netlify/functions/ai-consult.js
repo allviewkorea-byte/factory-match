@@ -46,20 +46,46 @@ function scoreFactory(factory, st) {
   const inds = Array.isArray(factory.industries)
     ? factory.industries
     : (factory.industries ? [String(factory.industries)] : []);
+
+  // ai_summary 파싱
+  let aiData = null;
+  try { aiData = factory.ai_summary ? (typeof factory.ai_summary === 'string' ? JSON.parse(factory.ai_summary) : factory.ai_summary) : null; } catch(e) {}
+  const aiProducts  = (aiData?.products  || []).map(p => p.toLowerCase());
+  const aiEquip     = (aiData?.equipment || []).map(e => e.toLowerCase());
+  const aiStrengths = (aiData?.strengths || []).map(s => s.toLowerCase());
+  const aiClients   = (aiData?.clients   || []).map(c => c.toLowerCase());
+  const aiIntro     = (aiData?.intro     || '').toLowerCase();
+
+  // completeness_score 보너스
+  score += Math.round((factory.completeness_score || 0) * 0.3);
+
   (st.industries || []).forEach(ind => { if (inds.includes(ind)) score += 30; });
   (st.processes || []).forEach(proc => { if ((factory.processes || []).includes(proc)) score += 25; });
   (st.materials || []).forEach(mat => {
     const m = mat.toLowerCase();
     if ((factory.materials || []).some(fm => fm.toLowerCase().includes(m) || m.includes(fm.toLowerCase()))) score += 15;
+    if (aiIntro.includes(m)) score += 10;
   });
   (st.keywords || []).forEach(kw => {
     const k = kw.toLowerCase();
-    const nameMatch = (factory.name || '').toLowerCase().includes(k);
-    const prodMatch = (factory.products || []).some(p => (p || '').toLowerCase().includes(k));
-    if (nameMatch) score += 25;
-    if ((factory.summary || '').toLowerCase().includes(k)) score += 20;
-    if (prodMatch) score += 25;
+    const nameMatch    = (factory.name || '').toLowerCase().includes(k);
+    const summaryMatch = (factory.summary || '').toLowerCase().includes(k);
+    const prodMatch    = (factory.products || []).some(p => (p || '').toLowerCase().includes(k));
+    const aiProductMatch  = aiProducts.some(p => p.includes(k) || k.includes(p));
+    const aiEquipMatch    = aiEquip.some(e => e.includes(k) || k.includes(e));
+    const aiIntroMatch    = aiIntro.includes(k);
+    const aiStrengthMatch = aiStrengths.some(s => s.includes(k));
+    const aiClientMatch   = aiClients.some(c => c.includes(k));
+
+    if (nameMatch)        score += 25;
+    if (summaryMatch)     score += 20;
+    if (prodMatch)        score += 25;
     if (nameMatch || prodMatch) score += 30;
+    if (aiProductMatch)   score += 35;
+    if (aiEquipMatch)     score += 20;
+    if (aiIntroMatch)     score += 15;
+    if (aiStrengthMatch)  score += 10;
+    if (aiClientMatch)    score += 10;
   });
   return score;
 }
@@ -68,9 +94,9 @@ async function fetchFactoriesByKeywords(keywords) {
   if (!keywords || keywords.length === 0) return [];
   const orParts = keywords.flatMap(kw => {
     const enc = encodeURIComponent('%' + kw + '%');
-    return ['name.ilike.' + enc, 'summary.ilike.' + enc];
+    return ['name.ilike.' + enc, 'summary.ilike.' + enc, 'ai_summary.ilike.' + enc];
   }).join(',');
-  const url = SUPABASE_URL + '/rest/v1/factories?hidden=eq.false&select=id,name,city,industries,processes,materials,products,summary&or=(' + orParts + ')&limit=200';
+  const url = SUPABASE_URL + '/rest/v1/factories?hidden=eq.false&select=id,name,city,industries,processes,materials,products,summary,ai_summary,completeness_score&or=(' + orParts + ')&order=completeness_score.desc&limit=200';
   const resp = await fetch(url, {
     headers: {
       'apikey': SUPABASE_KEY,
