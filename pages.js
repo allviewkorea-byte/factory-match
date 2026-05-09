@@ -699,6 +699,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
   const clustererRef = React.useRef(null);  // MarkerClusterer instance
   const markersRef = React.useRef([]);      // pre-geocoded (geoFactories)
   const dynMarkersRef = React.useRef([]);   // dynamically geocoded (pagedFactories)
+  const selectedMarkerRef = React.useRef(null); // highlighted pin for selected card
   const infoWindowRef = React.useRef(null);
   const onOpenRef = React.useRef(onOpenFactory);
   const [mapReady, setMapReady] = React.useState(false);
@@ -846,20 +847,40 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     };
   }, [mapReady, pagedFactories, geoFactories]);
 
-  // Pan/zoom to selected factory
+  // Pan/zoom to selected factory + show highlighted pin
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
+
+    // Remove previous selection marker
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.setMap(null);
+      selectedMarkerRef.current = null;
+    }
+
+    const placeSelectedPin = (lat, lng) => {
+      selectedMarkerRef.current = new google.maps.Marker({
+        position: { lat, lng },
+        map: mapRef.current,
+        title: selectedFactory.name,
+        animation: google.maps.Animation.DROP,
+        zIndex: 1000,
+      });
+    };
+
     if (selectedFactory) {
       if (selectedFactory.lat != null && selectedFactory.lng != null) {
         mapRef.current.panTo({ lat: selectedFactory.lat, lng: selectedFactory.lng });
         mapRef.current.setZoom(14);
+        placeSelectedPin(selectedFactory.lat, selectedFactory.lng);
       } else {
         new google.maps.Geocoder().geocode(
           { address: selectedFactory.roadAddress || selectedFactory.address || `${selectedFactory.name} ${selectedFactory.city}` },
           (res, status) => {
             if (status === 'OK' && res[0]) {
-              mapRef.current.panTo(res[0].geometry.location);
+              const loc = res[0].geometry.location;
+              mapRef.current.panTo(loc);
               mapRef.current.setZoom(14);
+              placeSelectedPin(loc.lat(), loc.lng());
             }
           }
         );
