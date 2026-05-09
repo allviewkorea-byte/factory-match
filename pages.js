@@ -7476,9 +7476,27 @@ const AdminPage = ({ onOpenFactory }) => {
     } catch (_) {}
   };
 
+  const [userCount, setUserCount] = useState(null);
+  const [rfqMonthCount, setRfqMonthCount] = useState(null);
+
+  useEffect(() => {
+    if (!window._sb) return;
+    // 전체 사용자 수: user_profiles (anon key로 접근 가능한 public 테이블)
+    window._sb.from('user_profiles').select('*', { count: 'exact', head: true })
+      .then(({ count, error }) => { if (!error && count != null) setUserCount(count); })
+      .catch(() => {});
+    // RFQ 이번달 건수
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    window._sb.from('rfq').select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDay)
+      .then(({ count, error }) => { setRfqMonthCount(!error && count != null ? count : 0); })
+      .catch(() => setRfqMonthCount(0));
+  }, []);
+
   const stats = {
-    total: totalCount ?? 0,
-    rfq: 248, chat: 89, users: 1342,
+    total: totalCount ?? '…',
+    users: userCount ?? '…',
+    rfq:   rfqMonthCount ?? '…',
   };
 
   const PREVIEW_COLS = [
@@ -7525,10 +7543,10 @@ const AdminPage = ({ onOpenFactory }) => {
       </header>
 
       <section className="admin-stats">
-        <div className="astat"><div className="astat-k">전체 제조사</div><div className="astat-v">{stats.total}</div></div>
-        <div className="astat"><div className="astat-k">전체 사용자</div><div className="astat-v">{stats.users.toLocaleString()}</div></div>
+        <div className="astat"><div className="astat-k">전체 제조사</div><div className="astat-v">{typeof stats.total === 'number' ? stats.total.toLocaleString() : stats.total}</div></div>
+        <div className="astat"><div className="astat-k">전체 사용자</div><div className="astat-v">{typeof stats.users === 'number' ? stats.users.toLocaleString() : stats.users}</div></div>
         <div className="astat"><div className="astat-k">RFQ (이번달)</div><div className="astat-v">{stats.rfq}</div></div>
-        <div className="astat"><div className="astat-k">활성 채팅</div><div className="astat-v">{stats.chat}</div></div>
+        <div className="astat"><div className="astat-k">활성 채팅</div><div className="astat-v" style={{ color: 'var(--ink-4)', fontSize: 13 }}>준비 중</div></div>
       </section>
 
       <nav className="admin-tabs">
