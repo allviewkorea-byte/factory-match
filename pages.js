@@ -2952,13 +2952,65 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
       {/* Tab content */}
       {tab === 'overview' && (
         <section className="detail-section">
-          <div className={f.summary ? 'detail-grid' : ''}>
-            {f.summary && (
+          {(() => {
+            let aiData = null;
+            try { aiData = f.ai_summary ? (typeof f.ai_summary === 'string' ? JSON.parse(f.ai_summary) : f.ai_summary) : null; } catch(e) {}
+            const intro = aiData?.intro || f.summary;
+            const hasAiExtra = aiData && (aiData.products?.length || aiData.equipment?.length || aiData.clients?.length || aiData.certifications?.length || aiData.strengths?.length);
+            return (
+          <div className={intro || hasAiExtra ? 'detail-grid' : ''}>
+            {intro && (
               <div>
                 <h3>회사 소개</h3>
-                <p className="detail-desc">{f.summary}</p>
+                <p className="detail-desc">{intro}</p>
+                {hasAiExtra && (
+                  <div className="ai-summary-wrap">
+                    {aiData.products?.length > 0 && (
+                      <div className="ai-summary-block">
+                        <span className="ai-summary-label">주요 제품</span>
+                        <div className="ai-summary-tags">
+                          {aiData.products.map((p,i) => <span key={i} className="ai-tag ai-tag-blue">{p}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {aiData.equipment?.length > 0 && (
+                      <div className="ai-summary-block">
+                        <span className="ai-summary-label">보유 장비</span>
+                        <div className="ai-summary-tags">
+                          {aiData.equipment.map((e,i) => <span key={i} className="ai-tag ai-tag-gray">{e}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {aiData.clients?.length > 0 && (
+                      <div className="ai-summary-block">
+                        <span className="ai-summary-label">납품처</span>
+                        <div className="ai-summary-tags">
+                          {aiData.clients.map((c,i) => <span key={i} className="ai-tag ai-tag-amber">{c}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {aiData.certifications?.length > 0 && (
+                      <div className="ai-summary-block">
+                        <span className="ai-summary-label">인증</span>
+                        <div className="ai-summary-tags">
+                          {aiData.certifications.map((c,i) => <span key={i} className="ai-tag ai-tag-green">{c}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {aiData.strengths?.length > 0 && (
+                      <div className="ai-summary-block">
+                        <span className="ai-summary-label">강점</span>
+                        <div className="ai-summary-tags">
+                          {aiData.strengths.map((s,i) => <span key={i} className="ai-tag ai-tag-purple">{s}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    <p className="ai-summary-source">🤖 AI가 홈페이지를 분석하여 요약한 정보입니다</p>
+                  </div>
+                )}
               </div>
             )}
+            {!intro && !hasAiExtra && null}
             <div className="detail-side">
               <h4>기본 정보</h4>
               <dl className="detail-dl">
@@ -3052,7 +3104,10 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
               <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
             </div>
+
           </div>
+            );
+          })()}
         </section>
       )}
 

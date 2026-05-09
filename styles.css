@@ -1405,6 +1405,48 @@ a { color: inherit; text-decoration: none; }
 .detail-dl dt { color: var(--ink-3); font-weight: 500; }
 .detail-dl dd { color: var(--ink-1); margin: 0; font-weight: 500; display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* ── AI 요약 정보 ──────────────────────────────────────── */
+.ai-summary-wrap {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ai-summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-summary-label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ai-summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ai-tag {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.ai-tag-blue   { background: #eff6ff; color: #1d4ed8; }
+.ai-tag-gray   { background: #f1f5f9; color: #475569; }
+.ai-tag-amber  { background: #fffbeb; color: #92400e; }
+.ai-tag-green  { background: #f0fdf4; color: #15803d; }
+.ai-tag-purple { background: #faf5ff; color: #7e22ce; }
+.ai-summary-source {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+}
+
 /* ── DART 재무정보 ──────────────────────────────────────── */
 .dart-finance-wrap {
   margin-top: 20px;
