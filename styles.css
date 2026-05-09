@@ -5567,7 +5567,7 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px 80px;
+  padding: 80px 24px 80px;
   text-align: center;
   min-height: calc(100vh - 64px);
   position: relative;
@@ -5835,7 +5835,7 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px 80px;
+  padding: 60px 24px 80px;
   text-align: center;
   position: relative;
   z-index: 1;
@@ -8209,4 +8209,173 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-3);
   min-width: 60px;
   text-align: center;
+}
+
+/* ─── 상태 뱃지 ──────────────────────────────────────────── */
+.grants-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.grants-status-badge.status-active  { background: #dcfce7; color: #15803d; }
+.grants-status-badge.status-urgent  { background: #fee2e2; color: #dc2626; }
+.grants-status-badge.status-closed  { background: #f1f5f9; color: #94a3b8; }
+
+/* ─── 목록 테이블 ────────────────────────────────────────── */
+.grants-list-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 8px;
+}
+.grants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.grants-table thead tr {
+  background: #f8fafc;
+  border-top: 2px solid #1e3a5f;
+  border-bottom: 1.5px solid var(--line);
+}
+.grants-table thead th {
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-align: left;
+  white-space: nowrap;
+}
+.grants-table tbody tr {
+  border-bottom: 1px solid var(--line-2);
+  transition: background 0.12s;
+}
+.grants-table-row {
+  cursor: pointer;
+}
+.grants-table-row:hover {
+  background: #f0f6ff;
+}
+.grants-table td {
+  padding: 14px 14px;
+  color: var(--ink-1);
+  vertical-align: middle;
+}
+.gt-no   { width: 52px; text-align: center; color: var(--ink-4); font-size: 13px; }
+.gt-cat  { width: 90px; }
+.gt-title{ max-width: 340px; font-weight: 500; line-height: 1.4; }
+.gt-org  { width: 130px; font-size: 13px; color: var(--ink-3); }
+.gt-period{ width: 190px; font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.gt-dday { width: 72px; text-align: center; }
+.gt-status{ width: 84px; text-align: center; }
+
+/* ─── 상세 페이지 ────────────────────────────────────────── */
+.grants-detail-page {
+  padding: 0 32px 80px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.grants-detail-header {
+  padding: 40px 0 32px;
+  border-bottom: 1px solid var(--line);
+}
+.grants-detail-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.grants-detail-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink-1);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+.grants-detail-org {
+  font-size: 14px;
+  color: var(--ink-3);
+  margin: 0;
+}
+.grants-detail-body {
+  padding-top: 32px;
+}
+.grants-detail-section {
+  margin-bottom: 32px;
+}
+.grants-detail-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-2);
+  letter-spacing: -0.01em;
+}
+.grants-detail-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.grants-detail-info-table th {
+  width: 120px;
+  padding: 11px 16px 11px 0;
+  color: var(--ink-3);
+  font-weight: 600;
+  vertical-align: top;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-2);
+}
+.grants-detail-info-table td {
+  padding: 11px 0;
+  color: var(--ink-1);
+  line-height: 1.6;
+  border-bottom: 1px solid var(--line-2);
+}
+.grants-detail-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-2);
+  margin: 0;
+  white-space: pre-wrap;
+}
+.grants-detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.grants-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.grants-detail-btn-primary {
+  background: #1e3a5f;
+  color: #fff;
+  border: 2px solid #1e3a5f;
+}
+.grants-detail-btn-primary:hover { background: #16304f; border-color: #16304f; }
+.grants-detail-btn-outline {
+  background: #fff;
+  color: #1e3a5f;
+  border: 2px solid #1e3a5f;
+}
+.grants-detail-btn-outline:hover { background: #f0f4fa; }
+
+@media (max-width: 640px) {
+  .grants-detail-page { padding: 0 16px 60px; }
+  .grants-detail-title { font-size: 20px; }
+  .gt-org, .gt-period { display: none; }
+  .gt-title { max-width: 180px; }
 }

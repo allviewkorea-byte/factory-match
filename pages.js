@@ -1241,9 +1241,6 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
             전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
           </div>
         )}
-        {!hasResults && !loading && (
-          <GrantsHomeSection onNav={onNav} authed={authed} compact />
-        )}
       </div>
 
       {hasResults && (
@@ -1405,6 +1402,29 @@ function calcDday(deadline) {
   if (diff < 0) return { label: '마감', urgent: false, expired: true };
   if (diff === 0) return { label: 'D-day', urgent: true, expired: false };
   return { label: `D-${diff}`, urgent: diff <= 7, expired: false };
+}
+
+function _stripHtml(html) {
+  if (!html) return '';
+  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+}
+
+function _biz(item) {
+  return {
+    title:    item.pblancNm    || item.pbancNm      || item.bizNm       || item.sprtBizNm   || '(제목 없음)',
+    org:      item.mnofcDeptNm || item.jrsdInsttNm  || item.instNm      || item.sprtInsttNm || '',
+    execOrg:  item.rcvAcptInsttNm || item.prgrsInsttNm || item.operInsttNm || '',
+    cat:      item.bizSectCdNm || item.sprtFldNm    || item.lclasNm     || item.sectNm      || '',
+    desc:     item.bsnsSumryCn || item.pblancDtlCn  || item.smryCn      || item.bizDtlCn   || '',
+    method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || '',
+    contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm     || '',
+    target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || '',
+    sttDate:  item.rcptSttDate || item.sprtSttDate  || item.applyStDt   || '',
+    endDate:  item.rcptEndDate || item.sprtEndDate  || item.applyEdDt   || item.pbancEndDt  || '',
+    applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl   || '',
+    viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
+    no:       item.pblancNo    || item.pblancId     || item.bizId       || '',
+  };
 }
 
 const GrantCard = ({ g, authed, onNav }) => {
@@ -4235,7 +4255,6 @@ function LandingPage({ onNav, authed }) {
         <div className="ldg2-stats">
           전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
         </div>
-        <GrantsHomeSection onNav={onNav} authed={false} compact />
       </main>
 
       {showModal && (
@@ -9020,14 +9039,106 @@ const ReportPage = ({ params, onNav }) => {
 // ══════════════════════════════════════════════════════════
 // GRANTS PAGE — 정부지원사업 전체 목록
 // ══════════════════════════════════════════════════════════
+// ─── 정부지원금 상세 페이지 ───────────────────────────────────
+const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
+  const f = _biz(item);
+  const dday = calcDday(f.endDate);
+  const catStyle = BIZINFO_CAT_COLOR[f.cat] || { bg: '#f1f5f9', color: '#475569' };
+  const status = !dday || dday.expired
+    ? { label: '마감', cls: 'status-closed' }
+    : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
+    : { label: '진행중', cls: 'status-active' };
+  const desc    = _stripHtml(f.desc);
+  const method  = _stripHtml(f.method);
+  const contact = _stripHtml(f.contact);
+
+  const infoRows = [
+    f.org     && { label: '소관기관', value: f.org },
+    f.execOrg && { label: '수행기관', value: f.execOrg },
+    (f.sttDate || f.endDate) && {
+      label: '신청기간',
+      value: f.sttDate && f.endDate
+        ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
+        : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '',
+    },
+    f.target  && { label: '지원대상', value: f.target },
+    f.cat     && { label: '분야',     value: f.cat },
+  ].filter(Boolean);
+
+  return (
+    <div className="page grants-detail-page">
+      <div className="grants-detail-header">
+        <button className="grants-back-btn" onClick={onBack}>← 목록으로 돌아가기</button>
+        <div className="grants-detail-badges">
+          {f.cat && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
+          <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+          {dday && !dday.expired && (
+            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
+          )}
+        </div>
+        <h1 className="grants-detail-title">{f.title}</h1>
+        {f.org && <p className="grants-detail-org">{f.org}</p>}
+      </div>
+
+      <div className="grants-detail-body">
+        {infoRows.length > 0 && (
+          <div className="grants-detail-section">
+            <h2 className="grants-detail-section-title">기본정보</h2>
+            <table className="grants-detail-info-table">
+              <tbody>
+                {infoRows.map(r => (
+                  <tr key={r.label}><th>{r.label}</th><td>{r.value}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {desc && (
+          <div className="grants-detail-section">
+            <h2 className="grants-detail-section-title">사업개요</h2>
+            <p className="grants-detail-text">{desc}</p>
+          </div>
+        )}
+
+        {method && (
+          <div className="grants-detail-section">
+            <h2 className="grants-detail-section-title">신청방법</h2>
+            <p className="grants-detail-text">{method}</p>
+          </div>
+        )}
+
+        {contact && (
+          <div className="grants-detail-section">
+            <h2 className="grants-detail-section-title">문의처</h2>
+            <p className="grants-detail-text">{contact}</p>
+          </div>
+        )}
+
+        <div className="grants-detail-actions">
+          {f.viewUrl && (
+            <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기 →</a>
+          )}
+          {f.applyUrl && f.applyUrl !== f.viewUrl && (
+            <a href={f.applyUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-primary">신청하기 →</a>
+          )}
+        </div>
+        <p className="biz-grant-source" style={{ marginTop: 32 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
+      </div>
+    </div>
+  );
+};
+
+// ─── 정부지원금 목록 페이지 ───────────────────────────────────
 const GrantsPage = ({ onNav, authed }) => {
+  const [selectedItem, setSelectedItem] = React.useState(null);
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
   const [catIdx, setCatIdx] = React.useState(0);
   const [pageNo, setPageNo] = React.useState(1);
   const [total, setTotal] = React.useState(0);
-  const numOfRows = 9;
+  const numOfRows = 20;
 
   const cat = BIZINFO_CATS[catIdx];
 
@@ -9035,23 +9146,22 @@ const GrantsPage = ({ onNav, authed }) => {
     window.scrollTo(0, 0);
     setLoading(true);
     setError(false);
+    setSelectedItem(null);
     fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id })
-      .then(({ items, total }) => {
-        setItems(items);
-        setTotal(total);
-        setLoading(false);
-      })
+      .then(({ items, total }) => { setItems(items); setTotal(total); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
   }, [catIdx, pageNo]);
 
   const totalPages = Math.max(1, Math.ceil(total / numOfRows));
-
   const handleCat = (idx) => { setCatIdx(idx); setPageNo(1); };
+
+  if (selectedItem) {
+    return <GrantDetailPage item={selectedItem} onBack={() => { setSelectedItem(null); window.scrollTo(0, 0); }} authed={authed} onNav={onNav} />;
+  }
 
   return (
     <div className="page grants-page">
       <div className="grants-page-head">
-        <button className="grants-back-btn" onClick={() => onNav('home')}>← 홈으로</button>
         <h1 className="grants-page-title">정부지원사업</h1>
         <p className="grants-page-sub">제조기업을 위한 정부지원금 · 보조금 정보를 확인하세요</p>
       </div>
@@ -9059,11 +9169,7 @@ const GrantsPage = ({ onNav, authed }) => {
       <div className="grants-page-controls">
         <div className="grants-cat-tabs">
           {BIZINFO_CATS.map((c, i) => (
-            <button
-              key={c.label}
-              className={`grants-cat-tab${catIdx === i ? ' is-active' : ''}`}
-              onClick={() => handleCat(i)}
-            >{c.label}</button>
+            <button key={c.label} className={`grants-cat-tab${catIdx === i ? ' is-active' : ''}`} onClick={() => handleCat(i)}>{c.label}</button>
           ))}
         </div>
       </div>
@@ -9076,24 +9182,62 @@ const GrantsPage = ({ onNav, authed }) => {
         <div className="grants-empty">해당 분야의 지원사업이 없습니다.</div>
       ) : (
         <>
-          <div className="grants-card-grid grants-page-grid">
-            {items.map((item, i) => (
-              <BizGrantCard key={item.pblancNo || i} item={item} authed={authed} onNav={onNav} />
-            ))}
+          <div className="grants-list-wrap">
+            <table className="grants-table">
+              <thead>
+                <tr>
+                  <th className="gt-no">순번</th>
+                  <th className="gt-cat">분야</th>
+                  <th className="gt-title">제목</th>
+                  <th className="gt-org">소관기관</th>
+                  <th className="gt-period">신청기간</th>
+                  <th className="gt-dday">D-day</th>
+                  <th className="gt-status">상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, i) => {
+                  const f = _biz(item);
+                  const dday = calcDday(f.endDate);
+                  const catStyle = BIZINFO_CAT_COLOR[f.cat] || { bg: '#f1f5f9', color: '#475569' };
+                  const status = !dday || dday.expired
+                    ? { label: '마감', cls: 'status-closed' }
+                    : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
+                    : { label: '진행중', cls: 'status-active' };
+                  const rowNum = (pageNo - 1) * numOfRows + i + 1;
+                  const period = f.sttDate && f.endDate
+                    ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
+                    : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '-';
+                  return (
+                    <tr key={f.no || i} className="grants-table-row" onClick={() => setSelectedItem(item)}>
+                      <td className="gt-no">{rowNum}</td>
+                      <td className="gt-cat">
+                        {f.cat && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
+                      </td>
+                      <td className="gt-title">{f.title}</td>
+                      <td className="gt-org">{f.org}</td>
+                      <td className="gt-period">{period}</td>
+                      <td className="gt-dday">
+                        {dday && !dday.expired
+                          ? <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
+                          : '-'}
+                      </td>
+                      <td className="gt-status">
+                        <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
           {totalPages > 1 && (
             <div className="grants-pagination">
-              <button
-                className="grants-page-btn"
-                disabled={pageNo <= 1}
-                onClick={() => { setPageNo(p => p - 1); window.scrollTo(0, 0); }}
-              >이전</button>
+              <button className="grants-page-btn" disabled={pageNo <= 1}
+                onClick={() => { setPageNo(p => p - 1); window.scrollTo(0, 0); }}>이전</button>
               <span className="grants-page-info">{pageNo} / {totalPages}</span>
-              <button
-                className="grants-page-btn"
-                disabled={pageNo >= totalPages}
-                onClick={() => { setPageNo(p => p + 1); window.scrollTo(0, 0); }}
-              >다음</button>
+              <button className="grants-page-btn" disabled={pageNo >= totalPages}
+                onClick={() => { setPageNo(p => p + 1); window.scrollTo(0, 0); }}>다음</button>
             </div>
           )}
         </>
@@ -9102,7 +9246,7 @@ const GrantsPage = ({ onNav, authed }) => {
   );
 };
 
-Object.assign(window, { GrantsHomeSection, GrantsPage, GrantCard, BizGrantCard });
+Object.assign(window, { GrantsHomeSection, GrantsPage, GrantCard, BizGrantCard, GrantDetailPage });
 
 // SiteFooter — 출처 표기 + 법적 링크
 // ──────────────────────────────────────────────────────────
