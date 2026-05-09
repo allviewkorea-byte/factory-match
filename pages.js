@@ -2984,6 +2984,72 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   </dd></>
                 )}
               </dl>
+
+              {/* ── DART 재무정보 (데이터 있을 때만 표시) ── */}
+              {(f.dart_revenue || f.dart_op_income || f.dart_net_income || f.dart_assets || f.dart_equity) && (
+                <div className="dart-finance-wrap">
+                  <div className="dart-finance-header">
+                    <span className="dart-finance-title">📊 재무정보</span>
+                    {f.dart_year && <span className="dart-finance-year">{f.dart_year}년 기준</span>}
+                  </div>
+                  <dl className="dart-finance-dl">
+                    {f.dart_revenue != null && (
+                      <div className="dart-finance-item">
+                        <dt>매출액</dt>
+                        <dd className="dart-finance-val dart-val-blue">
+                          {f.dart_revenue >= 1e8
+                            ? `${(f.dart_revenue / 1e8).toFixed(1)}억원`
+                            : `${(f.dart_revenue / 1e4).toFixed(0)}만원`}
+                        </dd>
+                      </div>
+                    )}
+                    {f.dart_op_income != null && (
+                      <div className="dart-finance-item">
+                        <dt>영업이익</dt>
+                        <dd className={`dart-finance-val ${f.dart_op_income >= 0 ? 'dart-val-green' : 'dart-val-red'}`}>
+                          {f.dart_op_income >= 0 ? '' : '▼ '}
+                          {Math.abs(f.dart_op_income) >= 1e8
+                            ? `${(Math.abs(f.dart_op_income) / 1e8).toFixed(1)}억원`
+                            : `${(Math.abs(f.dart_op_income) / 1e4).toFixed(0)}만원`}
+                        </dd>
+                      </div>
+                    )}
+                    {f.dart_net_income != null && (
+                      <div className="dart-finance-item">
+                        <dt>당기순이익</dt>
+                        <dd className={`dart-finance-val ${f.dart_net_income >= 0 ? 'dart-val-green' : 'dart-val-red'}`}>
+                          {f.dart_net_income >= 0 ? '' : '▼ '}
+                          {Math.abs(f.dart_net_income) >= 1e8
+                            ? `${(Math.abs(f.dart_net_income) / 1e8).toFixed(1)}억원`
+                            : `${(Math.abs(f.dart_net_income) / 1e4).toFixed(0)}만원`}
+                        </dd>
+                      </div>
+                    )}
+                    {f.dart_assets != null && (
+                      <div className="dart-finance-item">
+                        <dt>자산총계</dt>
+                        <dd className="dart-finance-val">
+                          {f.dart_assets >= 1e8
+                            ? `${(f.dart_assets / 1e8).toFixed(1)}억원`
+                            : `${(f.dart_assets / 1e4).toFixed(0)}만원`}
+                        </dd>
+                      </div>
+                    )}
+                    {f.dart_equity != null && (
+                      <div className="dart-finance-item">
+                        <dt>자본총계</dt>
+                        <dd className="dart-finance-val">
+                          {f.dart_equity >= 1e8
+                            ? `${(f.dart_equity / 1e8).toFixed(1)}억원`
+                            : `${(f.dart_equity / 1e4).toFixed(0)}만원`}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                  <p className="dart-finance-source">출처: 금융감독원 DART 공시정보</p>
+                </div>
+              )}
+
               <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
             </div>
           </div>
