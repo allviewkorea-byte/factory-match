@@ -1921,7 +1921,9 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       const next = [...acc, ...mapped];
       if (data.length < PAGE || next.length >= MAX_LOAD) {
         const sorted = next.slice().sort((a, b) =>
-          (b.enrichedScore || 0) - (a.enrichedScore || 0) || (b.rating || 0) - (a.rating || 0)
+          (b.completeness_score || 0) - (a.completeness_score || 0) ||
+          (b.enrichedScore || 0) - (a.enrichedScore || 0) ||
+          (b.rating || 0) - (a.rating || 0)
         );
         setFactories(sorted);
         setDbLoading(false);
