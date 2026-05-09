@@ -7782,3 +7782,272 @@ a { color: inherit; text-decoration: none; }
   transition: border-color 0.15s, color 0.15s;
 }
 .gate-btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
+
+/* ══════════════════════════════════════════════════════════
+   GRANTS — 정부지원사업
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── 홈 섹션 ─────────────────────────────────────────── */
+.grants-home-section {
+  width: 100%;
+  background: var(--surface-2);
+  border-top: 1px solid var(--line-2);
+  padding: 48px 24px 56px;
+}
+.grants-home-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.grants-home-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.grants-home-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-1);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.grants-home-sub {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0;
+}
+.grants-all-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  background: none;
+  border: 1.5px solid var(--brand);
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.grants-all-btn:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ─── 카드 그리드 ─────────────────────────────────────── */
+.grants-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* ─── 개별 카드 ──────────────────────────────────────── */
+.grant-card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.grant-card:hover {
+  box-shadow: 0 4px 20px oklch(0 0 0 / 0.08);
+  transform: translateY(-2px);
+}
+.grant-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.grant-org {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.grant-cat-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.grant-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-1);
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+.grant-desc {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.grant-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+.grant-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.grant-target {
+  font-size: 11.5px;
+  color: var(--ink-4);
+}
+.grant-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}
+.grant-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grant-dday {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.grant-dday.is-urgent {
+  color: #dc2626;
+  background: #fef2f2;
+}
+.grant-link-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid var(--brand);
+  border-radius: 7px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.grant-link-btn:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ─── 전체 목록 페이지 ────────────────────────────────── */
+.grants-page {
+  min-height: 100vh;
+}
+.grants-page-head {
+  padding: 40px 24px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.grants-back-btn {
+  font-size: 13px;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 12px;
+  display: block;
+  transition: color 0.15s;
+}
+.grants-back-btn:hover { color: var(--brand); }
+.grants-page-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink-1);
+  margin: 0 0 6px;
+  letter-spacing: -0.03em;
+}
+.grants-page-sub {
+  font-size: 14px;
+  color: var(--ink-3);
+  margin: 0;
+}
+.grants-page-controls {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.grants-cat-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.grants-cat-tab {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.grants-cat-tab:hover { color: var(--brand); border-color: var(--brand); }
+.grants-cat-tab.is-active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.grants-sort-sel {
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.grants-page-grid {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.grants-loading,
+.grants-empty {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+/* ─── 반응형 ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .grants-card-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .grants-card-grid { grid-template-columns: 1fr; }
+  .grants-home-section { padding: 32px 16px 40px; }
+  .grants-page-head { padding: 24px 16px 16px; }
+  .grants-page-controls { padding: 0 16px 16px; }
+  .grants-page-grid { padding: 0 16px 60px; }
+}

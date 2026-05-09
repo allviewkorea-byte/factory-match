@@ -1112,7 +1112,7 @@ const ParticleCanvas = () => {
   );
 };
 
-const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate }) => {
+const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
   const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
@@ -1372,7 +1372,97 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate }) => {
           )}
         </div>
       )}
+      <GrantsHomeSection onNav={onNav} />
     </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════
+// GRANTS SHARED
+// ══════════════════════════════════════════════════════════
+
+const GRANT_CATS = ['전체', '설비투자', '수출지원', '고용', '기술개발', '기타'];
+const GRANT_CAT_COLOR = {
+  설비투자: { bg: '#eff6ff', color: '#1d4ed8' },
+  수출지원: { bg: '#f0fdf4', color: '#15803d' },
+  고용:     { bg: '#fdf4ff', color: '#7e22ce' },
+  기술개발: { bg: '#fff7ed', color: '#c2410c' },
+  기타:     { bg: '#f1f5f9', color: '#64748b' },
+};
+
+function calcDday(deadline) {
+  if (!deadline) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(deadline + 'T00:00:00'); d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d - today) / 86400000);
+  if (diff < 0) return { label: '마감', urgent: false, expired: true };
+  if (diff === 0) return { label: 'D-day', urgent: true, expired: false };
+  return { label: `D-${diff}`, urgent: diff <= 7, expired: false };
+}
+
+const GrantCard = ({ g }) => {
+  const dday = calcDday(g.deadline);
+  const catStyle = GRANT_CAT_COLOR[g.category] || GRANT_CAT_COLOR['기타'];
+  return (
+    <div className="grant-card">
+      <div className="grant-card-head">
+        <span className="grant-org">{g.organization}</span>
+        <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{g.category}</span>
+      </div>
+      <h3 className="grant-title">{g.title}</h3>
+      {g.description && <p className="grant-desc">{g.description}</p>}
+      <div className="grant-card-foot">
+        <div className="grant-meta">
+          {g.target && <span className="grant-target">{g.target}</span>}
+          {g.amount && <span className="grant-amount">{g.amount}</span>}
+        </div>
+        <div className="grant-foot-right">
+          {dday && !dday.expired && (
+            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
+          )}
+          {g.url && (
+            <a href={g.url} target="_blank" rel="noreferrer" className="grant-link-btn">자세히 보기</a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GrantsHomeSection = ({ onNav }) => {
+  const [grants, setGrants] = React.useState([]);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!window._sb) { setLoaded(true); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    window._sb.from('government_support')
+      .select('id,title,organization,category,description,target,amount,deadline,url')
+      .eq('is_active', true)
+      .gte('deadline', today)
+      .order('deadline', { ascending: true })
+      .limit(3)
+      .then(({ data }) => { if (data?.length) setGrants(data); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  if (!loaded || grants.length === 0) return null;
+
+  return (
+    <section className="grants-home-section">
+      <div className="grants-home-inner">
+        <div className="grants-home-head">
+          <div>
+            <h2 className="grants-home-title">이달의 지원사업</h2>
+            <p className="grants-home-sub">제조기업을 위한 정부지원금 · 보조금 정보</p>
+          </div>
+          <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
+        </div>
+        <div className="grants-card-grid">
+          {grants.map(g => <GrantCard key={g.id} g={g} />)}
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -4003,6 +4093,8 @@ function LandingPage({ onNav }) {
           전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
         </div>
       </main>
+
+      <GrantsHomeSection onNav={onNav} />
 
       {showModal && (
         <div className="ldg2-modal-overlay">
@@ -7305,6 +7397,149 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
   );
 };
 
+// ─── AdminGrantsTab ────────────────────────────────────────
+const AdminGrantsTab = () => {
+  const [grants, setGrants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [catFilter, setCatFilter] = useState('전체');
+  const [showModal, setShowModal] = useState(false);
+  const [editGrant, setEditGrant] = useState(null);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const BLANK = { title: '', organization: '', category: '설비투자', description: '', target: '', amount: '', deadline: '', url: '', is_active: true };
+
+  const load = () => {
+    setLoading(true);
+    if (!window._sb) { setLoading(false); return; }
+    window._sb.from('government_support').select('*').order('deadline', { ascending: true })
+      .then(({ data }) => { if (data) setGrants(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const openAdd  = () => { setEditGrant(null); setForm({ ...BLANK }); setShowModal(true); };
+  const openEdit = (g) => { setEditGrant(g); setForm({ ...g }); setShowModal(true); };
+
+  const save = async () => {
+    if (!form.title?.trim() || !form.organization?.trim()) return;
+    setSaving(true);
+    const payload = {
+      title: form.title.trim(), organization: form.organization.trim(),
+      category: form.category || '기타', description: form.description || null,
+      target: form.target || null, amount: form.amount || null,
+      deadline: form.deadline || null, url: form.url || null,
+      is_active: !!form.is_active,
+    };
+    if (editGrant) {
+      await window._sb.from('government_support').update(payload).eq('id', editGrant.id);
+    } else {
+      await window._sb.from('government_support').insert(payload);
+    }
+    setSaving(false);
+    setShowModal(false);
+    load();
+  };
+
+  const del = async (id) => {
+    if (!confirm('삭제하시겠습니까?')) return;
+    await window._sb.from('government_support').delete().eq('id', id);
+    setGrants(prev => prev.filter(g => g.id !== id));
+  };
+
+  const setF = (key, val) => setForm(p => ({ ...p, [key]: val }));
+  const filtered = grants.filter(g => catFilter === '전체' || g.category === catFilter);
+
+  return (
+    <section className="admin-panel">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>지원사업 관리</h3>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="grants-cat-tabs">
+            {GRANT_CATS.map(c => (
+              <button key={c} className={`grants-cat-tab${catFilter === c ? ' is-active' : ''}`} onClick={() => setCatFilter(c)}>{c}</button>
+            ))}
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={openAdd}>+ 추가</button>
+        </div>
+      </div>
+
+      {loading ? <p style={{ color: 'var(--ink-3)', fontSize: 13 }}>불러오는 중…</p> : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>사업명</th><th>기관</th><th>카테고리</th><th>지원금액</th><th>마감일</th><th>D-day</th><th>상태</th><th>관리</th></tr></thead>
+            <tbody>
+              {filtered.map(g => {
+                const dday = calcDday(g.deadline);
+                return (
+                  <tr key={g.id}>
+                    <td style={{ maxWidth: 180 }}>{g.title}</td>
+                    <td>{g.organization}</td>
+                    <td><span className="grant-cat-badge" style={{ background: (GRANT_CAT_COLOR[g.category]||GRANT_CAT_COLOR['기타']).bg, color: (GRANT_CAT_COLOR[g.category]||GRANT_CAT_COLOR['기타']).color }}>{g.category}</span></td>
+                    <td>{g.amount || '—'}</td>
+                    <td>{g.deadline || '—'}</td>
+                    <td>{dday ? <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span> : '—'}</td>
+                    <td><span style={{ color: g.is_active ? '#16a34a' : '#94a3b8', fontSize: 12, fontWeight: 600 }}>{g.is_active ? '공개' : '비공개'}</span></td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => openEdit(g)}>수정</button>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: 12, color: 'var(--rose)', marginLeft: 4 }} onClick={() => del(g.id)}>삭제</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && <tr><td colSpan="8" className="admin-table-empty">지원사업이 없습니다</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="modal-veil" onClick={() => setShowModal(false)}>
+          <div className="modal-card" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <header className="modal-head">
+              <h3>{editGrant ? '지원사업 수정' : '지원사업 추가'}</h3>
+              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+            </header>
+            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { key: 'title',        label: '사업명 *' },
+                { key: 'organization', label: '기관명 *' },
+                { key: 'description',  label: '요약' },
+                { key: 'target',       label: '지원대상' },
+                { key: 'amount',       label: '지원금액' },
+                { key: 'url',          label: '링크 URL' },
+              ].map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--ink-2)' }}>
+                  {label}
+                  <input className="admin-form-input" value={form[key] || ''} onChange={e => setF(key, e.target.value)} />
+                </label>
+              ))}
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--ink-2)' }}>
+                카테고리
+                <select className="admin-form-input" value={form.category || '기타'} onChange={e => setF('category', e.target.value)}>
+                  {GRANT_CATS.filter(c => c !== '전체').map(c => <option key={c}>{c}</option>)}
+                </select>
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--ink-2)' }}>
+                마감일
+                <input type="date" className="admin-form-input" value={form.deadline || ''} onChange={e => setF('deadline', e.target.value)} />
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, color: 'var(--ink-2)' }}>
+                <input type="checkbox" checked={!!form.is_active} onChange={e => setF('is_active', e.target.checked)} />
+                공개 여부
+              </label>
+            </div>
+            <footer className="modal-foot">
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>취소</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? '저장 중…' : '저장'}</button>
+            </footer>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
@@ -7559,6 +7794,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'signups',   label: '가입 신청' },
           { id: 'analytics', label: '통계' },
           { id: 'visitors',  label: '비회원 활동' },
+          { id: 'grants',    label: '지원사업 관리' },
         ].map(t => (
           <button
             key={t.id}
@@ -7629,6 +7865,8 @@ const AdminPage = ({ onOpenFactory }) => {
           <AdminVisitorTab />
         </section>
       )}
+
+      {tab === 'grants' && <AdminGrantsTab />}
 
       {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
@@ -7853,7 +8091,7 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab, GateModal });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab, AdminGrantsTab, GateModal });
 
 
 // ──────────────────────────────────────────────────────────
@@ -8636,6 +8874,69 @@ const ReportPage = ({ params, onNav }) => {
     </div>
   );
 };
+
+// ══════════════════════════════════════════════════════════
+// GRANTS PAGE — 정부지원사업 전체 목록
+// ══════════════════════════════════════════════════════════
+const GrantsPage = ({ onNav }) => {
+  const [grants, setGrants] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [cat, setCat] = React.useState('전체');
+  const [sort, setSort] = React.useState('deadline');
+
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    if (!window._sb) { setLoading(false); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    window._sb.from('government_support')
+      .select('*')
+      .eq('is_active', true)
+      .gte('deadline', today)
+      .then(({ data }) => { if (data) setGrants(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = grants
+    .filter(g => cat === '전체' || g.category === cat)
+    .sort((a, b) => sort === 'deadline'
+      ? (a.deadline || '9999').localeCompare(b.deadline || '9999')
+      : (b.created_at || '').localeCompare(a.created_at || ''));
+
+  return (
+    <div className="page grants-page">
+      <div className="grants-page-head">
+        <button className="grants-back-btn" onClick={() => onNav('home')}>← 홈으로</button>
+        <h1 className="grants-page-title">정부지원사업</h1>
+        <p className="grants-page-sub">제조기업을 위한 정부지원금 · 보조금 정보를 확인하세요</p>
+      </div>
+
+      <div className="grants-page-controls">
+        <div className="grants-cat-tabs">
+          {GRANT_CATS.map(c => (
+            <button key={c} className={`grants-cat-tab${cat === c ? ' is-active' : ''}`} onClick={() => setCat(c)}>{c}</button>
+          ))}
+        </div>
+        <select className="grants-sort-sel" value={sort} onChange={e => setSort(e.target.value)}>
+          <option value="deadline">마감임박순</option>
+          <option value="created">최신순</option>
+        </select>
+      </div>
+
+      {loading
+        ? <div className="grants-loading">불러오는 중…</div>
+        : filtered.length === 0
+          ? <div className="grants-empty">해당 카테고리의 지원사업이 없습니다.</div>
+          : (
+            <div className="grants-card-grid grants-page-grid">
+              {filtered.map(g => <GrantCard key={g.id} g={g} />)}
+            </div>
+          )
+      }
+    </div>
+  );
+};
+
+Object.assign(window, { GrantsHomeSection, GrantsPage, GrantCard });
 
 // SiteFooter — 출처 표기 + 법적 링크
 // ──────────────────────────────────────────────────────────
