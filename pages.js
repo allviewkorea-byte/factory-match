@@ -1194,7 +1194,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
     <div className="page page-home">
       <ParticleCanvas />
       <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
-        {!hasResults && <h1 className="home-headline">{HOME_HEADLINE}</h1>}
+        {!hasResults && <h1 className="home-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="home-headline-accent">제조공장</span></h1>}
         {!hasResults && <p className="home-subline">{HOME_SUBLINE}</p>}
 
         <div className="home-search-wrapper">
@@ -4082,7 +4082,7 @@ function LandingPage({ onNav, authed }) {
 
       <main className="ldg2-main">
         <section className="ldg2-hero">
-          <h1 className="ldg2-headline">AI가 찾아주는 우리 회사에 딱 맞는 제조공장</h1>
+          <h1 className="ldg2-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="ldg2-headline-accent">제조공장</span></h1>
           <p className="ldg2-sub">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
 
           <div className="ldg2-search-wrap">

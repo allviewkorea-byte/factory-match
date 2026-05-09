@@ -5576,17 +5576,20 @@ a { color: inherit; text-decoration: none; }
 }
 
 .home-headline {
-  font-size: 40px;
-  font-weight: 780;
-  line-height: 1.2;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1.18;
   color: var(--ink-1);
-  margin: 0 0 12px;
-  letter-spacing: -0.025em;
+  margin: 0 0 16px;
+  letter-spacing: -0.03em;
+}
+.home-headline-accent {
+  color: #2563eb;
 }
 
 .home-subline {
   font-size: 18px;
-  color: var(--ink-3);
+  color: #475569;
   margin: 0 0 40px;
   font-weight: 400;
 }
@@ -5604,14 +5607,14 @@ a { color: inherit; text-decoration: none; }
   height: 56px;
   padding: 0 64px 0 24px;
   font-size: 16px;
-  border: 1.5px solid #e2e8f0;
+  border: 2px solid #cbd5e1;
   border-radius: 28px;
   background: #fff;
   color: var(--ink-1);
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s;
   font-family: inherit;
-  box-shadow: 0 2px 16px rgba(0,0,0,.07);
+  box-shadow: 0 4px 20px rgba(0,0,0,.10);
 }
 
 .home-search-input::placeholder { color: var(--ink-4); }
@@ -5768,7 +5771,7 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 640px) {
   .home-hero { padding: 0 16px 60px; min-height: calc(100vh - 56px); }
-  .home-headline { font-size: 28px; }
+  .home-headline { font-size: 30px; }
   .home-subline { font-size: 16px; margin-bottom: 28px; }
   .home-search-input { height: 52px; font-size: 15px; padding: 0 56px 0 20px; }
   .home-search-btn { width: 36px; height: 36px; right: 8px; }
@@ -5780,7 +5783,7 @@ a { color: inherit; text-decoration: none; }
 /* ── LandingPage v2 (ldg2-*) ── */
 .ldg2 {
   min-height: 100vh;
-  background: #f8f9fa;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
 }
@@ -5846,17 +5849,20 @@ a { color: inherit; text-decoration: none; }
 }
 
 .ldg2-headline {
-  font-size: 40px;
-  font-weight: 780;
-  line-height: 1.2;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1.18;
   color: #0f172a;
-  margin: 0 0 12px;
-  letter-spacing: -0.025em;
+  margin: 0 0 16px;
+  letter-spacing: -0.03em;
+}
+.ldg2-headline-accent {
+  color: #2563eb;
 }
 
 .ldg2-sub {
   font-size: 18px;
-  color: #64748b;
+  color: #475569;
   margin: 0 0 40px;
   font-weight: 400;
 }
@@ -5874,14 +5880,14 @@ a { color: inherit; text-decoration: none; }
   height: 56px;
   padding: 0 64px 0 24px;
   font-size: 16px;
-  border: 1.5px solid #e2e8f0;
+  border: 2px solid #cbd5e1;
   border-radius: 28px;
   background: #fff;
   color: #0f172a;
   outline: none;
   transition: border-color .18s, box-shadow .18s;
   font-family: inherit;
-  box-shadow: 0 2px 16px rgba(0,0,0,.07);
+  box-shadow: 0 4px 20px rgba(0,0,0,.10);
 }
 .ldg2-search-input::placeholder { color: #94a3b8; }
 .ldg2-search-input:focus {
@@ -5982,9 +5988,9 @@ a { color: inherit; text-decoration: none; }
 
 .ldg2-modal-signup-btn {
   width: 100%;
-  height: 48px;
-  border-radius: 10px;
-  background: var(--brand, #2563eb);
+  height: 54px;
+  border-radius: 12px;
+  background: #1e3a5f;
   color: #fff;
   font-size: 15px;
   font-weight: 700;
@@ -5992,25 +5998,25 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   transition: background .15s;
 }
-.ldg2-modal-signup-btn:hover { background: #1d4ed8; }
+.ldg2-modal-signup-btn:hover { background: #16304f; }
 
 .ldg2-modal-login-btn {
   width: 100%;
-  height: 48px;
-  border-radius: 10px;
-  background: #f1f5f9;
-  color: #374151;
+  height: 54px;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
   font-size: 15px;
   font-weight: 600;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #0f172a;
   cursor: pointer;
-  transition: background .15s;
+  transition: background .15s, border-color .15s;
 }
-.ldg2-modal-login-btn:hover { background: #e2e8f0; }
+.ldg2-modal-login-btn:hover { background: #f8fafc; }
 
 @media (max-width: 640px) {
   .ldg2-nav { padding: 0 16px; height: 56px; }
-  .ldg2-headline { font-size: 30px; }
+  .ldg2-headline { font-size: 32px; }
   .ldg2-sub { font-size: 16px; margin-bottom: 32px; }
   .ldg2-search-input { height: 52px; font-size: 15px; padding: 0 56px 0 18px; }
   .ldg2-search-btn { width: 36px; height: 36px; }
