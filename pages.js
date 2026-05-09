@@ -70,7 +70,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
       <div className="hdr-inner">
         <div className="hdr-left">
           <button className="logo" onClick={() => {
-            if (route === 'home') window.dispatchEvent(new CustomEvent('home-reset'));
+            if (route === 'home' && authed) window.dispatchEvent(new CustomEvent('home-reset'));
             else onNav('home');
           }}>
             <span className="logo-mark">
@@ -1162,7 +1162,14 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate }) => {
           </button>
         </div>
 
-        {!hasResults && (
+        {loading && (
+          <div className="home-search-loading">
+            <span className="home-loading-spinner"/>
+            <span>AI가 분석 중…</span>
+          </div>
+        )}
+
+        {!hasResults && !loading && (
           <div className="home-tag-row">
             {HOME_TAGS.map(tag => (
               <button key={tag} className="home-tag-pill" onClick={() => { setQ(tag); }}>
@@ -1172,21 +1179,15 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate }) => {
           </div>
         )}
 
-        {!hasResults && (
+        {!hasResults && !loading && (
           <div className="home-stats-bar">
             전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
           </div>
         )}
       </div>
 
-      {(loading || hasResults) && (
-        <div className={`home-results ${loading ? 'is-loading' : ''}`}>
-          {loading && (
-            <div className="home-search-loading">
-              <span className="home-loading-spinner"/>
-              <span>AI가 분석 중…</span>
-            </div>
-          )}
+      {hasResults && (
+        <div className="home-results">
 
           {/* 1. 공급망 분석 */}
           {!loading && aiResults?.supplyChain?.length > 0 && (
@@ -8166,9 +8167,11 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
   const msgsEndRef = React.useRef(null);
   const msgsContainerRef = React.useRef(null);
 
-  // Fix 1: mount 시 즉시 스크롤 최상단 이동
+  // 마운트 시 window 스크롤 잠금 (AI 페이지는 내부 컨테이너만 스크롤)
   React.useEffect(() => {
     window.scrollTo(0, 0);
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
   // 메시지 변경 시 채팅 컨테이너 안에서만 스크롤 (window 전체 스크롤 방지)
