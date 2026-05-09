@@ -1580,9 +1580,9 @@ const BIZINFO_RGNS = [
 ];
 
 const STATUS_FILTERS = [
-  { id: 'all',    label: '전체' },
   { id: 'active', label: '진행중' },
   { id: 'urgent', label: '마감임박' },
+  { id: 'all',    label: '전체' },
   { id: 'closed', label: '마감' },
 ];
 
@@ -9250,7 +9250,7 @@ const GrantsPage = ({ onNav, authed }) => {
   const [rgnIdx, setRgnIdx] = React.useState(0);
   const [pageNo, setPageNo] = React.useState(1);
   const [total, setTotal] = React.useState(0);
-  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [statusFilter, setStatusFilter] = React.useState('active');
   const [sortBy, setSortBy] = React.useState('smart');
   const [searchQuery, setSearchQuery] = React.useState('');
   const numOfRows = 20;
@@ -9295,17 +9295,27 @@ const GrantsPage = ({ onNav, authed }) => {
     });
   }
 
-  // 정렬: smart = D-day/마감임박 최상단, 그 다음 진행중(마감임박순), 마감은 맨 아래
-  const _sortScore = (item) => {
-    const dday = calcDday(_biz(item).endDate);
-    if (!dday || dday.expired) return 9999;       // 마감: 맨 아래
-    if (dday.urgent) return dday.label === 'D-day' ? 0 : parseInt(dday.label.replace('D-','')) || 1; // D-day/마감임박: 최상단
-    return 100 + (parseInt(_biz(item).endDate) || 99999999); // 진행중: 마감일 가까운순
-  };
+  // 정렬
+  displayItems = [...displayItems].sort((a, b) => {
+    const fa = _biz(a), fb = _biz(b);
+    const da = calcDday(fa.endDate), db = calcDday(fb.endDate);
 
-  if (sortBy === 'smart' || sortBy === 'deadline') {
-    displayItems = [...displayItems].sort((a, b) => _sortScore(a) - _sortScore(b));
-  }
+    if (sortBy === 'smart') {
+      // 임박순: D-day → 마감임박(남은일수) → 진행중(마감일순) → 마감
+      const score = (f, d) => {
+        if (!d || d.expired) return 9999;
+        if (d.label === 'D-day') return 0;
+        if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
+        return 100 + (parseInt(f.endDate) || 99999999);
+      };
+      return score(fa, da) - score(fb, db);
+    } else {
+      // 최신순: regDate 또는 no 기준 내림차순
+      const ra = fa.regDate || fa.no || '';
+      const rb = fb.regDate || fb.no || '';
+      return rb > ra ? 1 : rb < ra ? -1 : 0;
+    }
+  });
 
   if (selectedItem) {
     return <GrantDetailPage item={selectedItem} onBack={() => { setSelectedItem(null); window.scrollTo(0, 0); }} authed={authed} onNav={onNav} />;
