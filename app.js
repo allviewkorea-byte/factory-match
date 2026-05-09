@@ -7,7 +7,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 }/*EDITMODE-END*/;
 
 const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search'];
-const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'welcome'];
+const AUTH_ROUTES = ['landing', 'login', 'signup', 'verify', 'onboarding', 'buyer-profile', 'welcome'];
 
 // Parse route and factoryId from current URL once at startup
 function _parseInitialUrl() {
@@ -162,6 +162,13 @@ function App() {
   const handleOnboardingComplete = (data) => {
     setProfile(data);
     try { localStorage.setItem('fm-profile', JSON.stringify(data || {})); } catch {}
+    if (data?.role === 'buyer') nav('buyer-profile');
+    else nav('welcome');
+  };
+  const handleBuyerProfileComplete = (profileData) => {
+    const merged = { ...(profile || {}), buyerProfile: profileData };
+    setProfile(merged);
+    try { localStorage.setItem('fm-profile', JSON.stringify(merged)); } catch {}
     nav('welcome');
   };
   const handleEnterApp = () => {
@@ -179,7 +186,7 @@ function App() {
     nav('landing');
   };
   const [detailFrom, setDetailFrom] = useState('list');
-  const [chatTarget, setChatTarget] = useState(null);
+  // const [chatTarget, setChatTarget] = useState(null);  // 채팅 — 추후 활성화
   const [reportParams, setReportParams] = useState(null);
 
   const openFactory = (id, fromRoute) => {
@@ -188,11 +195,11 @@ function App() {
     setRoute('detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const openChat = (fid) => {
-    setChatTarget(fid || null);
-    setRoute('chat');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // const openChat = (fid) => {  // 채팅 — 추후 활성화
+  //   setChatTarget(fid || null);
+  //   setRoute('chat');
+  //   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // };
   const openReport = (params) => {
     setReportParams(params || null);
     setRoute('report');
@@ -215,6 +222,7 @@ function App() {
         {route === 'signup' && <SignupPage onNav={nav}/>}
         {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
         {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
+        {route === 'buyer-profile' && <BuyerProfilePage onNav={nav} onComplete={handleBuyerProfileComplete}/>}
         {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}
       </>
     );
@@ -266,7 +274,7 @@ function App() {
           }
           onAddRFQ={addRFQ}
           rfqIds={rfqIds}
-          onChat={openChat}
+          // onChat={openChat}  // 채팅 — 추후 활성화
           onReport={openReport}
         />
       )}
@@ -278,6 +286,7 @@ function App() {
           onNav={nav}
         />
       )}
+      {/* 채팅 — 추후 활성화
       {route === 'chat' && (
         <ChatPage
           initialFactoryId={chatTarget}
@@ -285,6 +294,7 @@ function App() {
           onOpenFactory={(id) => openFactory(id, 'chat')}
         />
       )}
+      */}
       {route === 'mypage' && (
         <MyPage
           profile={profile}
