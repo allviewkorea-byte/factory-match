@@ -8164,15 +8164,18 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
     () => window._aiConsultSession?.resolvedFactories || []
   );
   const msgsEndRef = React.useRef(null);
+  const msgsContainerRef = React.useRef(null);
 
   // Fix 1: mount 시 즉시 스크롤 최상단 이동
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // 메시지 변경 시 채팅 영역 끝으로 스크롤
+  // 메시지 변경 시 채팅 컨테이너 안에서만 스크롤 (window 전체 스크롤 방지)
   React.useEffect(() => {
-    msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (msgsContainerRef.current) {
+      msgsContainerRef.current.scrollTop = msgsContainerRef.current.scrollHeight;
+    }
   }, [messages, loading]);
 
   // Fix 2: 상태가 바뀔 때마다 window에 저장
@@ -8263,7 +8266,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
             </div>
           </div>
 
-          <div className="aic-messages">
+          <div className="aic-messages" ref={msgsContainerRef}>
             {messages.map((m, i) => (
               <div key={i} className={`aic-msg ${m.role === 'user' ? 'aic-msg-user' : 'aic-msg-ai'}`}>
                 {m.role === 'ai' && (
