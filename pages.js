@@ -9238,7 +9238,8 @@ const GrantsPage = ({ onNav, authed }) => {
   const [pageNo, setPageNo] = React.useState(1);
   const [total, setTotal] = React.useState(0);
   const [statusFilter, setStatusFilter] = React.useState('all');
-  const [sortBy, setSortBy] = React.useState('latest');
+  const [sortBy, setSortBy] = React.useState('smart');
+  const [searchQuery, setSearchQuery] = React.useState('');
   const numOfRows = 20;
 
   const cat = BIZINFO_CATS[catIdx];
@@ -9261,6 +9262,16 @@ const GrantsPage = ({ onNav, authed }) => {
   // 클라이언트 사이드 필터/정렬 (현재 페이지 내)
   let displayItems = items;
   // 지역 필터: API searchRgnCode로 서버사이드 처리됨 (클라이언트 필터 불필요)
+
+  // 검색어 필터
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    displayItems = displayItems.filter(item => {
+      const f = _biz(item);
+      return (f.title || '').toLowerCase().includes(q) || (f.org || '').toLowerCase().includes(q);
+    });
+  }
+
   if (statusFilter !== 'all') {
     displayItems = displayItems.filter(item => {
       const dday = calcDday(_biz(item).endDate);
@@ -9270,14 +9281,17 @@ const GrantsPage = ({ onNav, authed }) => {
       return true;
     });
   }
-  if (sortBy === 'deadline') {
-    displayItems = [...displayItems].sort((a, b) => {
-      const ea = _biz(a).endDate, eb = _biz(b).endDate;
-      if (!ea && !eb) return 0;
-      if (!ea) return 1;
-      if (!eb) return -1;
-      return ea < eb ? -1 : 1;
-    });
+
+  // 정렬: smart = D-day/마감임박 최상단, 그 다음 진행중(마감임박순), 마감은 맨 아래
+  const _sortScore = (item) => {
+    const dday = calcDday(_biz(item).endDate);
+    if (!dday || dday.expired) return 9999;       // 마감: 맨 아래
+    if (dday.urgent) return dday.label === 'D-day' ? 0 : parseInt(dday.label.replace('D-','')) || 1; // D-day/마감임박: 최상단
+    return 100 + (parseInt(_biz(item).endDate) || 99999999); // 진행중: 마감일 가까운순
+  };
+
+  if (sortBy === 'smart' || sortBy === 'deadline') {
+    displayItems = [...displayItems].sort((a, b) => _sortScore(a) - _sortScore(b));
   }
 
   if (selectedItem) {
@@ -9292,6 +9306,25 @@ const GrantsPage = ({ onNav, authed }) => {
       </div>
 
       <div className="grants-page-controls">
+        {/* 검색창 */}
+        <div className="grants-search-wrap">
+          <div className="grants-search-box">
+            <svg className="grants-search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.8"/>
+              <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+            <input
+              className="grants-search-input"
+              type="text"
+              placeholder="사업명 또는 기관명으로 검색..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="grants-search-clear" onClick={() => setSearchQuery('')}>✕</button>
+            )}
+          </div>
+        </div>
         <div className="grants-filter-row">
           <span className="grants-filter-label">분야</span>
           <div className="grants-cat-tabs">
@@ -9315,8 +9348,8 @@ const GrantsPage = ({ onNav, authed }) => {
             ))}
           </div>
           <select className="grants-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="smart">추천순 (진행중 우선)</option>
             <option value="latest">최신순</option>
-            <option value="deadline">마감임박순</option>
           </select>
         </div>
       </div>
