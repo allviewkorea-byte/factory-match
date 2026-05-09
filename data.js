@@ -385,5 +385,15 @@ window._dbRowToFactory = (row) => {
   representative: row.representative || '',
   industrial_complex: row.industrial_complex || '',
   building_area: row.building_area ?? null,
+  ai_summary: row.ai_summary || null,
+  completeness_score: row.completeness_score || 0,
+  bizrno: row.bizrno || '',
+  dart_corp_code: row.dart_corp_code || '',
+  dart_revenue: row.dart_revenue ?? null,
+  dart_op_income: row.dart_op_income ?? null,
+  dart_net_income: row.dart_net_income ?? null,
+  dart_assets: row.dart_assets ?? null,
+  dart_equity: row.dart_equity ?? null,
+  dart_year: row.dart_year || '',
 }); };
 
