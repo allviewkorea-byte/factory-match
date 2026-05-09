@@ -7641,3 +7641,104 @@ a { color: inherit; text-decoration: none; }
 .admin-table-empty { text-align: center; padding: 32px; color: #aaa; font-size: 13px; }
 .detail-link { color: #2563eb; text-decoration: none; word-break: break-all; }
 .detail-link:hover { text-decoration: underline; }
+
+/* ── GateModal — 비로그인 접근 제한 ── */
+.gate-veil {
+  position: fixed;
+  inset: 0;
+  background: oklch(0 0 0 / 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+.gate-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--bdr);
+  border-radius: 24px;
+  padding: 40px 36px 36px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px oklch(0 0 0 / 0.35);
+}
+.gate-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--ink-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+.gate-close:hover { background: var(--bdr); color: var(--ink-1); }
+.gate-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.gate-lock-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: oklch(0.5 0.2 250 / 0.1);
+  color: var(--brand);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 20px;
+}
+.gate-title {
+  font-size: 18px;
+  font-weight: 750;
+  color: var(--ink-1);
+  margin: 0 0 10px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+.gate-sub {
+  font-size: 13.5px;
+  color: var(--ink-3);
+  line-height: 1.65;
+  margin: 0 0 28px;
+  word-break: keep-all;
+}
+.gate-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gate-btn-primary {
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gate-btn-primary:hover { background: oklch(0.44 0.21 250); }
+.gate-btn-secondary {
+  height: 44px;
+  border: 1.5px solid var(--bdr);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.gate-btn-secondary:hover { border-color: var(--brand); color: var(--brand); }

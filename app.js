@@ -182,11 +182,24 @@ function App() {
   const [detailFrom, setDetailFrom] = useState('list');
   const [chatTarget, setChatTarget] = useState(null);
   const [reportParams, setReportParams] = useState(null);
+  const [gateReason, setGateReason] = useState(null); // null = 닫힘
+
+  const showGate = (reason) => {
+    window.logVisitor?.('signup_triggered', { trigger: reason });
+    setGateReason(reason);
+  };
+  const closeGate = () => setGateReason(null);
+  const gateToSignup = () => { closeGate(); nav('signup'); };
+  const gateToLogin  = () => { closeGate(); nav('login'); };
 
   const _factoryViewCount = React.useRef(0);
   const openFactory = (id, fromRoute) => {
     _factoryViewCount.current += 1;
     window.logVisitor?.('factory_view', { factory_id: id, count: _factoryViewCount.current });
+    if (!authed && _factoryViewCount.current >= 3) {
+      showGate('factory_view');
+      return;
+    }
     setFactoryId(id);
     setDetailFrom(fromRoute || (APP_ROUTES.includes(route) ? route : 'list'));
     setRoute('detail');
@@ -234,11 +247,15 @@ function App() {
           onSearch={handleSearch}
           density={tweaks.density}
           heroVariant={tweaks.heroVariant}
+          authed={authed}
+          onGate={showGate}
         />
       )}
       {route === 'ai' && (
         <AiConsultPage
           onOpenFactory={(id) => openFactory(id, 'ai')}
+          authed={authed}
+          onGate={showGate}
         />
       )}
       {route === 'search' && (
@@ -252,7 +269,7 @@ function App() {
       {route === 'list' && (
         <ListPage
           onOpenFactory={(id) => openFactory(id, 'list')}
-          onAddRFQ={addRFQ}
+          onAddRFQ={authed ? addRFQ : () => showGate('rfq')}
           rfqIds={rfqIds}
           density={tweaks.density}
           initialQuery={searchQ}
@@ -268,7 +285,7 @@ function App() {
             : detailFrom === 'search' ? '검색 결과로 돌아가기'
             : '제조사 목록으로'
           }
-          onAddRFQ={addRFQ}
+          onAddRFQ={authed ? addRFQ : () => showGate('rfq')}
           rfqIds={rfqIds}
           onChat={openChat}
           onReport={openReport}
@@ -305,6 +322,15 @@ function App() {
       {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}
 
       <SiteFooter onNav={nav}/>
+
+      {gateReason && (
+        <GateModal
+          reason={gateReason}
+          onClose={closeGate}
+          onSignup={gateToSignup}
+          onLogin={gateToLogin}
+        />
+      )}
 
       <TweaksPanel title="Tweaks">
         <TweakSection title="밀도 (Density)">

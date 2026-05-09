@@ -132,6 +132,52 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
 };
 
 // ──────────────────────────────────────────────────────────
+// GateModal — 비로그인 접근 제한 모달
+// ──────────────────────────────────────────────────────────
+const GATE_MESSAGES = {
+  search:       { title: '검색은 회원만 이용 가능합니다', sub: '무료로 가입하면 전국 공장 DB를 자유롭게 검색할 수 있어요.' },
+  factory_view: { title: '더 많은 공장을 보려면 가입하세요', sub: '회원 가입 후 모든 공장 상세 정보와 연락처를 확인할 수 있어요.' },
+  rfq:          { title: '견적 요청은 회원만 이용 가능합니다', sub: '가입하면 여러 공장에 동시에 견적을 요청할 수 있어요.' },
+  ai_consult:   { title: 'AI 상담을 계속하려면 가입하세요', sub: '가입하면 AI 상담을 무제한으로 이용하고 공장 추천을 받을 수 있어요.' },
+};
+
+const GateModal = ({ reason, onSignup, onLogin, onClose }) => {
+  const msg = GATE_MESSAGES[reason] || GATE_MESSAGES.search;
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  return (
+    <div className="gate-veil" onClick={onClose}>
+      <div className="gate-card" onClick={(e) => e.stopPropagation()}>
+        <button className="gate-close" onClick={onClose} aria-label="닫기">
+          <Icon name="close" size={16} stroke={2.2}/>
+        </button>
+        <div className="gate-logo">
+          <span className="logo-mark" style={{ width: 36, height: 36 }}>
+            <span className="logo-mark-inner"/>
+          </span>
+          <span className="logo-text">
+            <span className="logo-ko">공장매칭</span>
+            <span className="logo-en">FactoryMatch</span>
+          </span>
+        </div>
+        <div className="gate-lock-icon">
+          <Icon name="lock" size={28} stroke={1.6}/>
+        </div>
+        <h2 className="gate-title">{msg.title}</h2>
+        <p className="gate-sub">{msg.sub}</p>
+        <div className="gate-btns">
+          <button className="gate-btn-primary" onClick={onSignup}>무료로 시작하기</button>
+          <button className="gate-btn-secondary" onClick={onLogin}>로그인</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────────────────
 // Badge
 // ──────────────────────────────────────────────────────────
 const Badge = ({ children, tone = 'slate', size = 'sm', icon }) => (
@@ -1010,7 +1056,7 @@ const ParticleCanvas = () => {
   );
 };
 
-const HomePage = ({ onSearch, onOpenFactory, density }) => {
+const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
   const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
@@ -1039,6 +1085,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
     const query = q.trim();
     if (!query) return;
     window.logVisitor?.('search', { query });
+    if (!authed) { onGate?.('search'); return; }
     setLoading(true);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
@@ -7715,7 +7762,7 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab, GateModal });
 
 
 // ──────────────────────────────────────────────────────────
@@ -8103,7 +8150,7 @@ const PrivacyPage = () => {
 // ──────────────────────────────────────────────────────────
 const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만들고 싶으신가요? 편하게 말씀해 주세요.' };
 
-const AiConsultPage = ({ onOpenFactory }) => {
+const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
   // Fix 2: window._aiConsultSession으로 상태 보존 (상세페이지 다녀와도 유지)
   const [messages, setMessages] = React.useState(
     () => window._aiConsultSession?.messages || [AI_INIT_MSG]
@@ -8154,6 +8201,9 @@ const AiConsultPage = ({ onOpenFactory }) => {
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
+    // 비로그인 시 사용자 메시지 3턴 초과하면 게이트 표시
+    const userTurnCount = messages.filter(m => m.role === 'user').length;
+    if (!authed && userTurnCount >= 3) { onGate?.('ai_consult'); return; }
     window.logVisitor?.('ai_consult', { query: text });
     setInput('');
     const userMsg = { role: 'user', text };
