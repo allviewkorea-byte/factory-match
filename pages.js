@@ -9253,10 +9253,43 @@ const GrantsPage = ({ onNav, authed }) => {
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('smart');
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [pinnedItems, setPinnedItems] = React.useState([]); // 진행중/마감임박 전체
   const numOfRows = 20;
 
   const cat = BIZINFO_CATS[catIdx];
   const rgn = BIZINFO_RGNS[rgnIdx];
+
+  // 진행중/마감임박 전체 수집 (최대 5페이지 = 100건)
+  React.useEffect(() => {
+    setPinnedItems([]);
+    const fetchAllActive = async () => {
+      const collected = [];
+      for (let p = 1; p <= 5; p++) {
+        try {
+          const { items } = await fetchBizInfo({ pageNo: p, numOfRows: 20, searchLclasId: cat.id, searchRgnCode: rgn.code });
+          const active = items.filter(item => {
+            const d = calcDday(_biz(item).endDate);
+            return d && !d.expired;
+          });
+          collected.push(...active);
+          if (active.length < items.length) break; // 마감 섞이기 시작하면 중단
+        } catch(e) { break; }
+      }
+      // 임박순 정렬
+      collected.sort((a, b) => {
+        const da = calcDday(_biz(a).endDate), db = calcDday(_biz(b).endDate);
+        const score = d => {
+          if (!d || d.expired) return 9999;
+          if (d.label === 'D-day') return 0;
+          if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
+          return 1000 + (parseInt(_biz(a).endDate) || 99999999);
+        };
+        return score(da) - score(db);
+      });
+      setPinnedItems(collected);
+    };
+    fetchAllActive();
+  }, [catIdx, rgnIdx]);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -9272,54 +9305,45 @@ const GrantsPage = ({ onNav, authed }) => {
   const handleCat = (idx) => { setCatIdx(idx); setPageNo(1); };
   const handleRgn = (idx) => { setRgnIdx(idx); setPageNo(1); };
 
-  // 클라이언트 사이드 필터/정렬 (현재 페이지 내)
-  let displayItems = items;
-  // 지역 필터: API searchRgnCode로 서버사이드 처리됨 (클라이언트 필터 불필요)
-
-  // 검색어 필터
-  if (searchQuery.trim()) {
-    const q = searchQuery.trim().toLowerCase();
-    displayItems = displayItems.filter(item => {
-      const f = _biz(item);
-      return (f.title || '').toLowerCase().includes(q) || (f.org || '').toLowerCase().includes(q);
-    });
-  }
-
-  // 탭 필터 (진행중/마감임박/마감 탭 선택시)
-  if (statusFilter !== 'all') {
-    displayItems = displayItems.filter(item => {
-      const dday = calcDday(_biz(item).endDate);
-      if (statusFilter === 'active') return dday && !dday.expired;       // 진행중 = 진행중+마감임박 모두
-      if (statusFilter === 'urgent') return dday && !dday.expired && dday.urgent;
-      if (statusFilter === 'closed') return !dday || dday.expired;
-      return true;
-    });
-  }
-
-  // 정렬: 항상 진행중/임박이 상단 고정, 마감은 하단
-  displayItems = [...displayItems].sort((a, b) => {
-    const fa = _biz(a), fb = _biz(b);
-    const da = calcDday(fa.endDate), db = calcDday(fb.endDate);
-
-    const score = (f, d) => {
-      if (!d || d.expired) return 100000 + (99999999 - (parseInt(f.endDate) || 0)); // 마감: 최신순으로
-      if (d.label === 'D-day') return 0;
-      if (d.urgent) return parseInt(d.label.replace('D-','')) || 1;
-      return 1000 + (parseInt(f.endDate) || 99999999); // 진행중: 마감일 가까운순
-    };
-
-    if (sortBy === 'smart') {
-      return score(fa, da) - score(fb, db);
-    } else {
-      // 최신순: no 기준 내림차순 (단, 진행중은 여전히 마감 위)
-      const aExpired = !da || da.expired;
-      const bExpired = !db || db.expired;
-      if (aExpired !== bExpired) return aExpired ? 1 : -1;
-      const ra = fa.no || '';
-      const rb = fb.no || '';
-      return rb > ra ? 1 : rb < ra ? -1 : 0;
+  // ── 진행중/마감임박(pinnedItems) 상단 고정 + 현재 페이지 마감 목록 하단 ──
+  // 검색어/탭 필터 적용
+  const applyFilters = (list) => {
+    let r = list;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      r = r.filter(item => {
+        const f = _biz(item);
+        return (f.title||'').toLowerCase().includes(q) || (f.org||'').toLowerCase().includes(q);
+      });
     }
+    if (statusFilter === 'urgent') r = r.filter(item => { const d = calcDday(_biz(item).endDate); return d && !d.expired && d.urgent; });
+    if (statusFilter === 'closed') r = r.filter(item => { const d = calcDday(_biz(item).endDate); return !d || d.expired; });
+    return r;
+  };
+
+  // 현재 페이지에서 마감 항목만 추출 (진행중은 pinnedItems로 대체)
+  const pageClosedItems = items.filter(item => {
+    const d = calcDday(_biz(item).endDate);
+    return !d || d.expired;
   });
+
+  let displayItems;
+  if (statusFilter === 'active') {
+    displayItems = applyFilters(pinnedItems);
+  } else if (statusFilter === 'closed') {
+    displayItems = applyFilters(pageClosedItems);
+  } else if (statusFilter === 'urgent') {
+    displayItems = applyFilters(pinnedItems).filter(item => { const d = calcDday(_biz(item).endDate); return d && d.urgent; });
+  } else {
+    // 전체: 진행중 상단 고정 + 마감 하단
+    const filteredPinned = applyFilters(pinnedItems);
+    const filteredClosed = applyFilters(pageClosedItems);
+    // 최신순이면 마감도 no 기준 내림차순
+    if (sortBy === 'latest') {
+      filteredClosed.sort((a,b) => { const ra=_biz(a).no||'', rb=_biz(b).no||''; return rb>ra?1:rb<ra?-1:0; });
+    }
+    displayItems = [...filteredPinned, ...filteredClosed];
+  }
 
   if (selectedItem) {
     return <GrantDetailPage item={selectedItem} onBack={() => { setSelectedItem(null); window.scrollTo(0, 0); }} authed={authed} onNav={onNav} />;
