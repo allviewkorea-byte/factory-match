@@ -86,7 +86,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
               <button
                 key={n.id}
                 className={`hdr-nav-item ${route === n.id ? 'is-active' : ''}`}
-                onClick={() => onNav(n.id)}
+                onClick={() => { window.logVisitor?.('tab_click', { tab: n.id }); onNav(n.id); }}
               >
                 {n.label}
                 {n.badge && <span className="hdr-nav-badge">{n.badge}</span>}
@@ -122,7 +122,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
           ) : (
             <>
               <button className="hdr-login-btn" onClick={() => onNav('login')}>로그인</button>
-              <button className="hdr-signup-btn" onClick={() => onNav('signup')}>무료로 시작하기</button>
+              <button className="hdr-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'header' }); onNav('signup'); }}>무료로 시작하기</button>
             </>
           )}
         </div>
@@ -1038,6 +1038,7 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
   const handleAiSearch = async () => {
     const query = q.trim();
     if (!query) return;
+    window.logVisitor?.('search', { query });
     setLoading(true);
     try {
       const resp = await fetch('/.netlify/functions/ai-match', {
@@ -3848,13 +3849,6 @@ function LandingPage({ onNav }) {
   return (
     <div className="ldg2">
       <ParticleCanvas />
-      <header className="ldg2-nav">
-        <AuthLogo/>
-        <div className="ldg2-nav-right">
-          <button className="ldg2-nav-login" onClick={() => onNav('login')}>로그인</button>
-          <button className="ldg2-nav-signup" onClick={() => onNav('signup')}>무료로 시작하기</button>
-        </div>
-      </header>
 
       <main className="ldg2-main">
         <section className="ldg2-hero">
@@ -3896,7 +3890,7 @@ function LandingPage({ onNav }) {
             <h2 className="ldg2-modal-title">검색하려면 가입이 필요합니다</h2>
             <p className="ldg2-modal-sub">무료로 가입하면 전국 12,138개 공장 DB를 검색할 수 있습니다.</p>
             <div className="ldg2-modal-btns">
-              <button className="ldg2-modal-signup-btn" onClick={() => onNav('signup')}>무료로 시작하기</button>
+              <button className="ldg2-modal-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'landing_search_modal' }); onNav('signup'); }}>무료로 시작하기</button>
               <button className="ldg2-modal-login-btn" onClick={() => onNav('login')}>로그인</button>
             </div>
           </div>
@@ -6769,6 +6763,189 @@ const AdminAnalyticsTab = () => {
   );
 };
 
+// ──────────────────────────────────────────────────────────
+// AdminVisitorTab — 비회원 활동 현황
+// ──────────────────────────────────────────────────────────
+const VISITOR_PERIODS = [
+  { id: 'today', label: '오늘' },
+  { id: 'week',  label: '이번 주' },
+  { id: 'month', label: '이번 달' },
+];
+
+const AdminVisitorTab = () => {
+  const [period, setPeriod] = useState('today');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const periodStart = (p) => {
+    const d = new Date();
+    if (p === 'today') { d.setHours(0, 0, 0, 0); }
+    else if (p === 'week') { d.setDate(d.getDate() - d.getDay()); d.setHours(0, 0, 0, 0); }
+    else { d.setDate(1); d.setHours(0, 0, 0, 0); }
+    return d.toISOString();
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    setData(null);
+    (async () => {
+      if (!window._sb) { setLoading(false); return; }
+      try {
+        const since = periodStart(period);
+        const { data: rows } = await window._sb
+          .from('visitor_logs')
+          .select('session_id, event_type, event_data, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(5000);
+
+        if (!rows) { setData({}); setLoading(false); return; }
+
+        const sessions = new Set(rows.map(r => r.session_id));
+        const byType = (t) => rows.filter(r => r.event_type === t);
+
+        const searches = byType('search');
+        const factoryViews = byType('factory_view');
+        const rfqAttempts = byType('rfq_attempt');
+        const aiConsults = byType('ai_consult');
+        const triggered = byType('signup_triggered');
+        const completed = byType('signup_completed');
+
+        // 인기 검색어 Top 10
+        const qCounts = {};
+        searches.forEach(r => {
+          const q = r.event_data?.query;
+          if (q) qCounts[q] = (qCounts[q] || 0) + 1;
+        });
+        const topQueries = Object.entries(qCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([q, n]) => ({ q, n }));
+
+        // 트리거별 전환율
+        const triggerCounts = {};
+        triggered.forEach(r => {
+          const t = r.event_data?.trigger || 'unknown';
+          triggerCounts[t] = (triggerCounts[t] || 0) + 1;
+        });
+        const completedCount = completed.length;
+        const triggerConversion = Object.entries(triggerCounts).map(([t, n]) => ({
+          trigger: t,
+          shown: n,
+          pct: completedCount > 0 ? Math.round((completedCount / n) * 100) : 0,
+        }));
+
+        setData({
+          sessions: sessions.size,
+          searches: searches.length,
+          factoryViews: factoryViews.length,
+          rfqAttempts: rfqAttempts.length,
+          aiConsults: aiConsults.length,
+          triggered: triggered.length,
+          completed: completedCount,
+          convRate: triggered.length > 0 ? ((completedCount / triggered.length) * 100).toFixed(1) : '0.0',
+          topQueries,
+          triggerConversion,
+        });
+      } catch (e) {
+        console.error('visitor_logs fetch error:', e);
+        setData({});
+      }
+      setLoading(false);
+    })();
+  }, [period]);
+
+  const Stat = ({ label, value, highlight }) => (
+    <div className={`vst-stat ${highlight ? 'vst-stat-hi' : ''}`}>
+      <div className="vst-stat-v">{value ?? '—'}</div>
+      <div className="vst-stat-k">{label}</div>
+    </div>
+  );
+
+  const BarRow = ({ label, value, max, color }) => (
+    <div className="vst-bar-row">
+      <div className="vst-bar-label">{label}</div>
+      <div className="vst-bar-track">
+        <div className="vst-bar-fill" style={{ width: max ? `${Math.round((value / max) * 100)}%` : '0%', background: color || '#3b6ef5' }}/>
+      </div>
+      <div className="vst-bar-val">{value}</div>
+    </div>
+  );
+
+  return (
+    <div className="vst-wrap">
+      {/* 기간 필터 */}
+      <div className="vst-period-row">
+        {VISITOR_PERIODS.map(p => (
+          <button
+            key={p.id}
+            className={`vst-period-btn ${period === p.id ? 'is-active' : ''}`}
+            onClick={() => setPeriod(p.id)}
+          >{p.label}</button>
+        ))}
+      </div>
+
+      {loading && <div className="an-loading">데이터를 불러오는 중…</div>}
+
+      {!loading && data && (
+        <>
+          {/* 요약 지표 */}
+          <div className="vst-stats-grid">
+            <Stat label="비회원 세션 수"     value={data.sessions}     highlight/>
+            <Stat label="검색 시도"          value={data.searches}/>
+            <Stat label="공장 상세 클릭"     value={data.factoryViews}/>
+            <Stat label="견적 요청 시도"     value={data.rfqAttempts}/>
+            <Stat label="AI 상담 시도"       value={data.aiConsults}/>
+            <Stat label="가입 유도 노출"     value={data.triggered}/>
+            <Stat label="가입 완료"          value={data.completed}     highlight/>
+            <Stat label="전환율"             value={`${data.convRate}%`} highlight/>
+          </div>
+
+          {/* 트리거별 전환율 */}
+          {data.triggerConversion?.length > 0 && (
+            <div className="vst-card">
+              <h4 className="vst-card-title">가입 유도 트리거별 현황</h4>
+              <div className="vst-trigger-list">
+                {data.triggerConversion.map(({ trigger, shown, pct }) => (
+                  <div key={trigger} className="vst-trigger-row">
+                    <div className="vst-trigger-label">{trigger}</div>
+                    <div className="vst-trigger-bar-wrap">
+                      <div className="vst-trigger-bar" style={{ width: `${Math.min(pct, 100)}%` }}/>
+                    </div>
+                    <div className="vst-trigger-meta">{shown}회 노출 · 전환 {pct}%</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 인기 검색어 Top 10 */}
+          {data.topQueries?.length > 0 && (
+            <div className="vst-card">
+              <h4 className="vst-card-title">인기 검색어 Top 10</h4>
+              <div className="vst-query-list">
+                {data.topQueries.map(({ q, n }, i) => (
+                  <BarRow
+                    key={q}
+                    label={`${i + 1}. ${q}`}
+                    value={n}
+                    max={data.topQueries[0].n}
+                    color={i === 0 ? '#3b6ef5' : i < 3 ? '#6366f1' : '#94a3b8'}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!data.sessions && (
+            <div className="an-empty" style={{ marginTop: 40 }}>해당 기간 비회원 활동 데이터가 없습니다.</div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 // AdminFactoriesTab — 제조사 관리 (서버사이드 페이지네이션 + 검색 + 편집)
 const AdminFactoriesTab = ({ onOpenFactory }) => {
   const PAGE_SIZE = 50;
@@ -7243,6 +7420,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'reports',   label: '신고 관리' },
           { id: 'signups',   label: '가입 신청' },
           { id: 'analytics', label: '통계' },
+          { id: 'visitors',  label: '비회원 활동' },
         ].map(t => (
           <button
             key={t.id}
@@ -7305,6 +7483,12 @@ const AdminPage = ({ onOpenFactory }) => {
       {tab === 'analytics' && (
         <section className="admin-panel">
           <AdminAnalyticsTab />
+        </section>
+      )}
+
+      {tab === 'visitors' && (
+        <section className="admin-panel">
+          <AdminVisitorTab />
         </section>
       )}
 
@@ -7531,7 +7715,7 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab });
 
 
 // ──────────────────────────────────────────────────────────
@@ -7970,6 +8154,7 @@ const AiConsultPage = ({ onOpenFactory }) => {
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
+    window.logVisitor?.('ai_consult', { query: text });
     setInput('');
     const userMsg = { role: 'user', text };
     const nextMessages = [...messages, userMsg];

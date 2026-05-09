@@ -165,6 +165,7 @@ function App() {
     nav('welcome');
   };
   const handleEnterApp = () => {
+    window.logVisitor?.('signup_completed');
     try { localStorage.setItem('fm-authed', '1'); } catch {}
     setAuthed(true);
     nav('home');
@@ -182,7 +183,10 @@ function App() {
   const [chatTarget, setChatTarget] = useState(null);
   const [reportParams, setReportParams] = useState(null);
 
+  const _factoryViewCount = React.useRef(0);
   const openFactory = (id, fromRoute) => {
+    _factoryViewCount.current += 1;
+    window.logVisitor?.('factory_view', { factory_id: id, count: _factoryViewCount.current });
     setFactoryId(id);
     setDetailFrom(fromRoute || (APP_ROUTES.includes(route) ? route : 'list'));
     setRoute('detail');
