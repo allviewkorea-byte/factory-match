@@ -306,6 +306,46 @@ def check_is_mfg_site(api_key, html_text, factory_name):
         return True  # 예외 시 안전하게 관련 있음으로 처리
 
 
+def check_company_match(html_text, factory_name):
+    # type: (str, str) -> bool
+    """
+    홈페이지 내용이 해당 회사의 사이트인지 이름 기반으로 검증.
+    회사명의 핵심 키워드가 홈페이지에 포함되어 있는지 확인.
+    반환: True=일치 가능, False=다른 회사 사이트
+    """
+    if not html_text or not factory_name:
+        return True  # 판단 불가 시 통과
+
+    html_lower = html_text.lower()
+
+    # 회사명에서 핵심 키워드 추출
+    # (주), 주식회사, 유한회사 등 제거
+    clean_name = re.sub(r'[\(\（]주[\)\）]|주식회사|유한회사|합자회사|합명회사|\(유\)|\(합\)', '', factory_name).strip()
+
+    # 너무 짧은 이름은 검증 생략 (오탐 방지)
+    if len(clean_name) < 2:
+        return True
+
+    # 회사명 키워드가 홈페이지에 포함되는지 확인
+    if clean_name.lower() in html_lower:
+        return True
+
+    # 회사명을 2글자 이상 단어로 분리해서 매칭
+    words = [w for w in re.split(r'[\s\-_&]', clean_name) if len(w) >= 2]
+    if not words:
+        return True
+
+    # 핵심 단어 중 절반 이상 매칭되면 통과
+    matches = sum(1 for w in words if w.lower() in html_lower)
+    match_ratio = matches / len(words)
+
+    if match_ratio >= 0.5:
+        return True
+
+    print("    [검증] 회사명 불일치 → 다른 회사 사이트로 판단 ('{0}' not in page)".format(clean_name))
+    return False
+
+
 def call_claude(api_key, factory, html_text):
     # type: (str, dict, Optional[str]) -> Tuple[Optional[dict], bool]
     """Claude API 호출 (오류 시 1회 재시도). 반환: (결과 dict, 오류여부)"""
@@ -444,7 +484,23 @@ def main():
                 time.sleep(random.uniform(0.3, 0.8))
                 continue
 
-            # 2단계: 제조업 관련 사이트 여부 판단
+            # 2단계: 회사명 일치 검증 (다른 회사 사이트 필터링)
+            if not check_company_match(html_text, name):
+                print("    → 회사명 불일치 → website NULL 처리")
+                try:
+                    sb_nullify_website(fid)
+                except Exception as e:
+                    print("    [DB] website NULL 처리 실패: {0}".format(e))
+                append_invalid(
+                    {"id": fid, "name": name, "website": website, "reason": "company_mismatch"},
+                    invalid_list,
+                )
+                total_invalid += 1
+                total_processed += 1
+                time.sleep(random.uniform(0.3, 0.8))
+                continue
+
+            # 3단계: 제조업 관련 사이트 여부 판단
             print("    [AI] 관련성 판단 중...")
             today_api_calls += 1
             total_api_calls += 1
