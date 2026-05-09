@@ -1494,35 +1494,52 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '' } =
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   const body = json?.response?.body;
-  let items = body?.items ?? [];
-  if (!Array.isArray(items)) items = items ? [items] : [];
+  // 공공데이터포털 API는 items.item 또는 items 배열 두 가지 구조를 모두 사용
+  const raw = body?.items;
+  let items = [];
+  if (Array.isArray(raw)) {
+    items = raw;
+  } else if (raw?.item) {
+    items = Array.isArray(raw.item) ? raw.item : [raw.item];
+  } else if (raw && typeof raw === 'object') {
+    items = [raw];
+  }
+  if (items.length > 0) console.log('[BizInfo] 첫 번째 item 필드:', Object.keys(items[0]), items[0]);
   return { total: Number(body?.totalCount ?? 0), items };
 }
 
 const BizGrantCard = ({ item, authed, onNav, compact }) => {
-  const dday = calcDday(item.rcptEndDate);
-  const catName = item.bizSectCdNm || '';
+  // 필드명 변형 대응: 공공데이터포털 API 응답 필드는 버전마다 다를 수 있음
+  const title   = item.pblancNm   || item.pbancNm    || item.bizNm      || item.sprtBizNm  || '(제목 없음)';
+  const org     = item.mnofcDeptNm|| item.jrsdInsttNm|| item.instNm     || item.sprtInsttNm|| '';
+  const catName = item.bizSectCdNm|| item.sprtFldNm  || item.lclasNm    || item.sectNm     || '';
+  const desc    = item.bsnsSumryCn|| item.pblancDtlCn|| item.smryCn     || item.bizDtlCn   || '';
+  const sttDate = item.rcptSttDate|| item.sprtSttDate|| item.applyStDt  || '';
+  const endDate = item.rcptEndDate|| item.sprtEndDate|| item.applyEdDt  || item.pbancEndDt || '';
+  const url     = item.pbancUrl   || item.pblancUrl  || item.detailUrl  || item.hmpgUrl    || '';
+  const pblancNo= item.pblancNo   || item.pblancId   || item.bizId      || '';
+
+  const dday = calcDday(endDate);
   const catStyle = BIZINFO_CAT_COLOR[catName] || { bg: '#f1f5f9', color: '#475569' };
   const [gateOpen, setGateOpen] = React.useState(false);
-  const url = item.pbancUrl || '';
 
   return (
     <div className="grant-card">
       <div className="grant-card-head">
-        <span className="grant-org">{item.mnofcDeptNm || '중소벤처기업부'}</span>
+        <span className="grant-org">{org || '중소벤처기업부'}</span>
         {catName && (
           <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catName}</span>
         )}
       </div>
-      <h3 className="grant-title">{item.pblancNm || '(제목 없음)'}</h3>
-      {!compact && item.bsnsSumryCn && (
-        <p className="grant-desc biz-grant-desc">{item.bsnsSumryCn}</p>
+      <h3 className="grant-title">{title}</h3>
+      {!compact && desc && (
+        <p className="grant-desc biz-grant-desc">{desc}</p>
       )}
-      {!compact && (item.rcptSttDate || item.rcptEndDate) && (
+      {!compact && (sttDate || endDate) && (
         <p className="biz-grant-period">
-          {item.rcptSttDate && item.rcptEndDate
-            ? `신청기간: ${_fmtDate8(item.rcptSttDate)} ~ ${_fmtDate8(item.rcptEndDate)}`
-            : item.rcptEndDate ? `마감: ${_fmtDate8(item.rcptEndDate)}` : ''}
+          {sttDate && endDate
+            ? `신청기간: ${_fmtDate8(sttDate)} ~ ${_fmtDate8(endDate)}`
+            : endDate ? `마감: ${_fmtDate8(endDate)}` : ''}
         </p>
       )}
       <div className="grant-card-foot">
@@ -1564,9 +1581,10 @@ const GrantsHomeSection = ({ onNav, authed, compact }) => {
   React.useEffect(() => {
     fetchBizInfo({ pageNo: 1, numOfRows: 10 })
       .then(({ items }) => {
+        const getEnd = it => it.rcptEndDate || it.sprtEndDate || it.applyEdDt || it.pbancEndDt || '';
         const sorted = [...items]
-          .filter(it => it.rcptEndDate)
-          .sort((a, b) => String(a.rcptEndDate).localeCompare(String(b.rcptEndDate)));
+          .filter(it => getEnd(it))
+          .sort((a, b) => String(getEnd(a)).localeCompare(String(getEnd(b))));
         setItems((sorted.length ? sorted : items).slice(0, 3));
         setLoaded(true);
       })
