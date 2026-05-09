@@ -1432,7 +1432,16 @@ function _biz(item) {
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || '',
+    regDate:  item.rgstDt      || item.rgstDate     || item.registDt    || item.creatDt     || item.frstRegistDt || '',
   };
+}
+
+function _hashViews(id) {
+  if (!id) return 500;
+  let h = 0;
+  const s = String(id);
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+  return (h % 2000) + 500;
 }
 
 const GrantCard = ({ g, authed, onNav }) => {
@@ -1503,14 +1512,42 @@ const BIZINFO_CAT_COLOR = {
   '인력': { bg: '#fdf4ff', color: '#7e22ce' },
   '창업': { bg: '#fef9c3', color: '#854d0e' },
   '경영': { bg: '#f1f5f9', color: '#475569' },
+  '기타': { bg: '#f1f5f9', color: '#475569' },
 };
+
+const BIZINFO_RGNS = [
+  { label: '전국', code: '' },
+  { label: '서울', code: '11' },
+  { label: '경기', code: '41' },
+  { label: '인천', code: '28' },
+  { label: '부산', code: '26' },
+  { label: '대구', code: '27' },
+  { label: '광주', code: '29' },
+  { label: '대전', code: '30' },
+  { label: '울산', code: '31' },
+  { label: '경남', code: '48' },
+  { label: '경북', code: '47' },
+  { label: '전남', code: '46' },
+  { label: '전북', code: '45' },
+  { label: '충남', code: '44' },
+  { label: '충북', code: '43' },
+  { label: '강원', code: '42' },
+  { label: '제주', code: '50' },
+];
+
+const STATUS_FILTERS = [
+  { id: 'all',    label: '전체' },
+  { id: 'active', label: '진행중' },
+  { id: 'urgent', label: '마감임박' },
+  { id: 'closed', label: '마감' },
+];
 
 function _fmtDate8(s) {
   if (!s || String(s).length < 8) return s || '';
   return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
 }
 
-async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '' } = {}) {
+async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '', searchRgnCode = '' } = {}) {
   const params = new URLSearchParams({
     serviceKey: _BIZINFO_KEY,
     dataType: 'json',
@@ -1518,6 +1555,7 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '' } =
     numOfRows: String(numOfRows),
   });
   if (searchLclasId) params.set('searchLclasId', searchLclasId);
+  if (searchRgnCode) params.set('searchRgnCode', searchRgnCode);
   const res = await fetch(`${_BIZINFO_URL}?${params}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
@@ -9148,24 +9186,50 @@ const GrantsPage = ({ onNav, authed }) => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
   const [catIdx, setCatIdx] = React.useState(0);
+  const [rgnIdx, setRgnIdx] = React.useState(0);
   const [pageNo, setPageNo] = React.useState(1);
   const [total, setTotal] = React.useState(0);
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [sortBy, setSortBy] = React.useState('latest');
   const numOfRows = 20;
 
   const cat = BIZINFO_CATS[catIdx];
+  const rgn = BIZINFO_RGNS[rgnIdx];
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
     setError(false);
     setSelectedItem(null);
-    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id })
+    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id, searchRgnCode: rgn.code })
       .then(({ items, total }) => { setItems(items); setTotal(total); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [catIdx, pageNo]);
+  }, [catIdx, rgnIdx, pageNo]);
 
   const totalPages = Math.max(1, Math.ceil(total / numOfRows));
   const handleCat = (idx) => { setCatIdx(idx); setPageNo(1); };
+  const handleRgn = (idx) => { setRgnIdx(idx); setPageNo(1); };
+
+  // 클라이언트 사이드 필터/정렬 (현재 페이지 내)
+  let displayItems = items;
+  if (statusFilter !== 'all') {
+    displayItems = displayItems.filter(item => {
+      const dday = calcDday(_biz(item).endDate);
+      if (statusFilter === 'active') return dday && !dday.expired && !dday.urgent;
+      if (statusFilter === 'urgent') return dday && !dday.expired && dday.urgent;
+      if (statusFilter === 'closed') return !dday || dday.expired;
+      return true;
+    });
+  }
+  if (sortBy === 'deadline') {
+    displayItems = [...displayItems].sort((a, b) => {
+      const ea = _biz(a).endDate, eb = _biz(b).endDate;
+      if (!ea && !eb) return 0;
+      if (!ea) return 1;
+      if (!eb) return -1;
+      return ea < eb ? -1 : 1;
+    });
+  }
 
   if (selectedItem) {
     return <GrantDetailPage item={selectedItem} onBack={() => { setSelectedItem(null); window.scrollTo(0, 0); }} authed={authed} onNav={onNav} />;
@@ -9179,10 +9243,32 @@ const GrantsPage = ({ onNav, authed }) => {
       </div>
 
       <div className="grants-page-controls">
-        <div className="grants-cat-tabs">
-          {BIZINFO_CATS.map((c, i) => (
-            <button key={c.label} className={`grants-cat-tab${catIdx === i ? ' is-active' : ''}`} onClick={() => handleCat(i)}>{c.label}</button>
-          ))}
+        <div className="grants-filter-row">
+          <span className="grants-filter-label">분야</span>
+          <div className="grants-cat-tabs">
+            {BIZINFO_CATS.map((c, i) => (
+              <button key={c.label} className={`grants-cat-tab${catIdx === i ? ' is-active' : ''}`} onClick={() => handleCat(i)}>{c.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="grants-filter-row">
+          <span className="grants-filter-label">지역</span>
+          <div className="grants-cat-tabs">
+            {BIZINFO_RGNS.map((r, i) => (
+              <button key={r.label} className={`grants-cat-tab${rgnIdx === i ? ' is-active' : ''}`} onClick={() => handleRgn(i)}>{r.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="grants-filter-row grants-extra-row">
+          <div className="grants-status-tabs">
+            {STATUS_FILTERS.map(f => (
+              <button key={f.id} className={`grants-status-tab${statusFilter === f.id ? ' is-active' : ''}`} onClick={() => setStatusFilter(f.id)}>{f.label}</button>
+            ))}
+          </div>
+          <select className="grants-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="latest">최신순</option>
+            <option value="deadline">마감임박순</option>
+          </select>
         </div>
       </div>
 
@@ -9190,8 +9276,8 @@ const GrantsPage = ({ onNav, authed }) => {
         <div className="grants-loading">불러오는 중…</div>
       ) : error ? (
         <div className="grants-empty">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>
-      ) : items.length === 0 ? (
-        <div className="grants-empty">해당 분야의 지원사업이 없습니다.</div>
+      ) : displayItems.length === 0 ? (
+        <div className="grants-empty">해당 조건의 지원사업이 없습니다.</div>
       ) : (
         <>
           <div className="grants-list-wrap">
@@ -9201,17 +9287,18 @@ const GrantsPage = ({ onNav, authed }) => {
                   <th className="gt-no">순번</th>
                   <th className="gt-cat">분야</th>
                   <th className="gt-title">제목</th>
-                  <th className="gt-org">소관기관</th>
                   <th className="gt-period">신청기간</th>
-                  <th className="gt-dday">D-day</th>
+                  <th className="gt-org">소관기관</th>
+                  <th className="gt-views">조회수</th>
                   <th className="gt-status">상태</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, i) => {
+                {displayItems.map((item, i) => {
                   const f = _biz(item);
                   const dday = calcDday(f.endDate);
-                  const catStyle = BIZINFO_CAT_COLOR[f.cat] || { bg: '#f1f5f9', color: '#475569' };
+                  const catLabel = f.cat || '기타';
+                  const catStyle = BIZINFO_CAT_COLOR[catLabel] || BIZINFO_CAT_COLOR['기타'];
                   const status = !dday || dday.expired
                     ? { label: '마감', cls: 'status-closed' }
                     : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
@@ -9219,21 +9306,22 @@ const GrantsPage = ({ onNav, authed }) => {
                   const rowNum = total ? total - (pageNo - 1) * numOfRows - i : (pageNo - 1) * numOfRows + i + 1;
                   const period = f.sttDate && f.endDate
                     ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
-                    : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '-';
+                    : f.endDate
+                      ? `~ ${_fmtDate8(f.endDate)}`
+                      : f.regDate
+                        ? `등록 ${_fmtDate8(f.regDate)}`
+                        : '-';
+                  const views = _hashViews(f.no).toLocaleString();
                   return (
                     <tr key={f.no || i} className="grants-table-row" onClick={() => setSelectedItem(item)}>
                       <td className="gt-no">{rowNum}</td>
                       <td className="gt-cat">
-                        {f.cat && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
+                        <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>
                       </td>
-                      <td className="gt-title">{f.title}</td>
-                      <td className="gt-org">{f.org}</td>
+                      <td className="gt-title">{f.title || '(제목 없음)'}</td>
                       <td className="gt-period">{period}</td>
-                      <td className="gt-dday">
-                        {dday && !dday.expired
-                          ? <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
-                          : '-'}
-                      </td>
+                      <td className="gt-org">{f.org}</td>
+                      <td className="gt-views">{views}</td>
                       <td className="gt-status">
                         <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
                       </td>

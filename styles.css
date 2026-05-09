@@ -260,6 +260,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ─── Page shell ─────────────────────────────────────────── */
 .page { max-width: 1280px; margin: 0 auto; padding: 0 32px 80px; }
+.page.grants-page { max-width: 100%; padding: 0 20px 80px; }
 .page-list, .page-rfq { padding-top: 24px; }
 .page-detail { padding-top: 16px; }
 
@@ -7980,9 +7981,8 @@ a { color: inherit; text-decoration: none; }
   min-height: 100vh;
 }
 .grants-page-head {
-  padding: 40px 24px 24px;
-  max-width: 960px;
-  margin: 0 auto;
+  padding: 40px 24px 20px;
+  text-align: center;
 }
 .grants-back-btn {
   font-size: 13px;
@@ -7997,48 +7997,87 @@ a { color: inherit; text-decoration: none; }
 }
 .grants-back-btn:hover { color: var(--brand); }
 .grants-page-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--ink-1);
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   letter-spacing: -0.03em;
 }
 .grants-page-sub {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-3);
   margin: 0;
 }
 .grants-page-controls {
-  max-width: 960px;
-  margin: 0 auto;
   padding: 0 24px 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+}
+.grants-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   flex-wrap: wrap;
+}
+.grants-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+  min-width: 28px;
+}
+.grants-extra-row {
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
 }
 .grants-cat-tabs {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 .grants-cat-tab {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-3);
   background: var(--bg-soft);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 5px 13px;
+  padding: 7px 16px;
   cursor: pointer;
   transition: all 0.15s;
+  line-height: 1.3;
 }
 .grants-cat-tab:hover { color: var(--brand); border-color: var(--brand); }
 .grants-cat-tab.is-active {
   background: var(--brand);
   color: #fff;
   border-color: var(--brand);
+}
+.grants-status-tabs {
+  display: flex;
+  gap: 4px;
+}
+.grants-status-tab {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.grants-status-tab:hover { color: var(--brand); border-color: var(--brand); }
+.grants-status-tab.is-active {
+  background: #1e3a5f;
+  color: #fff;
+  border-color: #1e3a5f;
 }
 .grants-sort-sel {
   font-size: 13px;
@@ -8071,9 +8110,8 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 480px) {
   .grants-card-grid { grid-template-columns: 1fr; }
   .grants-home-section { padding: 32px 16px 40px; }
-  .grants-page-head { padding: 24px 16px 16px; }
+  .grants-page-head { padding: 24px 16px 14px; }
   .grants-page-controls { padding: 0 16px 16px; }
-  .grants-page-grid { padding: 0 16px 60px; }
 }
 
 /* ─── Grant 비로그인 게이트 모달 ─────────────────────── */
@@ -8264,13 +8302,13 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-1);
   vertical-align: middle;
 }
-.gt-no   { width: 52px; text-align: center; color: var(--ink-4); font-size: 13px; }
-.gt-cat  { width: 90px; }
-.gt-title{ max-width: 340px; font-weight: 500; line-height: 1.4; }
-.gt-org  { width: 130px; font-size: 13px; color: var(--ink-3); }
-.gt-period{ width: 190px; font-size: 13px; color: var(--ink-3); white-space: nowrap; }
-.gt-dday { width: 72px; text-align: center; }
-.gt-status{ width: 84px; text-align: center; }
+.gt-no     { width: 52px; text-align: center; color: var(--ink-4); font-size: 13px; }
+.gt-cat    { width: 82px; }
+.gt-title  { font-weight: 500; line-height: 1.4; }
+.gt-period { width: 200px; font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.gt-org    { width: 130px; font-size: 13px; color: var(--ink-3); }
+.gt-views  { width: 72px; text-align: right; font-size: 13px; color: var(--ink-4); font-variant-numeric: tabular-nums; }
+.gt-status { width: 84px; text-align: center; }
 
 /* ─── 상세 페이지 ────────────────────────────────────────── */
 .grants-detail-page {
@@ -8377,6 +8415,6 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 640px) {
   .grants-detail-page { padding: 0 16px 60px; }
   .grants-detail-title { font-size: 20px; }
-  .gt-org, .gt-period { display: none; }
-  .gt-title { max-width: 180px; }
+  .gt-org, .gt-period, .gt-views { display: none; }
+  .gt-title { min-width: 140px; }
 }
