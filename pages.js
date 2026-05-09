@@ -882,6 +882,23 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
   return <div ref={mapDivRef} style={{ width: '100%', height: '100%' }} />;
 }
 
+const ManufacturerCardSkeleton = () => (
+  <article className="mcard mcard-skeleton">
+    <div className="mcard-img sk-block"/>
+    <div className="mcard-body" style={{ pointerEvents: 'none' }}>
+      <div className="mcard-head">
+        <div className="mcard-titles">
+          <div className="sk-block sk-name"/>
+          <div className="sk-block sk-sub"/>
+        </div>
+      </div>
+      <div className="sk-block sk-tags"/>
+      <div className="sk-block sk-desc"/>
+      <div className="sk-block sk-desc" style={{ width: '65%' }}/>
+    </div>
+  </article>
+);
+
 Object.assign(window, { Icon, Header, Badge, Chip, ManufacturerCard, KoreaMap });
 
 
@@ -1969,28 +1986,35 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               </div>
             </div>
             <div className="list-results-grid">
-              {paginated.map(f => (
-                <div
-                  key={f.id}
-                  onMouseEnter={() => setHovered(f.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  onClick={() => setSelected(f.id)}
-                  className={`list-result-wrap ${selected === f.id ? 'is-active' : ''}`}
-                >
-                  <ManufacturerCard
-                    f={f}
-                    onOpen={(id) => {
-                      if (!window._factoryCache) window._factoryCache = {};
-                      window._factoryCache[id] = f;
-                      onOpenFactory(id);
-                    }}
-                    density={density}
-                    simplified
-                    onAddRFQ={onAddRFQ}
-                    rfqIds={rfqIds}
-                  />
-                </div>
-              ))}
+              {dbLoading && paginated.length === 0
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="list-result-wrap">
+                      <ManufacturerCardSkeleton />
+                    </div>
+                  ))
+                : paginated.map(f => (
+                    <div
+                      key={f.id}
+                      onMouseEnter={() => setHovered(f.id)}
+                      onMouseLeave={() => setHovered(null)}
+                      onClick={() => setSelected(f.id)}
+                      className={`list-result-wrap ${selected === f.id ? 'is-active' : ''}`}
+                    >
+                      <ManufacturerCard
+                        f={f}
+                        onOpen={(id) => {
+                          if (!window._factoryCache) window._factoryCache = {};
+                          window._factoryCache[id] = f;
+                          onOpenFactory(id);
+                        }}
+                        density={density}
+                        simplified
+                        onAddRFQ={onAddRFQ}
+                        rfqIds={rfqIds}
+                      />
+                    </div>
+                  ))
+              }
             </div>
             {!dbLoading && filtered.length === 0 && (
               <div className="list-empty">
@@ -2117,10 +2141,16 @@ function useMapsKey() {
 
 const MAPS_ENABLED = true; // Set to true when Maps API is authorized
 
-function FactoryMap({ addr, name }) {
+function FactoryMap({ addr, name, lat, lng }) {
   const key = useMapsKey();
   if (MAPS_ENABLED && key) {
-    const q = encodeURIComponent(addr || name);
+    // 좌표가 있으면 정확한 핀 고정 (주소 텍스트는 인근 장소로 오인될 수 있음)
+    const q = (lat != null && lng != null)
+      ? encodeURIComponent(`${lat},${lng}`)
+      : encodeURIComponent(addr || name);
+    const mapsLink = (lat != null && lng != null)
+      ? `https://www.google.com/maps?q=${lat},${lng}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr || name)}`;
     return (
       <div className="factory-map">
         <iframe
@@ -2130,6 +2160,9 @@ function FactoryMap({ addr, name }) {
           referrerPolicy="no-referrer-when-downgrade"
           title={`${name} 위치`}
         />
+        <a href={mapsLink} target="_blank" rel="noreferrer" className="factory-map-link">
+          Google 지도에서 보기
+        </a>
       </div>
     );
   }
@@ -2556,7 +2589,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   </dd></>
                 )}
               </dl>
-              <FactoryMap addr={f.roadAddress || f.address} name={f.name} />
+              <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
             </div>
           </div>
         </section>
@@ -3900,8 +3933,8 @@ function LandingPage({ onNav }) {
 
       <main className="ldg2-main">
         <section className="ldg2-hero">
-          <h1 className="ldg2-headline">제조 조건만 입력하세요.</h1>
-          <p className="ldg2-sub">맞는 공장이 먼저 찾아옵니다.</p>
+          <h1 className="ldg2-headline">AI가 찾아주는 우리 회사에 딱 맞는 제조공장</h1>
+          <p className="ldg2-sub">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
 
           <div className="ldg2-search-wrap">
             <input
@@ -3910,7 +3943,7 @@ function LandingPage({ onNav }) {
               value={q}
               onChange={e => setQ(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-              placeholder="가공방식, 소재, 제품명으로 검색"
+              placeholder="예: CNC 알루미늄 가공"
               autoComplete="off"
             />
             <button className="ldg2-search-btn" onClick={handleSearch}>
