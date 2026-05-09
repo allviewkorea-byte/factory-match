@@ -1906,6 +1906,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       // hidden 필터는 클라이언트에서 처리
       const { data, error } = await window._sb
         .from('factories').select('*')
+        .order('completeness_score', { ascending: false })
         .order('id', { ascending: true })
         .range(from, from + PAGE - 1);
       if (!mounted) return;
@@ -1958,6 +1959,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       const loadGeoPage = async (from, acc) => {
         let q = window._sb.from('factories').select('*')
           .not('coord_x', 'is', null).not('coord_y', 'is', null)
+          .order('completeness_score', { ascending: false })
           .order('id', { ascending: true })
           .range(from, from + GEO_PAGE - 1);
         q = _applyRegionFilter(q, activeRegion);
@@ -1995,6 +1997,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     const loadPage = async (from, acc) => {
       let q = window._sb.from('factories').select('*')
         .eq('hidden', false)
+        .order('completeness_score', { ascending: false })
         .order('id', { ascending: true })
         .range(from, from + PAGE - 1);
       q = _applyRegionFilter(q, activeRegion);
