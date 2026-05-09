@@ -5709,95 +5709,121 @@ a { color: inherit; text-decoration: none; }
   .home-tag-pill { font-size: 12px; padding: 6px 13px; }
 }
 
-/* ── Home AI Preview (home-aip-*) ── */
-.home-ai-preview {
-  margin-top: 36px;
-  max-width: 480px;
-  background: oklch(0.18 0.02 250 / 0.7);
-  border: 1px solid oklch(0.35 0.05 250 / 0.4);
-  border-radius: 16px;
-  padding: 20px;
-  backdrop-filter: blur(8px);
-  text-align: left;
+/* ── Home Preview Section (비로그인 전용) ── */
+.home-preview-section {
+  background: var(--bg-page, #f8fafc);
+  border-top: 1px solid var(--bdr);
+  padding: 56px 24px 72px;
+  margin: 0 -32px;
+}
+.home-preview-inner {
+  max-width: 860px;
+  margin: 0 auto;
 }
 .home-aip-label {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--brand-light, oklch(0.75 0.14 250));
-  margin-bottom: 14px;
+  color: #3b6ef5;
+  margin-bottom: 20px;
 }
-.home-aip-bubbles {
+
+/* Chat preview */
+.home-aip-chat {
+  max-width: 480px;
+  margin: 0 auto 40px;
+  background: #ffffff;
+  border: 1.5px solid #dde3ec;
+  border-radius: 18px;
+  padding: 20px 16px 16px;
+  box-shadow: 0 4px 24px rgba(59,110,245,0.07);
+  position: relative;
+}
+.home-aip-msg {
   display: flex;
-  flex-direction: column;
   gap: 8px;
+  margin-bottom: 10px;
+  max-width: 88%;
+}
+.home-aip-msg-user {
+  align-self: flex-end;
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+.home-aip-msg-ai { align-self: flex-start; }
+.home-aip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b6ef5 0%, #1e3a5f 100%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 .home-aip-bubble {
-  max-width: 90%;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 9px 13px;
+  border-radius: 14px;
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.55;
+  word-break: keep-all;
 }
-.home-aip-user {
-  align-self: flex-end;
-  background: var(--brand);
+.home-aip-bubble-user {
+  background: #3b6ef5;
   color: #fff;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(59,110,245,0.25);
 }
-.home-aip-ai {
-  align-self: flex-start;
-  background: oklch(0.25 0.02 250 / 0.9);
-  color: var(--ink-2);
-  border: 1px solid oklch(0.35 0.05 250 / 0.3);
+.home-aip-bubble-ai {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1.5px solid #dde3ec;
   border-bottom-left-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
 }
-.home-aip-ai-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--emerald);
-  flex-shrink: 0;
-}
-.home-aip-blur-row { position: relative; }
 .home-aip-blurred {
   filter: blur(4px);
   user-select: none;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.5;
+}
+.home-aip-chat-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef1f6;
 }
 .home-aip-cta {
-  margin-top: 16px;
-  width: 100%;
   height: 40px;
+  padding: 0 22px;
   border: none;
   border-radius: 10px;
-  background: var(--brand);
+  background: #3b6ef5;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   transition: background 0.15s;
+  box-shadow: 0 2px 10px rgba(59,110,245,0.3);
 }
-.home-aip-cta:hover { background: oklch(0.44 0.21 250); }
+.home-aip-cta:hover { background: #2a5ce0; }
 
-/* ── Home Blur Cards Section ── */
-.home-blur-section {
-  position: relative;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 0 24px 64px;
+/* Blur cards */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .home-blur-cards {
   display: grid;
@@ -5807,38 +5833,29 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none;
   user-select: none;
 }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
 .home-blur-card {
-  background: var(--bg-card);
-  border: 1px solid var(--bdr);
+  background: #fff;
+  border: 1.5px solid #dde3ec;
   border-radius: 16px;
   overflow: hidden;
   animation: fadeInUp 0.5s ease both;
 }
-.home-blur-card-img {
-  height: 100px;
-  border-radius: 0;
-}
-.home-blur-card-body {
-  padding: 14px 16px 16px;
-}
+.home-blur-card-img { height: 90px; }
+.home-blur-card-body { padding: 14px 16px 16px; }
 .home-blur-card-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--ink-1);
+  color: #0f172a;
   margin-bottom: 4px;
 }
 .home-blur-card-meta {
   font-size: 12px;
-  color: var(--ink-4);
+  color: #94a3b8;
   margin-bottom: 10px;
 }
 .home-blur-card-bar {
-  height: 10px;
-  background: var(--bg-soft);
+  height: 9px;
+  background: #f1f5f9;
   border-radius: 6px;
   margin-bottom: 6px;
 }
@@ -5851,7 +5868,6 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding-bottom: 32px;
 }
 .home-blur-msg {
   display: flex;
@@ -5859,32 +5875,35 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink-2);
-  background: var(--bg-card);
-  border: 1px solid var(--bdr);
+  color: #1e293b;
+  background: #ffffff;
+  border: 1.5px solid #dde3ec;
   padding: 10px 20px;
   border-radius: 999px;
-  box-shadow: 0 4px 20px oklch(0 0 0 / 0.3);
+  box-shadow: 0 4px 20px rgba(15,23,42,0.1);
 }
 .home-blur-cta {
   height: 44px;
   padding: 0 28px;
   border: none;
   border-radius: 12px;
-  background: var(--brand);
+  background: #3b6ef5;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 20px oklch(0.5 0.2 250 / 0.4);
+  box-shadow: 0 4px 16px rgba(59,110,245,0.35);
   transition: background 0.15s, transform 0.1s;
 }
-.home-blur-cta:hover { background: oklch(0.44 0.21 250); transform: translateY(-1px); }
+.home-blur-cta:hover { background: #2a5ce0; transform: translateY(-1px); }
+
+/* 블러카드 wrapper: overlay 포지셔닝 기준 */
+.home-blur-wrapper { position: relative; }
 
 @media (max-width: 640px) {
+  .home-preview-section { padding: 40px 16px 56px; }
   .home-blur-cards { grid-template-columns: 1fr; }
-  .home-ai-preview { max-width: 100%; }
-  .home-blur-section { padding: 0 16px 48px; }
+  .home-aip-chat { max-width: 100%; }
 }
 
 /* ── BuyerProfilePage (bpro-*) ── */

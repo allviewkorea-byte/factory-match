@@ -238,6 +238,7 @@ function App() {
           onSearch={handleSearch}
           density={tweaks.density}
           heroVariant={tweaks.heroVariant}
+          authed={authed}
         />
       )}
       {route === 'ai' && (

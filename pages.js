@@ -1001,7 +1001,7 @@ const ParticleCanvas = () => {
   );
 };
 
-const HomePage = ({ onSearch, onOpenFactory, density }) => {
+const HomePage = ({ onSearch, onOpenFactory, density, authed }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
   const [placeholderIndex, setPlaceholderIndex] = useStateP(0);
@@ -1121,64 +1121,80 @@ const HomePage = ({ onSearch, onOpenFactory, density }) => {
           </div>
         )}
 
-        {!hasResults && (
-          <div className="home-ai-preview">
+      </div>
+
+      {!hasResults && !authed && (
+        <div className="home-preview-section">
+          <div className="home-preview-inner">
             <div className="home-aip-label">
               <Icon name="sparkle" size={12} stroke={2.4}/>
               AI 상담 미리보기
             </div>
-            <div className="home-aip-bubbles">
-              <div className="home-aip-bubble home-aip-user">
-                "자동차 부품 플라스틱 사출 500개 필요해요"
-              </div>
-              <div className="home-aip-bubble home-aip-ai">
-                <span className="home-aip-ai-dot"/>
-                조건에 맞는 공장 3곳을 찾았어요! 단가·리드타임을 비교해 드릴게요.
-              </div>
-              <div className="home-aip-blur-row">
-                <div className="home-aip-bubble home-aip-ai home-aip-blurred">
-                  충남 천안 소재 A 공장 — 사출 전문, ISO 인증 보유, 리드타임 5일…
+            <div className="home-aip-chat">
+              <div className="home-aip-msg home-aip-msg-user">
+                <div className="home-aip-bubble home-aip-bubble-user">
+                  "자동차 부품 플라스틱 사출 500개 필요해요"
                 </div>
               </div>
+              <div className="home-aip-msg home-aip-msg-ai">
+                <div className="home-aip-avatar">AI</div>
+                <div className="home-aip-bubble home-aip-bubble-ai">
+                  조건에 맞는 공장 3곳을 찾았어요! 단가·리드타임을 비교해 드릴게요.
+                </div>
+              </div>
+              <div className="home-aip-msg home-aip-msg-ai home-aip-blurred">
+                <div className="home-aip-avatar">AI</div>
+                <div className="home-aip-bubble home-aip-bubble-ai">
+                  충남 천안 소재 A 공장 — 사출 전문, ISO 9001 인증, 리드타임 5일, MOQ 200개…
+                </div>
+              </div>
+              <div className="home-aip-msg home-aip-msg-user home-aip-blurred">
+                <div className="home-aip-bubble home-aip-bubble-user">
+                  단가는 어느 정도인가요?
+                </div>
+              </div>
+              <div className="home-aip-chat-cta">
+                <button
+                  className="home-aip-cta"
+                  onClick={() => window.dispatchEvent(new CustomEvent('auth-nav', { detail: 'signup' }))}
+                >
+                  가입하고 계속하기
+                  <Icon name="arrow_right" size={13} stroke={2.4}/>
+                </button>
+              </div>
             </div>
-            <button className="home-aip-cta" onClick={() => window.dispatchEvent(new CustomEvent('auth-nav', { detail: 'signup' }))}>
-              가입하고 계속하기
-              <Icon name="arrow_right" size={13} stroke={2.4}/>
-            </button>
-          </div>
-        )}
-      </div>
 
-      {!hasResults && (
-        <div className="home-blur-section">
-          <div className="home-blur-cards">
-            {[
-              { bg: 'linear-gradient(135deg,#1a5fa3 0%,#0d3d6e 100%)', name: '○○기계', loc: '경기 안산', tag: 'CNC 가공' },
-              { bg: 'linear-gradient(135deg,#5236a0 0%,#2d1a6e 100%)', name: '○○전자', loc: '충남 천안', tag: '전자 부품' },
-              { bg: 'linear-gradient(135deg,#2a7d50 0%,#1a5235 100%)', name: '○○식품', loc: '전북 익산', tag: '식품 가공' },
-            ].map((c, i) => (
-              <div key={i} className="home-blur-card" style={{ animationDelay: `${i * 0.15}s` }}>
-                <div className="home-blur-card-img" style={{ background: c.bg }}/>
-                <div className="home-blur-card-body">
-                  <div className="home-blur-card-name">{c.name}</div>
-                  <div className="home-blur-card-meta">{c.loc} · {c.tag}</div>
-                  <div className="home-blur-card-bar"/>
-                  <div className="home-blur-card-bar home-blur-card-bar-sm"/>
-                </div>
+            <div className="home-blur-wrapper">
+              <div className="home-blur-cards">
+                {[
+                  { bg: 'linear-gradient(135deg,#1a5fa3 0%,#0d3d6e 100%)', name: '○○기계', loc: '경기 안산', tag: 'CNC 가공' },
+                  { bg: 'linear-gradient(135deg,#5236a0 0%,#2d1a6e 100%)', name: '○○전자', loc: '충남 천안', tag: '전자 부품' },
+                  { bg: 'linear-gradient(135deg,#2a7d50 0%,#1a5235 100%)', name: '○○식품', loc: '전북 익산', tag: '식품 가공' },
+                ].map((c, i) => (
+                  <div key={i} className="home-blur-card" style={{ animationDelay: `${i * 0.15}s` }}>
+                    <div className="home-blur-card-img" style={{ background: c.bg }}/>
+                    <div className="home-blur-card-body">
+                      <div className="home-blur-card-name">{c.name}</div>
+                      <div className="home-blur-card-meta">{c.loc} · {c.tag}</div>
+                      <div className="home-blur-card-bar"/>
+                      <div className="home-blur-card-bar home-blur-card-bar-sm"/>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="home-blur-overlay">
-            <div className="home-blur-msg">
-              <Icon name="lock" size={20} stroke={1.8}/>
-              <span>회원가입 후 확인 가능합니다</span>
+              <div className="home-blur-overlay">
+                <div className="home-blur-msg">
+                  <Icon name="lock" size={20} stroke={1.8}/>
+                  <span>회원가입 후 확인 가능합니다</span>
+                </div>
+                <button
+                  className="home-blur-cta"
+                  onClick={() => window.dispatchEvent(new CustomEvent('auth-nav', { detail: 'signup' }))}
+                >
+                  무료로 시작하기
+                </button>
+              </div>
             </div>
-            <button
-              className="home-blur-cta"
-              onClick={() => window.dispatchEvent(new CustomEvent('auth-nav', { detail: 'signup' }))}
-            >
-              무료로 시작하기
-            </button>
           </div>
         </div>
       )}
