@@ -1422,16 +1422,32 @@ function _stripHtml(html) {
     .trim();
 }
 
+// 날짜 문자열을 YYYYMMDD 8자리로 정규화 (YYYY-MM-DD, YYYY/MM/DD, YYYYMMDD 모두 처리)
+function _normDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  // YYYY-MM-DD 또는 YYYY/MM/DD
+  const m = s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+  if (m) return m[1] + m[2] + m[3];
+  // YYYYMMDD
+  if (/^\d{8}$/.test(s)) return s;
+  return '';
+}
+
 function _biz(item) {
-  // 날짜 자동 탐지: YYYYMMDD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
+  // 날짜 자동 탐지: YYYYMMDD or YYYY-MM-DD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
   const dateFlds = Object.entries(item)
-    .filter(([, v]) => v && /^\d{8}$/.test(String(v)))
+    .map(([k, v]) => [k, _normDate(v)])
+    .filter(([, v]) => v.length === 8)
     .sort(([, a], [, b]) => a < b ? -1 : 1);
   const autoStt = dateFlds[0]?.[1] || '';
   const autoEnd = dateFlds[dateFlds.length - 1]?.[1] || '';
 
+  // 날짜 필드 추출 헬퍼
+  const _d = (...keys) => { for (const k of keys) { const v = _normDate(item[k]); if (v) return v; } return ''; };
+
   return {
-    title:    item.pblancNm    || item.pbancNm      || item.bizNm       || item.sprtBizNm   || item.pblancNm  || '',
+    title:    item.pblancNm    || item.pbancNm      || item.bizNm       || item.sprtBizNm   || '',
     org:      item.mnofcDeptNm || item.jrsdInsttNm  || item.instNm      || item.sprtInsttNm || item.orgnNm    || item.deptNm || '',
     execOrg:  item.rcvAcptInsttNm || item.prgrsInsttNm || item.operInsttNm || item.execInsttNm || '',
     cat:      item.bizSectCdNm || item.sprtFldNm    || item.lclasNm     || item.lclasSe     || item.sectNm    || item.fldNm || item.ctgryNm || '',
@@ -1439,13 +1455,13 @@ function _biz(item) {
     method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || item.applyMthd   || '',
     contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm      || item.telNm       || item.cntcTelno || '',
     target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || item.sprtTrget   || '',
-    // 신청기간: 알려진 필드명 모두 + 자동 탐지 폴백
-    sttDate:  item.pbancBgngDt || item.rcptSttDate || item.sprtSttDate  || item.applyBgngDe || item.applyStDt   || item.rcptBgngDe || item.pbancBgngDe || item.bizApplyBgngDe || autoStt,
-    endDate:  item.pbancEndDt  || item.rcptEndDate || item.sprtEndDate  || item.applyEndDe  || item.applyEdDt   || item.rcptEndDe  || item.pbancEndDe    || item.bizApplyEndDe || autoEnd,
+    // 신청기간: 공공데이터 표준 필드(rcptBgnDe/rcptEndDe) 우선 + 알려진 필드명 + 자동 탐지 폴백
+    sttDate:  _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe') || autoStt,
+    endDate:  _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
-    no:       item.pblancNo    || item.pblancId     || item.bizId       || '',
-    regDate:  item.rgstDt      || item.rgstDate     || item.registDt    || item.creatDt     || item.frstRegistDt || '',
+    no:       item.pblancNo    || item.pblancId     || item.bizId       || item.pbancId      || '',
+    regDate:  _d('rgstDt','rgstDate','registDt','creatDt','frstRegistDt'),
   };
 }
 
@@ -1590,10 +1606,10 @@ async function fetchBizInfo({ pageNo = 1, numOfRows = 10, searchLclasId = '', se
     console.log('[BizInfo] 필드명:', Object.keys(items[0]));
     console.log('[BizInfo] 첫 아이템:', items[0]);
   }
-  // pbancEndDt 기준 내림차순 정렬: 진행중(미래) 공고가 먼저, 마감(과거) 공고가 나중
+  // 마감일 기준 내림차순 정렬: 진행중(미래) 공고가 먼저, 마감(과거) 공고가 나중
   items.sort((a, b) => {
-    const ea = a.pbancEndDt || a.rcptEndDate || a.sprtEndDate || '';
-    const eb = b.pbancEndDt || b.rcptEndDate || b.sprtEndDate || '';
+    const ea = _normDate(a.rcptEndDe || a.pbancEndDt || a.rcptEndDate || a.sprtEndDate || '');
+    const eb = _normDate(b.rcptEndDe || b.pbancEndDt || b.rcptEndDate || b.sprtEndDate || '');
     if (!ea && !eb) return 0;
     if (!ea) return 1;
     if (!eb) return -1;
@@ -9233,25 +9249,18 @@ const GrantsPage = ({ onNav, authed }) => {
     setLoading(true);
     setError(false);
     setSelectedItem(null);
-    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id })
+    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id, searchRgnCode: rgn.code })
       .then(({ items, total }) => { setItems(items); setTotal(total); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [catIdx, pageNo]);
+  }, [catIdx, rgnIdx, pageNo]);
 
   const totalPages = Math.max(1, Math.ceil(total / numOfRows));
   const handleCat = (idx) => { setCatIdx(idx); setPageNo(1); };
-  const handleRgn = (idx) => { setRgnIdx(idx); };
+  const handleRgn = (idx) => { setRgnIdx(idx); setPageNo(1); };
 
   // 클라이언트 사이드 필터/정렬 (현재 페이지 내)
   let displayItems = items;
-  // 지역 필터: 소관기관명에 지역명 포함 여부로 필터
-  if (rgnIdx > 0) {
-    const rgnLabel = BIZINFO_RGNS[rgnIdx].label;
-    displayItems = displayItems.filter(item => {
-      const f = _biz(item);
-      return (f.org || '').includes(rgnLabel) || (f.title || '').includes(rgnLabel);
-    });
-  }
+  // 지역 필터: API searchRgnCode로 서버사이드 처리됨 (클라이언트 필터 불필요)
   if (statusFilter !== 'all') {
     displayItems = displayItems.filter(item => {
       const dday = calcDday(_biz(item).endDate);
@@ -9359,7 +9368,14 @@ const GrantsPage = ({ onNav, authed }) => {
                         {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>}
                       </td>
                       <td className="gt-title">{f.title || '(제목 없음)'}</td>
-                      <td className="gt-period">{period}</td>
+                      <td className="gt-period">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <span>{period}</span>
+                          {dday && !dday.expired && (
+                            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`} style={{ fontSize: 11, width: 'fit-content' }}>{dday.label}</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="gt-org">{f.org}</td>
                       <td className="gt-views">{views}</td>
                       <td className="gt-status">
