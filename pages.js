@@ -1414,10 +1414,8 @@ const GrantCard = ({ g, authed, onNav }) => {
         <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{g.category}</span>
       </div>
       <h3 className="grant-title">{g.title}</h3>
-      {g.description && <p className="grant-desc">{g.description}</p>}
       <div className="grant-card-foot">
         <div className="grant-meta">
-          {g.target && <span className="grant-target">{g.target}</span>}
           {g.amount && <span className="grant-amount">{g.amount}</span>}
         </div>
         <div className="grant-foot-right">
@@ -1472,14 +1470,11 @@ const GrantsHomeSection = ({ onNav, authed, compact }) => {
     <section className={`grants-home-section${compact ? ' is-compact' : ''}`}>
       <div className="grants-home-inner">
         <div className="grants-home-head">
-          <h2 className="grants-home-title">이달의 지원사업</h2>
-          <p className="grants-home-sub">제조기업을 위한 정부지원금 · 보조금 정보</p>
+          <h2 className="grants-home-title">제조기업을 위한 정부지원금 · 보조금 정보</h2>
+          <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
         </div>
         <div className="grants-card-grid">
           {grants.map(g => <GrantCard key={g.id} g={g} authed={authed} onNav={onNav} />)}
-        </div>
-        <div className="grants-all-wrap">
-          <button className="grants-all-btn" onClick={() => onNav('grants')}>전체 지원사업 보기 →</button>
         </div>
       </div>
     </section>
