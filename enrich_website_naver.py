@@ -96,6 +96,7 @@ _SKIP_DOMAINS = {
     "kosre.or.kr", "waterkorea.kr", "k-seafoodtrade.kr",
     "okgoodfood.com", "wonju.go.kr", "mma.go.kr", "sen.es.kr",
     "g2b.go.kr", "dh.go.kr",
+    "happycampus.com", "sankun.com", "jobplanet.co.kr",
 }
 
 
