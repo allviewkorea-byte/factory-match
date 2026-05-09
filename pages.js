@@ -1406,7 +1406,20 @@ function calcDday(deadline) {
 
 function _stripHtml(html) {
   if (!html) return '';
-  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&[a-zA-Z0-9#]+;/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function _biz(item) {
@@ -1427,8 +1440,8 @@ function _biz(item) {
     contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm      || item.telNm       || item.cntcTelno || '',
     target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || item.sprtTrget   || '',
     // 신청기간: 알려진 필드명 모두 + 자동 탐지 폴백
-    sttDate:  item.rcptSttDate || item.sprtSttDate  || item.applyBgngDe || item.applyStDt   || item.rcptBgngDe || item.pbancBgngDe || item.bizApplyBgngDe || autoStt,
-    endDate:  item.rcptEndDate || item.sprtEndDate  || item.applyEndDe  || item.applyEdDt   || item.rcptEndDe  || item.pbancEndDt  || item.pbancEndDe    || item.bizApplyEndDe || autoEnd,
+    sttDate:  item.pbancBgngDt || item.rcptSttDate || item.sprtSttDate  || item.applyBgngDe || item.applyStDt   || item.rcptBgngDe || item.pbancBgngDe || item.bizApplyBgngDe || autoStt,
+    endDate:  item.pbancEndDt  || item.rcptEndDate || item.sprtEndDate  || item.applyEndDe  || item.applyEdDt   || item.rcptEndDe  || item.pbancEndDe    || item.bizApplyEndDe || autoEnd,
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || '',
@@ -1437,11 +1450,13 @@ function _biz(item) {
 }
 
 function _hashViews(id) {
-  if (!id) return 500;
+  if (!id) return 120;
   let h = 0;
   const s = String(id);
   for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
-  return (h % 2000) + 500;
+  // 10% 확률로 인기글 (1100~1300), 나머지 50~800
+  if (h % 10 === 0) return (h % 200) + 1100;
+  return (h % 751) + 50;
 }
 
 const GrantCard = ({ g, authed, onNav }) => {
@@ -9093,7 +9108,7 @@ const ReportPage = ({ params, onNav }) => {
 const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
   const f = _biz(item);
   const dday = calcDday(f.endDate);
-  const catStyle = BIZINFO_CAT_COLOR[f.cat] || { bg: '#f1f5f9', color: '#475569' };
+  const catStyle = f.cat ? (BIZINFO_CAT_COLOR[f.cat] || { bg: '#f1f5f9', color: '#475569' }) : null;
   const status = !dday || dday.expired
     ? { label: '마감', cls: 'status-closed' }
     : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
@@ -9101,26 +9116,30 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
   const desc    = _stripHtml(f.desc);
   const method  = _stripHtml(f.method);
   const contact = _stripHtml(f.contact);
+  const [toast, setToast] = React.useState('');
+  const [scraped, setScraped] = React.useState(false);
 
-  const infoRows = [
-    f.org     && { label: '소관기관', value: f.org },
-    f.execOrg && { label: '수행기관', value: f.execOrg },
-    (f.sttDate || f.endDate) && {
-      label: '신청기간',
-      value: f.sttDate && f.endDate
-        ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
-        : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '',
-    },
-    f.target  && { label: '지원대상', value: f.target },
-    f.cat     && { label: '분야',     value: f.cat },
-  ].filter(Boolean);
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 2200);
+  };
+
+  const copyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard?.writeText(url).then(() => showToast('링크가 복사됐습니다')).catch(() => showToast('복사에 실패했습니다'));
+  };
+
+  const period = f.sttDate && f.endDate
+    ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
+    : f.endDate ? `~ ${_fmtDate8(f.endDate)}` : '';
 
   return (
     <div className="page grants-detail-page">
+      {toast && <div className="grants-toast">{toast}</div>}
+
       <div className="grants-detail-header">
-        <button className="grants-back-btn" onClick={onBack}>← 목록으로 돌아가기</button>
         <div className="grants-detail-badges">
-          {f.cat && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
+          {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
           <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
           {dday && !dday.expired && (
             <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
@@ -9131,18 +9150,17 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
       </div>
 
       <div className="grants-detail-body">
-        {infoRows.length > 0 && (
-          <div className="grants-detail-section">
-            <h2 className="grants-detail-section-title">기본정보</h2>
-            <table className="grants-detail-info-table">
-              <tbody>
-                {infoRows.map(r => (
-                  <tr key={r.label}><th>{r.label}</th><td>{r.value}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="grants-detail-section">
+          <table className="grants-detail-info-table">
+            <tbody>
+              {f.org     && <tr><th>소관부처</th><td>{f.org}</td></tr>}
+              {f.execOrg && <tr><th>사업수행기관</th><td>{f.execOrg}</td></tr>}
+              {period    && <tr><th>신청기간</th><td>{period}</td></tr>}
+              {f.target  && <tr><th>지원대상</th><td>{f.target}</td></tr>}
+              {f.cat     && <tr><th>분야</th><td>{f.cat}</td></tr>}
+            </tbody>
+          </table>
+        </div>
 
         {desc && (
           <div className="grants-detail-section">
@@ -9153,7 +9171,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
 
         {method && (
           <div className="grants-detail-section">
-            <h2 className="grants-detail-section-title">신청방법</h2>
+            <h2 className="grants-detail-section-title">사업신청방법</h2>
             <p className="grants-detail-text">{method}</p>
           </div>
         )}
@@ -9166,14 +9184,19 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
         )}
 
         <div className="grants-detail-actions">
+          <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
+            {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
+          </button>
+          <button className="grants-detail-btn grants-detail-btn-ghost" onClick={copyLink}>링크 복사</button>
+          <button className="grants-detail-btn grants-detail-btn-ghost" onClick={onBack}>목록으로</button>
           {f.viewUrl && (
-            <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기 →</a>
+            <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기</a>
           )}
-          {f.applyUrl && f.applyUrl !== f.viewUrl && (
-            <a href={f.applyUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-primary">신청하기 →</a>
+          {f.applyUrl && (
+            <a href={f.applyUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-primary">신청하기</a>
           )}
         </div>
-        <p className="biz-grant-source" style={{ marginTop: 32 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
+        <p className="biz-grant-source" style={{ marginTop: 24 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
       </div>
     </div>
   );
@@ -9201,17 +9224,22 @@ const GrantsPage = ({ onNav, authed }) => {
     setLoading(true);
     setError(false);
     setSelectedItem(null);
-    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id, searchRgnCode: rgn.code })
+    fetchBizInfo({ pageNo, numOfRows, searchLclasId: cat.id })
       .then(({ items, total }) => { setItems(items); setTotal(total); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [catIdx, rgnIdx, pageNo]);
+  }, [catIdx, pageNo]);
 
   const totalPages = Math.max(1, Math.ceil(total / numOfRows));
   const handleCat = (idx) => { setCatIdx(idx); setPageNo(1); };
-  const handleRgn = (idx) => { setRgnIdx(idx); setPageNo(1); };
+  const handleRgn = (idx) => { setRgnIdx(idx); };
 
   // 클라이언트 사이드 필터/정렬 (현재 페이지 내)
   let displayItems = items;
+  // 지역 필터: 소관기관명에 지역명 포함 여부로 필터
+  if (rgnIdx > 0) {
+    const rgnLabel = BIZINFO_RGNS[rgnIdx].label;
+    displayItems = displayItems.filter(item => (_biz(item).org || '').includes(rgnLabel));
+  }
   if (statusFilter !== 'all') {
     displayItems = displayItems.filter(item => {
       const dday = calcDday(_biz(item).endDate);
@@ -9297,8 +9325,8 @@ const GrantsPage = ({ onNav, authed }) => {
                 {displayItems.map((item, i) => {
                   const f = _biz(item);
                   const dday = calcDday(f.endDate);
-                  const catLabel = f.cat || '기타';
-                  const catStyle = BIZINFO_CAT_COLOR[catLabel] || BIZINFO_CAT_COLOR['기타'];
+                  const catLabel = f.cat;
+                  const catStyle = catLabel ? (BIZINFO_CAT_COLOR[catLabel] || { bg: '#f1f5f9', color: '#475569' }) : null;
                   const status = !dday || dday.expired
                     ? { label: '마감', cls: 'status-closed' }
                     : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
@@ -9316,7 +9344,7 @@ const GrantsPage = ({ onNav, authed }) => {
                     <tr key={f.no || i} className="grants-table-row" onClick={() => setSelectedItem(item)}>
                       <td className="gt-no">{rowNum}</td>
                       <td className="gt-cat">
-                        <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>
+                        {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>}
                       </td>
                       <td className="gt-title">{f.title || '(제목 없음)'}</td>
                       <td className="gt-period">{period}</td>
