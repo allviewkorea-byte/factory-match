@@ -132,13 +132,13 @@ def fetch_page(session, term, page_no):
 # ── Supabase ─────────────────────────────────────────────────────────────
 
 def fetch_all_kicox(session):
-    """DB kicox_ 레코드 전체 (id, name, summary) 페이지네이션 로딩"""
+    """DB kicox_ 레코드 전체 (id, name, summary, bizrno) 페이지네이션 로딩"""
     records, offset, ps = [], 0, 1000
     while True:
         resp = session.get(
             f"{SUPABASE_URL}/rest/v1/factories",
             headers=SB_HEADERS,
-            params={"select": "id,name,summary",
+            params={"select": "id,name,summary,bizrno",
                     "id": "like.kicox_%",
                     "limit": ps, "offset": offset},
         )
@@ -329,6 +329,11 @@ def _process_items(items, name_map, seen_names, done_ids, all_updates, progress)
             tag = f"[{complex_nm}]"
             if tag not in existing:
                 payload["summary"] = (existing + " " + tag).strip() if existing else tag
+
+        # 사업자등록번호 수집
+        bizrno = sv(item.get("bizrno"))
+        if bizrno:
+            payload["bizrno"] = bizrno
 
         if payload:
             all_updates[rec["id"]] = payload
