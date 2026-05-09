@@ -148,7 +148,7 @@ def sb_update_ai_summary(factory_id, summary_dict):
 
 def sb_nullify_website(factory_id):
     # type: (str) -> None
-    """유효하지 않은 website URL을 NULL로 업데이트"""
+    """유효하지 않거나 무관한 website URL을 NULL로 업데이트"""
     r = requests.patch(
         SUPABASE_URL + "/rest/v1/factories",
         headers=SB_HEADERS,
@@ -272,15 +272,49 @@ def _call_claude_once(api_key, user_content):
         return None, True
 
 
+def check_is_mfg_site(api_key, html_text, factory_name):
+    # type: (str, str, str) -> bool
+    """
+    홈페이지가 제조공장/제조업 관련 사이트인지 Claude로 판단.
+    반환: True=관련 있음, False=무관
+    """
+    content = (
+        "공장명: {name}\n\n"
+        "=== 홈페이지 내용 (발췌) ===\n{html}\n\n"
+        "이 페이지가 제조공장/제조업 관련 사이트인가? yes 또는 no로만 답해."
+    ).format(name=factory_name, html=html_text[:2000])
+    try:
+        r = requests.post(
+            ANTHROPIC_API_URL,
+            headers={
+                "x-api-key":         api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type":      "application/json",
+            },
+            json={
+                "model":      MODEL,
+                "max_tokens": 10,
+                "messages":   [{"role": "user", "content": content}],
+            },
+            timeout=CLAUDE_TIMEOUT,
+        )
+        if r.status_code != 200:
+            return True  # 판단 실패 시 안전하게 관련 있음으로 처리
+        text = (r.json().get("content") or [{}])[0].get("text", "").strip().lower()
+        return text.startswith("yes")
+    except Exception:
+        return True  # 예외 시 안전하게 관련 있음으로 처리
+
+
 def call_claude(api_key, factory, html_text):
     # type: (str, dict, Optional[str]) -> Tuple[Optional[dict], bool]
     """Claude API 호출 (오류 시 1회 재시도). 반환: (결과 dict, 오류여부)"""
     user_content = _build_user_content(factory, html_text)
-    print("    [AI] 호출 중 (시도 1)")
+    print("    [AI] 요약 호출 중 (시도 1)")
     result, error = _call_claude_once(api_key, user_content)
     if error:
         time.sleep(3)
-        print("    [AI] 호출 중 (시도 2 – 재시도)")
+        print("    [AI] 요약 호출 중 (시도 2 – 재시도)")
         result, error = _call_claude_once(api_key, user_content)
     return result, error
 
@@ -410,7 +444,32 @@ def main():
                 time.sleep(random.uniform(0.3, 0.8))
                 continue
 
-            # 2단계: Claude API 분석
+            # 2단계: 제조업 관련 사이트 여부 판단
+            print("    [AI] 관련성 판단 중...")
+            today_api_calls += 1
+            total_api_calls += 1
+            is_mfg = check_is_mfg_site(api_key, html_text, name)
+            if not is_mfg:
+                print("    → 제조업 무관 사이트 → website NULL 처리")
+                try:
+                    sb_nullify_website(fid)
+                except Exception as e:
+                    print("    [DB] website NULL 처리 실패: {0}".format(e))
+                append_invalid(
+                    {"id": fid, "name": name, "website": website, "reason": "not_mfg"},
+                    invalid_list,
+                )
+                total_invalid += 1
+                total_processed += 1
+                time.sleep(random.uniform(0.5, 1.0))
+                continue
+
+            if today_api_calls >= DAILY_LIMIT:
+                print("\n금일 한도 {0:,}건 도달. 내일 재실행하세요.".format(DAILY_LIMIT))
+                quota_exceeded = True
+                break
+
+            # 3단계: Claude API 요약 생성
             try:
                 summary, ai_err = call_claude(api_key, factory, html_text)
             except RuntimeError as e:
@@ -476,7 +535,7 @@ def main():
     print("=" * 58)
     print("  처리 건수     : {0:,}건".format(total_processed))
     print("  저장 성공     : {0:,}건 ({1:.1f}%)".format(total_updated, pct))
-    print("  무효 URL      : {0:,}건  (→ {1})".format(total_invalid, INVALID_FILE))
+    print("  무효·무관 URL : {0:,}건  (→ {1})".format(total_invalid, INVALID_FILE))
     print("  AI 오류       : {0:,}건".format(total_ai_error))
     print("  금일 API 호출 : {0:,}건".format(today_api_calls))
     print("  진행 저장     : {0}".format(PROGRESS_FILE))
