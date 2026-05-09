@@ -1435,6 +1435,19 @@ function _normDate(v) {
 }
 
 function _biz(item) {
+  // reqstBeginEndDe: "20260101~20260531" 또는 "2026.01.01~2026.05.31" 형태 파싱
+  let combinedStt = '', combinedEnd = '';
+  if (item.reqstBeginEndDe) {
+    const raw = String(item.reqstBeginEndDe);
+    const parts = raw.split(/[~\-]/);
+    if (parts.length >= 2) {
+      combinedStt = _normDate(parts[0].trim());
+      combinedEnd = _normDate(parts[parts.length - 1].trim());
+    } else {
+      combinedEnd = _normDate(raw.trim());
+    }
+  }
+
   // 날짜 자동 탐지: YYYYMMDD or YYYY-MM-DD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
   const dateFlds = Object.entries(item)
     .map(([k, v]) => [k, _normDate(v)])
@@ -1455,9 +1468,9 @@ function _biz(item) {
     method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || item.applyMthd   || '',
     contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm      || item.telNm       || item.cntcTelno || '',
     target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || item.sprtTrget   || '',
-    // 신청기간: 공공데이터 표준 필드(rcptBgnDe/rcptEndDe) 우선 + 알려진 필드명 + 자동 탐지 폴백
-    sttDate:  _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe') || autoStt,
-    endDate:  _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
+    // 신청기간: reqstBeginEndDe(합산필드) 최우선 → 개별 필드 → 자동 탐지
+    sttDate:  combinedStt || _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe') || autoStt,
+    endDate:  combinedEnd || _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || item.pbancId      || '',
