@@ -1843,7 +1843,7 @@ const _applyRegionFilter = (q, regionId) => {
 
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
-  const [factories, setFactories] = useStateP(window.MFG_DATA.FACTORIES);
+  const [factories, setFactories] = useStateP([]);
   const [dbLoading, setDbLoading] = useStateP(true);
   const [dbError, setDbError] = useStateP(null);
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
