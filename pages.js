@@ -1892,7 +1892,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [sort, setSort] = useStateP(_freshSearch ? 'match' : (_listStateCache?.sort ?? 'match'));
   const [hovered, setHovered] = useStateP(null);
   const [selected, setSelected] = useStateP(null);
-  const [page, setPage] = useStateP(1);
+  const [page, setPage] = useStateP(_freshSearch ? 1 : (_listStateCache?.page ?? 1));
   const PAGE_SIZE = 20;
 
   // Accordion state: which sections are open
@@ -2130,8 +2130,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
   useEffectP(() => {
-    _listStateCache = { initialQuery, query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort };
-  }, [query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort]);
+    _listStateCache = { initialQuery, query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, page };
+  }, [query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, page]);
 
   // factories 데이터 캐시 저장
   useEffectP(() => {
