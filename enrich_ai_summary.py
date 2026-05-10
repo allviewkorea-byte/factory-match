@@ -95,6 +95,44 @@ WEBSITE_HEADERS = {
 # HTML 텍스트 추출
 # ─────────────────────────────────────────────────────────
 
+def _extract_email(html, factory_name=""):
+    # type: (str, str) -> str
+    """HTML에서 공식 이메일 주소 추출 (제조업 무관 도메인 제외)"""
+    # 제외할 도메인 패턴
+    EXCLUDE_DOMAINS = [
+        "example.com", "test.com", "naver.com", "gmail.com",
+        "daum.net", "hanmail.net", "kakao.com", "nate.com",
+        "yahoo.com", "hotmail.com", "outlook.com",
+        "w3.org", "schema.org", "sentry.io",
+    ]
+    # 이메일 정규식
+    pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+    emails = re.findall(pattern, html)
+
+    # 필터링
+    valid = []
+    seen = set()
+    for em in emails:
+        em_lower = em.lower()
+        if em_lower in seen:
+            continue
+        seen.add(em_lower)
+        domain = em_lower.split("@")[-1]
+        if any(ex in domain for ex in EXCLUDE_DOMAINS):
+            continue
+        if len(em) > 60:
+            continue
+        valid.append(em)
+
+    # 가장 짧고 신뢰도 높은 이메일 반환 (info@, contact@, sales@ 우선)
+    priority = ["info@", "contact@", "sales@", "mail@", "admin@"]
+    for prefix in priority:
+        for em in valid:
+            if em.lower().startswith(prefix):
+                return em
+    return valid[0] if valid else ""
+
+
 def _strip_html(html):
     # type: (str) -> str
     """HTML에서 스크립트·스타일 제거 후 가시 텍스트 추출"""
@@ -524,6 +562,33 @@ def main():
                 print("\n금일 한도 {0:,}건 도달. 내일 재실행하세요.".format(DAILY_LIMIT))
                 quota_exceeded = True
                 break
+
+            # 2.5단계: 이메일 추출 (HTML에서 직접)
+            extracted_email = _extract_email(html_text, name) if html_text else ""
+            if extracted_email:
+                print("    [이메일] 추출됨: {0}".format(extracted_email))
+                # 기존 email이 없는 경우에만 저장
+                try:
+                    check = requests.get(
+                        SUPABASE_URL + "/rest/v1/factories",
+                        headers=SB_HEADERS,
+                        params={"id": "eq." + str(fid), "select": "email"},
+                        timeout=10,
+                    )
+                    existing_email = (check.json() or [{}])[0].get("email", "") or ""
+                    if not existing_email:
+                        requests.patch(
+                            SUPABASE_URL + "/rest/v1/factories",
+                            headers=SB_HEADERS,
+                            params={"id": "eq." + str(fid)},
+                            json={"email": extracted_email},
+                            timeout=10,
+                        )
+                        print("    [이메일] DB 저장 완료")
+                    else:
+                        print("    [이메일] 이미 있음 → 스킵")
+                except Exception as e:
+                    print("    [이메일] 저장 실패: {0}".format(e))
 
             # 3단계: Claude API 요약 생성
             try:
