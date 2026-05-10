@@ -9115,11 +9115,12 @@ function App() {
         <DetailPage
           factoryId={factoryId}
           onBack={() => {
+            const scrollY = window._listScrollY || 0;
             nav(detailFrom || 'list');
             if (detailFrom === 'list' || !detailFrom) {
-              requestAnimationFrame(() => {
-                window.scrollTo({ top: window._listScrollY || 0, behavior: 'instant' });
-              });
+              setTimeout(() => {
+                window.scrollTo({ top: scrollY, behavior: 'instant' });
+              }, 50);
             }
           }}
           backLabel={

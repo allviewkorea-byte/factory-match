@@ -2449,6 +2449,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                         onOpen={(id) => {
                           if (!window._factoryCache) window._factoryCache = {};
                           window._factoryCache[id] = f;
+                          window._listScrollY = window.scrollY;
                           onOpenFactory(id);
                         }}
                         density={density}
@@ -2862,7 +2863,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   return (
     <div className="page page-detail">
       <div className="detail-bar">
-        <button className="back-btn" onClick={() => { if (window.history.length > 1) window.history.back(); else onBack?.(); }}>
+        <button className="back-btn" onClick={() => { onBack?.(); }}>
           <Icon name="chevron_right" size={14} stroke={2} className="back-arrow"/>
           {backLabel || '제조사 목록으로'}
         </button>
