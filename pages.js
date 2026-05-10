@@ -8941,10 +8941,10 @@ const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만�
 const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const [messages, setMessages] = React.useState(() => {
     const saved = window._aiConsultSession?.messages;
-    // 저장된 세션 있으면 복원, 없으면 초기 메시지
     if (saved && saved.length > 0) return saved;
-    if (factoryContext) return [{ role: 'ai', text: `${factoryContext.name}로 상담을 시작할게요. 어떤 것이 궁금하신가요?` }];
-    return [AI_INIT_MSG];
+    // 저장된 세션 없고 factoryContext도 없으면 → 초기 메시지
+    // factoryContext 있으면 useEffect에서 처리하므로 일단 빈 배열
+    return factoryContext ? [] : [AI_INIT_MSG];
   });
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -8954,17 +8954,18 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const [resolvedFactories, setResolvedFactories] = React.useState(
     () => window._aiConsultSession?.resolvedFactories || []
   );
-  // factoryContext가 바뀌면 전환 메시지 추가 (같은 제조사면 스킵)
-  const prevFactoryIdRef = React.useRef(window._aiConsultSession?.factoryContext?.id || factoryContext?.id);
+  // factoryContext 변경 감지 - 처음 진입이든 전환이든 메시지 추가
+  const prevFactoryIdRef = React.useRef(null); // 항상 null로 시작
   React.useEffect(() => {
     if (!factoryContext) return;
     if (prevFactoryIdRef.current === factoryContext.id) return;
+    const isFirst = prevFactoryIdRef.current === null;
     prevFactoryIdRef.current = factoryContext.id;
-    // 전환 메시지 - 인사 없이 간결하게
-    const switchMsg = { role: 'ai', text: `${factoryContext.name}로 변경되어 상담 이어갈게요. 어떤 점이 궁금하신가요?` };
-    setMessages(prev => [...prev, switchMsg]);
-    setFactories([]);
-    setResolvedFactories([]);
+    const msg = isFirst
+      ? { role: 'ai', text: `${factoryContext.name}로 상담을 시작할게요. 어떤 점이 궁금하신가요?` }
+      : { role: 'ai', text: `${factoryContext.name}로 변경되어 상담 이어갈게요. 어떤 점이 궁금하신가요?` };
+    setMessages(prev => [...prev, msg]);
+    if (!isFirst) { setFactories([]); setResolvedFactories([]); }
   }, [factoryContext?.id]);
   const msgsEndRef = React.useRef(null);
   const msgsContainerRef = React.useRef(null);
