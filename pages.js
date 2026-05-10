@@ -332,17 +332,20 @@ function getCardKeywords(f) {
   }
   // summary에서 핵심 키워드 추출 (DB 공장용)
   if (kws.length === 0 && f.summary) {
-    const key = _resolveIndustryKey(f);
-    const labelMap = { machine: '기계/금속', electronics: '전자/전기', chemical: '화학/소재', food: '식품', textile: '섬유/의류' };
-    if (key && labelMap[key]) kws.push(labelMap[key]);
-    // summary에서 '제조' 앞 단어 추출
-    const m = f.summary.match(/([가-힣]+(?:,\s*[가-힣]+)*)\s*제조/);
+    // summary에서 '제조' 앞 단어들 추출
+    const m = f.summary.match(/([가-힣A-Za-z]+(?:[,，、·]\s*[가-힣A-Za-z]+)*)\s*제조/);
     if (m) {
-      const parts = m[1].split(/[,，、]/).map(s => s.trim()).filter(s => s.length >= 2 && s.length <= 8);
-      kws.push(...parts.slice(0, 2));
+      const parts = m[1].split(/[,，、·]/).map(s => s.trim()).filter(s => s.length >= 2 && s.length <= 10);
+      kws.push(...parts.slice(0, 3));
     }
   }
-  return kws.slice(0, 3).join(' · ') || (f.name || '').slice(0, 12);
+  // 그래도 없으면 업종 라벨
+  if (kws.length === 0) {
+    const key = _resolveIndustryKey(f);
+    const labelMap = { machine: '기계/금속', electronics: '전자/전기', chemical: '화학/소재', food: '식품가공', textile: '섬유/의류', auto: '자동차부품', plastic: '플라스틱', print: '인쇄/포장', wood: '목재/가구' };
+    if (key && labelMap[key]) kws.push(labelMap[key]);
+  }
+  return kws.slice(0, 3);
 }
 
 // 도로명주소에서 도/특별시 + 시/군/구 추출 ("경기도 파주시 문산읍..." → "경기도 파주시")
@@ -384,7 +387,11 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
         <div className="mcard-img-stripes"/>
         <div className="mcard-icon">{getCardIcon(f)}</div>
-        <div className="mcard-kw-text">{getCardKeywords(f)}</div>
+        <div className="mcard-kw-tags">
+          {getCardKeywords(f).map((kw, i) => (
+            <span key={i} className="mcard-kw-tag">{kw}</span>
+          ))}
+        </div>
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
