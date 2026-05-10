@@ -16,9 +16,9 @@ web_search 도구를 활용하여 제조사 정보, 업계 동향, 기술 정보
 
 실제 단가나 현재 생산능력은 정확히 알 수 없으므로 "공장마다 다르며 견적 요청을 통해 확인하시는 게 좋습니다"라고 안내하세요.
 
-반드시 아래 JSON 형식으로만 응답하세요:
+반드시 아래 JSON 형식으로만 응답하세요. web_search 도구를 사용한 후에도 반드시 이 JSON 형식으로 최종 답변을 작성하세요:
 {
-  "reply": "사용자에게 보여줄 답변 (자연스러운 한국어)",
+  "reply": "사용자에게 보여줄 답변 (자연스러운 한국어, 마크다운 없이)",
   "searchReady": false,
   "searchTerms": null
 }
@@ -186,17 +186,33 @@ ${aiData ? `- 주요제품: ${(aiData.products || []).join(', ')}
     }
     const data = await resp.json();
 
-    // 텍스트 블록 추출 (tool_use 블록 제외)
-    const textContent = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
+    // 텍스트 블록 추출 (tool_use 블록 제외, 마지막 텍스트 블록 우선)
+    const textBlocks = (data.content || []).filter(b => b.type === 'text');
+    const textContent = textBlocks.map(b => b.text).join('');
 
-    // JSON 파싱 시도, 실패 시 텍스트 그대로 reply로
+    // JSON 파싱 시도
     try {
-      result = JSON.parse(textContent.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+      const cleaned = textContent
+        .replace(/^```json\s*/,'').replace(/\s*```$/,'')
+        .replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      result = JSON.parse(cleaned);
     } catch(e) {
-      result = { reply: textContent || '죄송합니다. 잠시 후 다시 시도해주세요.', searchReady: false, searchTerms: null };
+      // JSON 파싱 실패 - 텍스트에서 JSON 블록 추출 시도
+      const jsonMatch = textContent.match(/\{[\s\S]*"reply"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          result = JSON.parse(jsonMatch[0]);
+        } catch(e2) {
+          // 완전 실패 시 텍스트 그대로 사용 (JSON 코드 제거)
+          const cleanText = textContent
+            .replace(/```json[\s\S]*?```/g, '')
+            .replace(/```[\s\S]*?```/g, '')
+            .trim();
+          result = { reply: cleanText || '죄송합니다. 잠시 후 다시 시도해주세요.', searchReady: false, searchTerms: null };
+        }
+      } else {
+        result = { reply: textContent || '죄송합니다. 잠시 후 다시 시도해주세요.', searchReady: false, searchTerms: null };
+      }
     }
   } catch (e) {
     return {
