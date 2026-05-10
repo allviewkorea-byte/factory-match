@@ -2996,9 +2996,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             >
               {inRfq ? <><Icon name="check" size={15} stroke={2.4}/> 견적함에 추가됨</> : <><Icon name="plus" size={15} stroke={2.4}/> 견적 요청하기</>}
             </button>
-            <button className="btn btn-secondary btn-lg" onClick={() => onChat?.(f.id)}>
+            <button className="btn btn-secondary btn-lg" onClick={() => onChat?.(f.id, f)}>
               <Icon name="chat" size={15} stroke={2}/>
-              실시간 상담
+              AI 상담
             </button>
           </div>
         </div>
@@ -8938,10 +8938,14 @@ const PrivacyPage = () => {
 // ──────────────────────────────────────────────────────────
 const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만들고 싶으신가요? 편하게 말씀해 주세요.' };
 
-const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
-  // Fix 2: window._aiConsultSession으로 상태 보존 (상세페이지 다녀와도 유지)
+const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
+  // factoryContext가 있으면 해당 제조사 전용 초기 메시지
+  const initMsg = factoryContext
+    ? { role: 'ai', text: `${factoryContext.name} AI 상담을 요청하셨는데 어떤 것이 궁금한가요? 회사 정보 조사, 제품 문의, 연락처 등 편하게 물어보세요!` }
+    : AI_INIT_MSG;
+
   const [messages, setMessages] = React.useState(
-    () => window._aiConsultSession?.messages || [AI_INIT_MSG]
+    () => factoryContext ? [initMsg] : (window._aiConsultSession?.messages || [AI_INIT_MSG])
   );
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -9017,7 +9021,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate }) => {
       const resp = await fetch('/.netlify/functions/ai-consult', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: fullApiMessages }),
+        body: JSON.stringify({ messages: fullApiMessages, factoryContext: factoryContext || null }),
       });
       const data = await resp.json();
       if (data.reply) {

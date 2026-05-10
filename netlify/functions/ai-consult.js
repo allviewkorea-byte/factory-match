@@ -1,40 +1,42 @@
 const SUPABASE_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
 
-const SYSTEM = `당신은 공장매칭 플랫폼의 AI 컨설턴트입니다.
-바이어가 원하는 제품, 수량, 지역, 소재 등을 파악해서 적합한 제조공장을 추천해주세요.
-DB에 없는 정보는 절대 만들어내지 마세요.
-친근하고 전문적인 톤으로 대화하세요.
+const SYSTEM = `당신은 공장매칭 플랫폼의 AI 컨설턴트입니다. 한국 제조업 B2B 전문가로서 제조 공정, 소재, 유통, 납기, MOQ, 인증, 수출입 등 제조업 전반에 대한 깊은 지식을 보유하고 있습니다.
 
-반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이 순수 JSON):
+web_search 도구를 활용하여 제조사 정보, 업계 동향, 기술 정보 등을 실시간으로 조사할 수 있습니다.
+
+역할:
+1. 바이어가 원하는 제품/공장을 찾도록 도움 (공장 매칭)
+2. 특정 제조사에 대한 조사 및 분석
+3. 제조업 관련 전문 지식 제공 (공정, 소재, 인증, 단가 등)
+
+담당자 연락처/이메일 질문 시:
+- DB에 이메일이 있으면 알려주기
+- 없으면: "정확한 연락처는 견적 요청하기를 통해 직접 문의해 보시는 건 어떨까요?" 로 안내
+
+실제 단가나 현재 생산능력은 정확히 알 수 없으므로 "공장마다 다르며 견적 요청을 통해 확인하시는 게 좋습니다"라고 안내하세요.
+
+반드시 아래 JSON 형식으로만 응답하세요:
 {
-  "reply": "사용자에게 보여줄 답변 텍스트 (마크다운 없이 자연스러운 한국어)",
+  "reply": "사용자에게 보여줄 답변 (자연스러운 한국어)",
   "searchReady": false,
   "searchTerms": null
 }
 
-충분한 정보(제품 종류, 대략적 수량 또는 규모)가 파악된 경우 searchReady를 true로 설정하고 searchTerms를 채우세요:
+공장 매칭이 필요한 경우 searchReady: true로:
 {
-  "reply": "정보가 파악됐습니다. 적합한 공장을 찾아볼게요!",
+  "reply": "적합한 공장을 찾아볼게요!",
   "searchReady": true,
   "searchTerms": {
     "industries": ["machine"],
-    "processes": ["cnc", "welding"],
-    "materials": ["알루미늄", "스테인리스"],
-    "keywords": ["제품명", "부품명", "특성키워드"]
+    "processes": ["cnc"],
+    "materials": ["알루미늄"],
+    "keywords": ["키워드1", "키워드2"]
   }
 }
 
-searchTerms 규칙:
-- industries: machine / electronics / chemical / food / textile 중에서만 선택
-- processes: cnc / injection / press / mold / cutting / welding / painting / assembly 중에서만 선택
-- materials: 한국어 재료명 (없으면 빈 배열)
-- keywords: 제품·부품·특성 관련 한국어 키워드 3~6개
-
-대화 가이드:
-- 처음에는 제품 종류, 소재, 수량 등을 1~2가지씩 자연스럽게 물어보세요
-- 이미 충분한 정보가 있으면 바로 searchReady: true로 응답하세요
-- 같은 정보를 반복해서 묻지 마세요`;
+industries: machine / electronics / chemical / food / textile 중 선택
+processes: cnc / injection / press / mold / cutting / welding / painting / assembly 중 선택`;
 
 const RESPONSE_HEADERS = {
   'Content-Type': 'application/json',
@@ -47,7 +49,6 @@ function scoreFactory(factory, st) {
     ? factory.industries
     : (factory.industries ? [String(factory.industries)] : []);
 
-  // ai_summary 파싱
   let aiData = null;
   try { aiData = factory.ai_summary ? (typeof factory.ai_summary === 'string' ? JSON.parse(factory.ai_summary) : factory.ai_summary) : null; } catch(e) {}
   const aiProducts  = (aiData?.products  || []).map(p => p.toLowerCase());
@@ -56,7 +57,6 @@ function scoreFactory(factory, st) {
   const aiClients   = (aiData?.clients   || []).map(c => c.toLowerCase());
   const aiIntro     = (aiData?.intro     || '').toLowerCase();
 
-  // completeness_score 보너스
   score += Math.round((factory.completeness_score || 0) * 0.3);
 
   (st.industries || []).forEach(ind => { if (inds.includes(ind)) score += 30; });
@@ -115,9 +115,9 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: RESPONSE_HEADERS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  let messages;
+  let messages, factoryContext;
   try {
-    ({ messages } = JSON.parse(event.body || '{}'));
+    ({ messages, factoryContext } = JSON.parse(event.body || '{}'));
   } catch {
     return { statusCode: 400, headers: RESPONSE_HEADERS, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
@@ -134,6 +134,28 @@ exports.handler = async (event) => {
     };
   }
 
+  // 특정 제조사 컨텍스트가 있으면 시스템 프롬프트에 추가
+  let systemPrompt = SYSTEM;
+  if (factoryContext) {
+    let aiData = null;
+    try { aiData = factoryContext.ai_summary ? JSON.parse(factoryContext.ai_summary) : null; } catch(e) {}
+    systemPrompt += `\n\n현재 상담 중인 제조사 정보:
+- 회사명: ${factoryContext.name || ''}
+- 위치: ${factoryContext.city || ''}
+- 소개: ${factoryContext.summary || ''}
+- 홈페이지: ${factoryContext.website || '없음'}
+- 전화: ${factoryContext.phone || '없음'}
+- 이메일: ${factoryContext.email || '없음'}
+${aiData ? `- 주요제품: ${(aiData.products || []).join(', ')}
+- 보유장비: ${(aiData.equipment || []).join(', ')}
+- 납품처: ${(aiData.clients || []).join(', ')}
+- 강점: ${(aiData.strengths || []).join(', ')}
+- AI분석: ${aiData.intro || ''}` : ''}
+
+이 제조사에 대한 질문에 집중하여 답변하세요.
+담당자 연락처를 물어보면: ${factoryContext.email ? `이메일(${factoryContext.email})을 알려주고` : '이메일 정보가 없으므로'} 견적 요청하기를 안내하세요.`;
+  }
+
   let result;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -146,7 +168,13 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system: SYSTEM,
+        system: systemPrompt,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          }
+        ],
         messages,
       }),
     });
@@ -157,8 +185,19 @@ exports.handler = async (event) => {
       });
     }
     const data = await resp.json();
-    const raw = data.content?.[0]?.text || '{}';
-    result = JSON.parse(raw.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+
+    // 텍스트 블록 추출 (tool_use 블록 제외)
+    const textContent = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // JSON 파싱 시도, 실패 시 텍스트 그대로 reply로
+    try {
+      result = JSON.parse(textContent.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+    } catch(e) {
+      result = { reply: textContent || '죄송합니다. 잠시 후 다시 시도해주세요.', searchReady: false, searchTerms: null };
+    }
   } catch (e) {
     return {
       statusCode: 502,

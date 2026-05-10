@@ -139,6 +139,7 @@ function App() {
   }, []);
 
   const nav = (r) => {
+    if (r === 'ai') setAiFactoryContext(null); // 상단 탭 클릭 시 컨텍스트 초기화
     setRoute(r);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -181,6 +182,7 @@ function App() {
   };
   const [detailFrom, setDetailFrom] = useState('list');
   const [chatTarget, setChatTarget] = useState(null);
+  const [aiFactoryContext, setAiFactoryContext] = useState(null);
   const [reportParams, setReportParams] = useState(null);
   const [gateReason, setGateReason] = useState(null); // null = 닫힘
 
@@ -205,9 +207,15 @@ function App() {
     setRoute('detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const openChat = (fid) => {
-    setChatTarget(fid || null);
-    setRoute('chat');
+  const openChat = (fid, factory) => {
+    if (factory) {
+      // 상세페이지에서 AI 상담 → AI 탭으로 이동 + 제조사 컨텍스트 전달
+      setAiFactoryContext(factory);
+      setRoute('ai');
+    } else {
+      setChatTarget(fid || null);
+      setRoute('chat');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openReport = (params) => {
@@ -256,6 +264,8 @@ function App() {
           onOpenFactory={(id) => openFactory(id, 'ai')}
           authed={authed}
           onGate={showGate}
+          factoryContext={aiFactoryContext}
+          onClearContext={() => setAiFactoryContext(null)}
         />
       )}
       {route === 'search' && (
