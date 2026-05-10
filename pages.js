@@ -387,7 +387,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
         <div className="mcard-img-stripes"/>
         <div className="mcard-icon">{getCardIcon(f)}</div>
-        <div className="mcard-kw-text">{getCardKeywords(f).join(' · ')}</div>
+        {/* 썸네일 텍스트 제거 */}
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
@@ -765,12 +765,29 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     markersRef.current = [];
 
     window.__omf = (id) => onOpenRef.current(id);
+    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
     const newMarkers = [];
     (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
+      const isCurrentPage = pagedIds.has(f.id);
       // No 'map' prop — clusterer manages visibility
       const marker = new google.maps.Marker({
         position: { lat: f.lat, lng: f.lng },
         title: f.name,
+        icon: isCurrentPage ? {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#2563eb',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        } : {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: '#94a3b8',
+          fillOpacity: 0.7,
+          strokeColor: '#ffffff',
+          strokeWeight: 1.5,
+        },
       });
       marker.addListener('click', () => {
         if (!window._factoryCache) window._factoryCache = {};
@@ -2136,8 +2153,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     return arr;
   }, [factories, regionRows, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
-  // 지도 핀: geo 쿼리가 이미 activeRegion 필터를 적용했으므로 그대로 사용
-  const filteredGeoFactories = geoFactories;
+  // 지도 핀: 현재 페이지에 보이는 공장만 표시 + 결과 없으면 빈 배열
+  const filteredGeoFactories = React.useMemo(() => {
+    if (filtered.length === 0) return []; // 결과 없으면 핀 없애기
+    // 현재 페이지 공장 중 좌표 있는 것 + geoFactories에서 현재 필터된 공장만
+    const filteredIds = new Set(filtered.map(f => f.id));
+    return geoFactories.filter(f => filteredIds.has(f.id));
+  }, [geoFactories, filtered]);
 
   useEffectP(() => { setPage(1); }, [activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
