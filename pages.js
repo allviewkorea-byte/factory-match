@@ -8939,9 +8939,13 @@ const PrivacyPage = () => {
 const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만들고 싶으신가요? 편하게 말씀해 주세요.' };
 
 const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
-  const [messages, setMessages] = React.useState(
-    () => window._aiConsultSession?.messages || [AI_INIT_MSG]
-  );
+  const [messages, setMessages] = React.useState(() => {
+    const saved = window._aiConsultSession?.messages;
+    // 저장된 세션 있으면 복원, 없으면 초기 메시지
+    if (saved && saved.length > 0) return saved;
+    if (factoryContext) return [{ role: 'ai', text: `${factoryContext.name}로 상담을 시작할게요. 어떤 것이 궁금하신가요?` }];
+    return [AI_INIT_MSG];
+  });
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [factories, setFactories] = React.useState(
@@ -8950,15 +8954,15 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const [resolvedFactories, setResolvedFactories] = React.useState(
     () => window._aiConsultSession?.resolvedFactories || []
   );
-  // factoryContext가 새로 들어오면 (다른 제조사) 인사 메시지만 추가
-  const prevFactoryIdRef = React.useRef(factoryContext?.id);
+  // factoryContext가 바뀌면 전환 메시지 추가 (같은 제조사면 스킵)
+  const prevFactoryIdRef = React.useRef(window._aiConsultSession?.factoryContext?.id || factoryContext?.id);
   React.useEffect(() => {
     if (!factoryContext) return;
     if (prevFactoryIdRef.current === factoryContext.id) return;
     prevFactoryIdRef.current = factoryContext.id;
-    // 새 제조사 AI 상담 시작 - 기존 대화 유지하고 새 메시지만 추가
-    const newMsg = { role: 'ai', text: `${factoryContext.name} AI 상담을 요청하셨는데 어떤 것이 궁금한가요? 회사 정보 조사, 제품 문의, 연락처 등 편하게 물어보세요!` };
-    setMessages(prev => [...prev, newMsg]);
+    // 전환 메시지 - 인사 없이 간결하게
+    const switchMsg = { role: 'ai', text: `${factoryContext.name}로 변경되어 상담 이어갈게요. 어떤 점이 궁금하신가요?` };
+    setMessages(prev => [...prev, switchMsg]);
     setFactories([]);
     setResolvedFactories([]);
   }, [factoryContext?.id]);
