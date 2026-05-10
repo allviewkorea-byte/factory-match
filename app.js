@@ -259,7 +259,7 @@ function App() {
           onGate={showGate}
         />
       )}
-      {route === 'ai' && (
+      <div style={{ display: (route === 'ai') ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
         <AiConsultPage
           onOpenFactory={(id) => openFactory(id, 'ai')}
           authed={authed}
@@ -267,7 +267,7 @@ function App() {
           factoryContext={aiFactoryContext}
           onClearContext={() => setAiFactoryContext(null)}
         />
-      )}
+      </div>
       {route === 'search' && (
         <SearchUXPage
           initialQuery={searchQ}
