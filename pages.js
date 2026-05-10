@@ -806,15 +806,8 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     });
     markersRef.current = newMarkers;
 
-    if (newMarkers.length > 0) {
-      const MC = window.markerClusterer?.MarkerClusterer;
-      if (MC) {
-        clustererRef.current = new MC({ map: mapRef.current, markers: newMarkers });
-      } else {
-        // Fallback if CDN not yet loaded
-        newMarkers.forEach(m => m.setMap(mapRef.current));
-      }
-    }
+    // 클러스터링 없이 직접 지도에 표시
+    newMarkers.forEach(m => m.setMap(mapRef.current));
 
     return () => {
       if (clustererRef.current) {
