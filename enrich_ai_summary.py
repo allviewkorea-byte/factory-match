@@ -66,6 +66,7 @@ SYSTEM_PROMPT = """당신은 한국 B2B 제조업 공장 정보를 수집하는 
 반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이 순수 JSON):
 {
   "intro": "바이어에게 보여줄 2~3문장 소개글 (홈페이지 내용 기반, 없으면 공장명·위치·업종으로 생성)",
+  "email": "홈페이지에서 발견한 연락처 이메일 주소 (없으면 빈 문자열)",
   "products": ["주요 제품1", "주요 제품2"],
   "equipment": ["보유 장비1", "보유 장비2"],
   "clients": ["납품처1", "납품처2"],
@@ -75,9 +76,11 @@ SYSTEM_PROMPT = """당신은 한국 B2B 제조업 공장 정보를 수집하는 
 
 지침:
 - intro는 반드시 바이어 관점의 자연스러운 한국어 2~3문장으로 작성
+- email은 홈페이지 본문, 푸터, 헤더, 문의페이지 등에서 연락처로 사용되는 이메일 주소를 찾아서 반환
+- email이 여러 개면 가장 대표적인 연락처 1개만 반환
 - 홈페이지 내용이 공장과 무관한 사이트(주차 페이지, 광고 등)면 DB 정보(공장명, 위치, 업종)만으로 작성
 - 확인되지 않은 정보는 절대 생성하지 말 것
-- 없는 정보는 빈 배열 [] 처리
+- 없는 정보는 빈 배열 [] 또는 빈 문자열 처리
 - JSON만 반환 (마크다운 코드블록 없이)"""
 
 WEBSITE_HEADERS = {
@@ -95,42 +98,91 @@ WEBSITE_HEADERS = {
 # HTML 텍스트 추출
 # ─────────────────────────────────────────────────────────
 
-def _extract_email(html, factory_name=""):
-    # type: (str, str) -> str
-    """HTML에서 공식 이메일 주소 추출 (제조업 무관 도메인 제외)"""
-    # 제외할 도메인 패턴
-    EXCLUDE_DOMAINS = [
-        "example.com", "test.com", "naver.com", "gmail.com",
-        "daum.net", "hanmail.net", "kakao.com", "nate.com",
-        "yahoo.com", "hotmail.com", "outlook.com",
-        "w3.org", "schema.org", "sentry.io",
-    ]
-    # 이메일 정규식
-    pattern = r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
-    emails = re.findall(pattern, html)
+# 기술적으로 제외할 시스템 도메인 (사람이 쓰지 않는 것들)
+_SYSTEM_DOMAINS = [
+    "w3.org", "schema.org", "sentry.io", "example.com",
+    "test.com", "localhost", "temp.com",
+]
 
-    # 필터링
+def _extract_mailto(raw_html):
+    # type: (str) -> str
+    """
+    HTML 원본에서 mailto: 링크 우선 추출.
+    가장 신뢰도 높은 공식 연락처 이메일.
+    """
+    # mailto: 링크에서 추출
+    mailto_pattern = r'href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']'
+    matches = re.findall(mailto_pattern, raw_html, re.IGNORECASE)
+
     valid = []
     seen = set()
-    for em in emails:
+    for em in matches:
         em_lower = em.lower()
         if em_lower in seen:
             continue
         seen.add(em_lower)
         domain = em_lower.split("@")[-1]
-        if any(ex in domain for ex in EXCLUDE_DOMAINS):
+        if any(ex in domain for ex in _SYSTEM_DOMAINS):
             continue
-        if len(em) > 60:
+        if len(em) > 80:
             continue
         valid.append(em)
 
-    # 가장 짧고 신뢰도 높은 이메일 반환 (info@, contact@, sales@ 우선)
-    priority = ["info@", "contact@", "sales@", "mail@", "admin@"]
-    for prefix in priority:
-        for em in valid:
-            if em.lower().startswith(prefix):
-                return em
     return valid[0] if valid else ""
+
+
+def _fetch_subpage(base_url, path):
+    # type: (str, str) -> str
+    """서브페이지 크롤링 (연락처/소개 페이지)"""
+    from urllib.parse import urljoin
+    url = urljoin(base_url, path)
+    try:
+        r = requests.get(
+            url,
+            headers=WEBSITE_HEADERS,
+            timeout=(8, 15),
+            allow_redirects=True,
+        )
+        if r.status_code == 200:
+            return r.text
+    except Exception:
+        pass
+    return ""
+
+
+def extract_email_from_site(base_url, main_html):
+    # type: (str, str) -> str
+    """
+    공장 웹사이트에서 공식 이메일 추출.
+    우선순위:
+    1. 메인 페이지 mailto: 링크
+    2. 서브페이지(contact, about) mailto: 링크
+    3. Claude에게 판단 위임 (call_claude에서 처리)
+    """
+    # 1단계: 메인 페이지 mailto: 링크
+    email = _extract_mailto(main_html)
+    if email:
+        print("    [이메일] mailto 링크 발견: {0}".format(email))
+        return email
+
+    # 2단계: 서브페이지 크롤링
+    subpages = [
+        "/contact", "/contact-us", "/contactus",
+        "/about", "/about-us", "/company",
+        "/inquiry", "/문의", "/연락처", "/회사소개",
+    ]
+    for path in subpages:
+        sub_html = _fetch_subpage(base_url, path)
+        if not sub_html:
+            continue
+        email = _extract_mailto(sub_html)
+        if email:
+            print("    [이메일] 서브페이지({0}) mailto 발견: {1}".format(path, email))
+            return email
+
+    # 3단계: Claude 판단으로 넘김 (반환값 없음 → call_claude에서 처리)
+    print("    [이메일] mailto 없음 → Claude 판단으로 넘김")
+    return ""
 
 
 def _strip_html(html):
@@ -563,32 +615,8 @@ def main():
                 quota_exceeded = True
                 break
 
-            # 2.5단계: 이메일 추출 (HTML에서 직접)
-            extracted_email = _extract_email(html_text, name) if html_text else ""
-            if extracted_email:
-                print("    [이메일] 추출됨: {0}".format(extracted_email))
-                # 기존 email이 없는 경우에만 저장
-                try:
-                    check = requests.get(
-                        SUPABASE_URL + "/rest/v1/factories",
-                        headers=SB_HEADERS,
-                        params={"id": "eq." + str(fid), "select": "email"},
-                        timeout=10,
-                    )
-                    existing_email = (check.json() or [{}])[0].get("email", "") or ""
-                    if not existing_email:
-                        requests.patch(
-                            SUPABASE_URL + "/rest/v1/factories",
-                            headers=SB_HEADERS,
-                            params={"id": "eq." + str(fid)},
-                            json={"email": extracted_email},
-                            timeout=10,
-                        )
-                        print("    [이메일] DB 저장 완료")
-                    else:
-                        print("    [이메일] 이미 있음 → 스킵")
-                except Exception as e:
-                    print("    [이메일] 저장 실패: {0}".format(e))
+            # 2.5단계: 이메일 추출 (mailto 우선 → 서브페이지 → Claude 판단)
+            extracted_email = extract_email_from_site(website, html_text) if html_text else ""
 
             # 3단계: Claude API 요약 생성
             try:
@@ -613,9 +641,35 @@ def main():
             try:
                 sb_update_ai_summary(fid, summary)
                 total_updated += 1
-                print("    → 저장 완료")
+                print("    → AI 요약 저장 완료")
             except Exception as e:
                 print("    → DB 저장 실패: {0}".format(e))
+
+            # 이메일 저장 (mailto에서 못 찾은 경우 Claude 결과 사용)
+            final_email = extracted_email or summary.get("email", "")
+            if final_email:
+                try:
+                    check = requests.get(
+                        SUPABASE_URL + "/rest/v1/factories",
+                        headers=SB_HEADERS,
+                        params={"id": "eq." + str(fid), "select": "email"},
+                        timeout=10,
+                    )
+                    existing = (check.json() or [{}])[0].get("email", "") or ""
+                    if not existing:
+                        requests.patch(
+                            SUPABASE_URL + "/rest/v1/factories",
+                            headers=SB_HEADERS,
+                            params={"id": "eq." + str(fid)},
+                            json={"email": final_email},
+                            timeout=10,
+                        )
+                        source = "mailto" if extracted_email else "Claude"
+                        print("    [이메일] {0} → DB 저장: {1}".format(source, final_email))
+                    else:
+                        print("    [이메일] 이미 있음 → 스킵")
+                except Exception as e:
+                    print("    [이메일] 저장 실패: {0}".format(e))
 
             total_processed += 1
 
