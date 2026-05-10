@@ -6423,12 +6423,16 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden; min-width: 0;
 }
 
-/* 상담 중인 제조사 고정 영역 */
-.aic-context-factory {
+/* ── AI 상담 우측 패널 통합 ────────────────────────────── */
+.aic-panel-scroll {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* 확장 상태 - 상담중인 제조사 크게 */
+.aic-context-expanded {
+  padding: 14px 16px 0;
   flex-shrink: 0;
-  padding: 14px 16px;
-  border-bottom: 2px solid var(--line-2);
-  background: linear-gradient(135deg, #f0f6ff 0%, #e8f0fe 100%);
 }
 .aic-context-label {
   display: flex; align-items: center; gap: 5px;
@@ -6436,37 +6440,40 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: 0.05em; text-transform: uppercase;
   margin-bottom: 10px;
 }
-.aic-context-card {
-  display: flex; flex-direction: column; gap: 0;
+.aic-context-full-card {
+  display: flex; flex-direction: column;
   width: 100%; padding: 0;
   background: #fff; border: 1.5px solid #c7d9f5;
   border-radius: 12px; cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
   text-align: left; overflow: hidden;
 }
-.aic-context-card:hover {
+.aic-context-full-card:hover {
   border-color: var(--brand);
-  box-shadow: 0 4px 16px rgba(30,58,95,0.12);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(30,58,95,0.12);
+  transform: translateY(-2px);
 }
-/* 썸네일 - 가로 전체 */
-.aic-context-thumb-lg {
-  width: 100%; height: 90px;
+.aic-context-full-thumb {
+  width: 100%; height: 110px;
   position: relative; overflow: hidden; flex-shrink: 0;
 }
 .aic-context-icon-lg {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.aic-context-icon-lg svg { width: 40px; height: 40px; opacity: 0.25; }
-/* 정보 영역 */
-.aic-context-body {
-  padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 4px;
+.aic-context-icon-lg svg { width: 48px; height: 48px; opacity: 0.2; }
+.aic-context-full-name-overlay {
+  position: absolute; bottom: 10px; left: 12px;
+  font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.95);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
+.aic-context-full-body {
+  padding: 12px 14px 14px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.aic-context-full-row { display: flex; align-items: center; gap: 8px; }
 .aic-context-name-lg {
   font-size: 15px; font-weight: 700; color: var(--ink-1);
-  line-height: 1.3;
 }
 .aic-context-city-lg {
   display: flex; align-items: center; gap: 3px;
@@ -6474,17 +6481,57 @@ a { color: inherit; text-decoration: none; }
 }
 .aic-context-summary-lg {
   font-size: 12px; color: var(--ink-2);
-  line-height: 1.5; margin: 2px 0 0;
+  line-height: 1.6; margin: 2px 0 0;
 }
 .aic-context-link {
   font-size: 12px; font-weight: 600; color: var(--brand);
   margin-top: 4px;
 }
-
-/* 추천 제조사 스크롤 영역 */
-.aic-recommend-section {
-  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+.aic-context-hint {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px; margin-bottom: 4px;
+  font-size: 12px; color: var(--ink-3);
+  padding: 8px 10px;
+  background: rgba(30,58,95,0.04);
+  border-radius: 8px;
 }
+
+/* 축소 상태 - 버튼형태 */
+.aic-context-collapsed {
+  display: flex; align-items: center; gap: 10px;
+  margin: 10px 12px 0;
+  padding: 8px 12px;
+  background: #f0f6ff; border: 1.5px solid #c7d9f5;
+  border-radius: 10px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left; flex-shrink: 0;
+}
+.aic-context-collapsed:hover {
+  border-color: var(--brand);
+  background: #e4effe;
+}
+.aic-context-mini-thumb {
+  width: 32px; height: 32px; border-radius: 6px;
+  position: relative; overflow: hidden; flex-shrink: 0;
+}
+.aic-context-mini-info {
+  flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;
+}
+.aic-context-mini-label {
+  font-size: 10px; font-weight: 600; color: var(--brand);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.aic-context-mini-name {
+  font-size: 13px; font-weight: 700; color: var(--ink-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* 추천 제조사 영역 */
+.aic-recommend-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  margin-top: 12px;
+}
+.aic-recommend-wrap.has-results { flex: 1; }
 
 .aic-results-head {
   display: flex; align-items: center; gap: 8px;

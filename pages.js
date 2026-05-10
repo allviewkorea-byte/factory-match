@@ -9100,71 +9100,94 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
           </div>
         </div>
 
-        {/* 우측: 상담 제조사 고정 + 추천 공장 스크롤 */}
+        {/* 우측: 통합 패널 */}
         <div className="aic-results">
+          <div className="aic-panel-scroll">
 
-          {/* 상담 중인 제조사 - 상단 고정 */}
-          {factoryContext && (
-            <div className="aic-context-factory">
-              <div className="aic-context-label">
-                <Icon name="buildings" size={13} stroke={2}/>
-                <span>상담 중인 제조사</span>
+            {/* 상담 중인 제조사 - 추천 없으면 크게, 있으면 버튼으로 축소 */}
+            {factoryContext && (
+              resolvedFactories.length === 0 ? (
+                /* 확장 상태 - 상세 내용 표시 */
+                <div className="aic-context-expanded">
+                  <div className="aic-context-label">
+                    <Icon name="buildings" size={13} stroke={2}/>
+                    <span>상담 중인 제조사</span>
+                  </div>
+                  <button className="aic-context-full-card" onClick={() => onOpenFactory?.(factoryContext.id)}>
+                    <div className="aic-context-full-thumb" style={{ background: getCardBg(factoryContext) }}>
+                      <div className="mcard-img-stripes"/>
+                      <div className="aic-context-icon-lg">{getCardIcon(factoryContext)}</div>
+                      <div className="aic-context-full-name-overlay">{factoryContext.name}</div>
+                    </div>
+                    <div className="aic-context-full-body">
+                      <div className="aic-context-full-row">
+                        <strong className="aic-context-name-lg">{factoryContext.name}</strong>
+                      </div>
+                      <span className="aic-context-city-lg">
+                        <Icon name="pin" size={11} stroke={2}/> {factoryContext.city || ''}
+                      </span>
+                      {factoryContext.summary && (
+                        <p className="aic-context-summary-lg">{factoryContext.summary}</p>
+                      )}
+                      <span className="aic-context-link">상세페이지 보기 →</span>
+                    </div>
+                  </button>
+                  <div className="aic-context-hint">
+                    <Icon name="chat" size={13} stroke={2}/>
+                    <span>왼쪽에서 이 제조사에 대해 AI에게 물어보세요</span>
+                  </div>
+                </div>
+              ) : (
+                /* 축소 상태 - 버튼형태 */
+                <button className="aic-context-collapsed" onClick={() => onOpenFactory?.(factoryContext.id)}>
+                  <div className="aic-context-mini-thumb" style={{ background: getCardBg(factoryContext) }}>
+                    <div className="mcard-img-stripes"/>
+                  </div>
+                  <div className="aic-context-mini-info">
+                    <span className="aic-context-mini-label">상담 중인 제조사</span>
+                    <strong className="aic-context-mini-name">{factoryContext.name}</strong>
+                  </div>
+                  <Icon name="arrow_right" size={14} stroke={2} style={{ flexShrink: 0, color: '#94a3b8' }}/>
+                </button>
+              )
+            )}
+
+            {/* AI 추천 제조사 */}
+            <div className={`aic-recommend-wrap${resolvedFactories.length > 0 ? ' has-results' : ''}`}>
+              <div className="aic-results-head">
+                <Icon name="sparkle" size={16} stroke={1.8}/>
+                <span>AI 추천 제조사</span>
+                {resolvedFactories.length > 0 && (
+                  <span className="aic-results-count">{resolvedFactories.length}곳</span>
+                )}
               </div>
-              <button className="aic-context-card" onClick={() => onOpenFactory?.(factoryContext.id)}>
-                {/* 썸네일 */}
-                <div className="aic-context-thumb-lg" style={{ background: getCardBg(factoryContext) }}>
-                  <div className="mcard-img-stripes"/>
-                  <div className="aic-context-icon-lg">{getCardIcon(factoryContext)}</div>
+              {resolvedFactories.length === 0 ? (
+                <div className="aic-results-empty">
+                  <div className="aic-empty-icon">
+                    <Icon name="search" size={32} stroke={1.2}/>
+                  </div>
+                  <p>AI와 대화하면<br/>적합한 공장을 찾아드립니다</p>
                 </div>
-                {/* 정보 */}
-                <div className="aic-context-body">
-                  <strong className="aic-context-name-lg">{factoryContext.name}</strong>
-                  <span className="aic-context-city-lg">
-                    <Icon name="pin" size={11} stroke={2}/> {factoryContext.city || ''}
-                  </span>
-                  {factoryContext.summary && (
-                    <p className="aic-context-summary-lg">{factoryContext.summary.slice(0, 60)}{factoryContext.summary.length > 60 ? '…' : ''}</p>
-                  )}
-                  <span className="aic-context-link">상세페이지 보기 →</span>
+              ) : (
+                <div className="aic-cards">
+                  {resolvedFactories.map((f) => {
+                    const match = factories.find(x => x.id === f.id);
+                    return (
+                      <div key={f.id} className="aic-card-wrap">
+                        {match && (
+                          <div className="aic-match-badge">{match.matchPct}% 매칭</div>
+                        )}
+                        <ManufacturerCard
+                          f={f}
+                          onOpen={() => onOpenFactory?.(f.id)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-              </button>
-            </div>
-          )}
-
-          {/* 추천 제조사 - 스크롤 영역 */}
-          <div className="aic-recommend-section">
-            <div className="aic-results-head">
-              <Icon name="sparkle" size={16} stroke={1.8}/>
-              <span>AI 추천 제조사</span>
-              {resolvedFactories.length > 0 && (
-                <span className="aic-results-count">{resolvedFactories.length}곳</span>
               )}
             </div>
-            {resolvedFactories.length === 0 ? (
-              <div className="aic-results-empty">
-                <div className="aic-empty-icon">
-                  <Icon name="search" size={32} stroke={1.2}/>
-                </div>
-                <p>AI와 대화하면<br/>적합한 공장을 찾아드립니다</p>
-              </div>
-            ) : (
-              <div className="aic-cards">
-                {resolvedFactories.map((f) => {
-                  const match = factories.find(x => x.id === f.id);
-                  return (
-                    <div key={f.id} className="aic-card-wrap">
-                      {match && (
-                        <div className="aic-match-badge">{match.matchPct}% 매칭</div>
-                      )}
-                      <ManufacturerCard
-                        f={f}
-                        onOpen={() => onOpenFactory?.(f.id)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+
           </div>
         </div>
       </div>
