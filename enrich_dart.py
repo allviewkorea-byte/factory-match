@@ -157,18 +157,17 @@ def fetch_factories_without_dart(session):
     """bizrno 있고 dart_corp_code 없는 공장 조회"""
     records, offset, ps = [], 0, 1000
     while True:
-        resp = session.get(
-            f"{SUPABASE_URL}/rest/v1/factories",
-            headers=SB_HEADERS,
-            params={
-                "select":          "id,name,bizrno",
-                "bizrno":          "not.is.null",
-                "bizrno":          "neq.",
-                "dart_corp_code":  "is.null",
-                "limit":           ps,
-                "offset":          offset,
-            }
+        # params dict는 동일 키를 마지막 값으로 덮어쓰므로
+        # bizrno 조건 2개를 URL 쿼리스트링으로 직접 조합
+        url = (
+            f"{SUPABASE_URL}/rest/v1/factories"
+            f"?select=id,name,bizrno"
+            f"&bizrno=not.is.null"
+            f"&bizrno=neq."
+            f"&dart_corp_code=is.null"
+            f"&limit={ps}&offset={offset}"
         )
+        resp = session.get(url, headers=SB_HEADERS)
         resp.raise_for_status()
         chunk = resp.json()
         if not chunk: break
