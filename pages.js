@@ -8944,16 +8944,19 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
     ? { role: 'ai', text: `${factoryContext.name} AI 상담을 요청하셨는데 어떤 것이 궁금한가요? 회사 정보 조사, 제품 문의, 연락처 등 편하게 물어보세요!` }
     : AI_INIT_MSG;
 
-  const [messages, setMessages] = React.useState(
-    () => factoryContext ? [initMsg] : (window._aiConsultSession?.messages || [AI_INIT_MSG])
-  );
+  // 같은 제조사로 돌아온 경우 세션 복원, 다른 제조사면 초기화
+  const isSameFactory = factoryContext && window._aiConsultSession?.factoryContext?.id === factoryContext?.id;
+  const [messages, setMessages] = React.useState(() => {
+    if (factoryContext) return isSameFactory ? (window._aiConsultSession?.messages || [initMsg]) : [initMsg];
+    return window._aiConsultSession?.messages || [AI_INIT_MSG];
+  });
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [factories, setFactories] = React.useState(
-    () => window._aiConsultSession?.factories || []
+    () => isSameFactory ? (window._aiConsultSession?.factories || []) : []
   );
   const [resolvedFactories, setResolvedFactories] = React.useState(
-    () => window._aiConsultSession?.resolvedFactories || []
+    () => isSameFactory ? (window._aiConsultSession?.resolvedFactories || []) : []
   );
   const msgsEndRef = React.useRef(null);
   const msgsContainerRef = React.useRef(null);
@@ -8974,7 +8977,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
 
   // Fix 2: 상태가 바뀔 때마다 window에 저장
   React.useEffect(() => {
-    window._aiConsultSession = { messages, factories, resolvedFactories };
+    window._aiConsultSession = { messages, factories, resolvedFactories, factoryContext };
   }, [messages, factories, resolvedFactories]);
 
   // 매칭된 factory id 목록이 바뀌면 Supabase에서 상세 조회
@@ -9132,10 +9135,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
                       <span className="aic-context-link">상세페이지 보기 →</span>
                     </div>
                   </button>
-                  <div className="aic-context-hint">
-                    <Icon name="chat" size={13} stroke={2}/>
-                    <span>왼쪽에서 이 제조사에 대해 AI에게 물어보세요</span>
-                  </div>
+
                 </div>
               ) : (
                 /* 축소 상태 - 버튼형태 */
@@ -9179,7 +9179,11 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
                         )}
                         <ManufacturerCard
                           f={f}
-                          onOpen={() => onOpenFactory?.(f.id)}
+                          onOpen={(id) => {
+                            if (!window._factoryCache) window._factoryCache = {};
+                            window._factoryCache[id] = f;
+                            onOpenFactory?.(id);
+                          }}
                         />
                       </div>
                     );
