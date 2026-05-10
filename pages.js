@@ -1868,9 +1868,11 @@ const _applyRegionFilter = (q, regionId) => {
 };
 
 const _scrollListToTop = () => {
-  const el = document.querySelector('.list-results');
-  if (el) el.scrollTop = 0;
-  else window.scrollTo(0, 0);
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.list-results');
+    if (el) el.scrollTop = 0;
+    else window.scrollTo(0, 0);
+  });
 };
 
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
@@ -2149,6 +2151,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (window._listPageCache && window._listPageCache > 1) {
       setPage(window._listPageCache);
       window._listPageCache = null;
+    } else {
+      _scrollListToTop();
     }
   }, []);
 
