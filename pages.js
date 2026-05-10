@@ -802,6 +802,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         );
         infoWindowRef.current.open(mapRef.current, marker);
       });
+      marker._fid = f.id; // pagedFactories 아이콘 업데이트용
       newMarkers.push(marker);
     });
     markersRef.current = newMarkers;
@@ -819,9 +820,40 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     };
   }, [mapReady, geoFactories]);
 
+  // pagedFactories 변경 시 기존 마커 아이콘만 업데이트 (재생성 없이)
+  const pagedIdsRef = React.useRef(new Set());
+  React.useEffect(() => {
+    if (!mapReady || !mapRef.current || !markersRef.current.length) return;
+    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
+    // 이전과 같으면 스킵
+    const prev = pagedIdsRef.current;
+    const same = pagedIds.size === prev.size && [...pagedIds].every(id => prev.has(id));
+    if (same) return;
+    pagedIdsRef.current = pagedIds;
+    // 아이콘만 업데이트
+    markersRef.current.forEach(m => {
+      const fid = m._fid;
+      if (!fid) return;
+      const isCurrentPage = pagedIds.has(fid);
+      m.setIcon(isCurrentPage ? {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 9, fillColor: '#2563eb', fillOpacity: 1,
+        strokeColor: '#ffffff', strokeWeight: 2,
+      } : {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 6, fillColor: '#94a3b8', fillOpacity: 0.7,
+        strokeColor: '#ffffff', strokeWeight: 1.5,
+      });
+    });
+  }, [mapReady, pagedFactories]);
+
   // Dynamic geocoding — pagedFactories without pre-geocoded coords
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
+    // pagedFactories ID가 실제로 바뀐 경우에만 실행
+    const newIds = (pagedFactories || []).map(f => f.id).sort().join(',');
+    if (dynPagedIdsRef.current === newIds) return;
+    dynPagedIdsRef.current = newIds;
     dynMarkersRef.current.forEach(m => m.setMap(null));
     dynMarkersRef.current = [];
     if (!pagedFactories || !pagedFactories.length) return;
@@ -887,6 +919,8 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
       dynMarkersRef.current = [];
     };
   }, [mapReady, pagedFactories, geoFactories]);
+
+  const dynPagedIdsRef = React.useRef('');
 
   // Pan/zoom to selected factory + show highlighted pin
   React.useEffect(() => {
