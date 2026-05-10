@@ -387,11 +387,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
       <div className="mcard-img" style={{ background: getCardBg(f) }}>
         <div className="mcard-img-stripes"/>
         <div className="mcard-icon">{getCardIcon(f)}</div>
-        <div className="mcard-kw-tags">
-          {getCardKeywords(f).map((kw, i) => (
-            <span key={i} className="mcard-kw-tag">{kw}</span>
-          ))}
-        </div>
+        <div className="mcard-kw-text">{getCardKeywords(f).join(' · ')}</div>
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
@@ -421,12 +417,13 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
 
         {simplified ? (
           <>
-            {hasTags && (
-              <div className="mcard-tags">
-                {processTags.map(p => <span key={p} className="mtag">{p}</span>)}
-                {industryTags.map(i => <span key={i} className="mtag mtag-ind">{i}</span>)}
-              </div>
-            )}
+            <div className="mcard-tags">
+              {getCardKeywords(f).map((kw, i) => (
+                <span key={'kw'+i} className="mtag mtag-product">{kw}</span>
+              ))}
+              {processTags.map(p => <span key={p} className="mtag">{p}</span>)}
+              {industryTags.map(i => <span key={i} className="mtag mtag-ind">{i}</span>)}
+            </div>
             {f.summary && <p className="mcard-desc">{f.summary}</p>}
           </>
         ) : (
