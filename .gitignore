@@ -1,5 +1,4 @@
 kicox_factories.csv
-env-config.js
 node_modules/
 dist/
 enrich_*.py
