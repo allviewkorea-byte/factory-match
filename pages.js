@@ -2450,6 +2450,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                           if (!window._factoryCache) window._factoryCache = {};
                           window._factoryCache[id] = f;
                           window._listScrollY = window.scrollY;
+                          window._listPageCache = page;
+                          console.log('[DEBUG] 스크롤 저장:', window.scrollY, '페이지:', page);
                           onOpenFactory(id);
                         }}
                         density={density}
