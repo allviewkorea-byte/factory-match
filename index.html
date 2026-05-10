@@ -11,8 +11,9 @@
 <body>
 <div id="app"></div>
 
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
 <script src="env-config.js"></script>
@@ -23,9 +24,9 @@ window._sb = window.supabase.createClient(
 );
 </script>
 
-<script src="compiled/data.js"></script>
-<script src="visitor_log.js"></script>
-<script src="compiled/pages.js"></script>
-<script src="compiled/app.js"></script>
+<script type="text/babel" src="data.js?v=17"></script>
+<script src="visitor_log.js?v=1"></script>
+<script type="text/babel" src="pages.js?v=57"></script>
+<script type="text/babel" src="app.js?v=8"></script>
 </body>
 </html>
