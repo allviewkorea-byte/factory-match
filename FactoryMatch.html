@@ -9115,13 +9115,7 @@ function App() {
         <DetailPage
           factoryId={factoryId}
           onBack={() => {
-            const scrollY = window._listScrollY || 0;
             nav(detailFrom || 'list');
-            if (detailFrom === 'list' || !detailFrom) {
-              setTimeout(() => {
-                window.scrollTo({ top: scrollY, behavior: 'instant' });
-              }, 50);
-            }
           }}
           backLabel={
             detailFrom === 'rfq' ? '견적 요청서로 돌아가기'

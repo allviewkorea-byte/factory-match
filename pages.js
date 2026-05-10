@@ -2138,18 +2138,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (factories.length > 0) window._listFactoriesCache = factories;
   }, [factories]);
 
-  // 목록으로 돌아왔을 때 스크롤 복원 - factories 렌더링 완료 후
+  // 목록으로 돌아왔을 때 페이지 번호 복원
   useEffectP(() => {
-    if (window._listScrollY && window._listScrollY > 0 && factories.length > 0) {
-      const y = window._listScrollY;
-      window._listScrollY = 0;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: y, behavior: 'instant' });
-        });
-      });
+    if (window._listPageCache && window._listPageCache > 1) {
+      setPage(window._listPageCache);
+      window._listPageCache = null;
     }
-  }, [factories.length]);
+  }, []);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -2449,9 +2444,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                         onOpen={(id) => {
                           if (!window._factoryCache) window._factoryCache = {};
                           window._factoryCache[id] = f;
-                          window._listScrollY = window.scrollY;
                           window._listPageCache = page;
-                          console.log('[DEBUG] 스크롤 저장:', window.scrollY, '페이지:', page);
                           onOpenFactory(id);
                         }}
                         density={density}
@@ -2480,7 +2473,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             {pageCount > 1 && (
               <div className="list-pagination">
-                <button className="pg-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                <button className="pg-btn" onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo(0,0); }} disabled={page === 1}>
                   <Icon name="arrow_left" size={14} stroke={2}/>
                   이전
                 </button>
@@ -2491,13 +2484,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                       : page >= pageCount - 3 ? pageCount - 6 + i
                       : page - 3 + i;
                     return (
-                      <button key={n} className={`pg-num ${page === n ? 'is-active' : ''}`} onClick={() => setPage(n)}>
+                      <button key={n} className={`pg-num ${page === n ? 'is-active' : ''}`} onClick={() => { setPage(n); window.scrollTo(0,0); }}>
                         {n}
                       </button>
                     );
                   })}
                 </div>
-                <button className="pg-btn" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount}>
+                <button className="pg-btn" onClick={() => { setPage(p => Math.min(pageCount, p + 1)); window.scrollTo(0,0); }} disabled={page === pageCount}>
                   다음
                   <Icon name="arrow_right" size={14} stroke={2}/>
                 </button>
