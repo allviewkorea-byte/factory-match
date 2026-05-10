@@ -1,7 +1,6 @@
 kicox_factories.csv
 env-config.js
 node_modules/
-compiled/
 dist/
 enrich_*.py
 !enrich_factoryon.py
