@@ -1,7 +1,7 @@
 const {
-  useState,
-  useEffect,
-  useRef
+  useState: useStateApp,
+  useEffect: useEffectApp,
+  useRef: useRefApp
 } = React;
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
@@ -69,29 +69,29 @@ function _buildHash(route, factoryId) {
 const _INITIAL = _parseInitialUrl();
 function App() {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const [authed, setAuthed] = useState(() => {
+  const [authed, setAuthed] = useStateApp(() => {
     try {
       return localStorage.getItem('fm-authed') === '1';
     } catch {
       return false;
     }
   });
-  const [pendingEmail, setPendingEmail] = useState('');
-  const [profile, setProfile] = useState(() => {
+  const [pendingEmail, setPendingEmail] = useStateApp('');
+  const [profile, setProfile] = useStateApp(() => {
     try {
       return JSON.parse(localStorage.getItem('fm-profile') || 'null');
     } catch {
       return null;
     }
   });
-  const [route, setRoute] = useState(_INITIAL.route);
-  const [factoryId, setFactoryId] = useState(_INITIAL.factoryId);
-  const initialMount = useRef(true);
-  const [rfqIds, setRfqIds] = useState([]);
-  const [searchQ, setSearchQ] = useState('');
+  const [route, setRoute] = useStateApp(_INITIAL.route);
+  const [factoryId, setFactoryId] = useStateApp(_INITIAL.factoryId);
+  const initialMount = useRefApp(true);
+  const [rfqIds, setRfqIds] = useStateApp([]);
+  const [searchQ, setSearchQ] = useStateApp('');
 
   // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
-  useEffect(() => {
+  useEffectApp(() => {
     const {
       data: {
         subscription
@@ -115,12 +115,12 @@ function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
-  useEffect(() => {
+  useEffectApp(() => {
     document.documentElement.setAttribute('data-density', tweaks.density);
   }, [tweaks.density]);
 
   // Keep URL in sync with route + factoryId
-  useEffect(() => {
+  useEffectApp(() => {
     const hashPart = _buildHash(route, factoryId);
     const url = hashPart ? `#${hashPart}` : window.location.pathname + window.location.search;
     const currentHash = (window.location.hash || '').replace('#', '');
@@ -141,21 +141,21 @@ function App() {
       }, '', url);
     }
   }, [route, factoryId]);
-  useEffect(() => {
+  useEffectApp(() => {
     const h = e => nav(e.detail);
     window.addEventListener('auth-nav', h);
     return () => window.removeEventListener('auth-nav', h);
   }, []);
 
   // 페이지뷰 추적 — route 변경 시 Supabase page_views에 INSERT
-  useEffect(() => {
+  useEffectApp(() => {
     if (!window._sb || route === 'admin') return;
     window._sb.from('page_views').insert({
       path: route,
       referrer: document.referrer || null
     }).then(() => {});
   }, [route]);
-  useEffect(() => {
+  useEffectApp(() => {
     const onPopState = e => {
       const h = (window.location.hash || '').replace('#', '');
       const parsed = _parseHash(h);
@@ -224,11 +224,11 @@ function App() {
     setProfile(null);
     nav('home');
   };
-  const [detailFrom, setDetailFrom] = useState('list');
-  const [chatTarget, setChatTarget] = useState(null);
-  const [aiFactoryContext, setAiFactoryContext] = useState(null);
-  const [reportParams, setReportParams] = useState(null);
-  const [gateReason, setGateReason] = useState(null); // null = 닫힘
+  const [detailFrom, setDetailFrom] = useStateApp('list');
+  const [chatTarget, setChatTarget] = useStateApp(null);
+  const [aiFactoryContext, setAiFactoryContext] = useStateApp(null);
+  const [reportParams, setReportParams] = useStateApp(null);
+  const [gateReason, setGateReason] = useStateApp(null); // null = 닫힘
 
   const showGate = reason => {
     window.logVisitor?.('signup_triggered', {
@@ -245,7 +245,7 @@ function App() {
     closeGate();
     nav('login');
   };
-  const _factoryViewCount = React.useRef(0);
+  const _factoryViewCount = React.useRefApp(0);
   const openFactory = (id, fromRoute) => {
     _factoryViewCount.current += 1;
     window.logVisitor?.('factory_view', {
