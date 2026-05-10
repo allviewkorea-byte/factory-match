@@ -2138,14 +2138,18 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (factories.length > 0) window._listFactoriesCache = factories;
   }, [factories]);
 
-  // 목록으로 돌아왔을 때 스크롤 복원
+  // 목록으로 돌아왔을 때 스크롤 복원 - factories 렌더링 완료 후
   useEffectP(() => {
-    if (window._listScrollY && window._listScrollY > 0) {
+    if (window._listScrollY && window._listScrollY > 0 && factories.length > 0) {
       const y = window._listScrollY;
       window._listScrollY = 0;
-      setTimeout(() => window.scrollTo({ top: y, behavior: 'instant' }), 100);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: y, behavior: 'instant' });
+        });
+      });
     }
-  }, []);
+  }, [factories.length]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
