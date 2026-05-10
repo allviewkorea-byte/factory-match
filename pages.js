@@ -9100,40 +9100,68 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
           </div>
         </div>
 
-        {/* 우측: 추천 공장 */}
+        {/* 우측: 상담 제조사 고정 + 추천 공장 스크롤 */}
         <div className="aic-results">
-          <div className="aic-results-head">
-            <Icon name="buildings" size={16} stroke={1.8}/>
-            <span>추천 제조사</span>
-            {resolvedFactories.length > 0 && (
-              <span className="aic-results-count">{resolvedFactories.length}곳</span>
-            )}
-          </div>
-          {resolvedFactories.length === 0 ? (
-            <div className="aic-results-empty">
-              <div className="aic-empty-icon">
-                <Icon name="search" size={32} stroke={1.2}/>
+
+          {/* 상담 중인 제조사 - 상단 고정 */}
+          {factoryContext && (
+            <div className="aic-context-factory">
+              <div className="aic-context-label">
+                <Icon name="buildings" size={13} stroke={2}/>
+                <span>상담 중인 제조사</span>
               </div>
-              <p>AI와 대화하면<br/>적합한 공장을 찾아드립니다</p>
-            </div>
-          ) : (
-            <div className="aic-cards">
-              {resolvedFactories.map((f) => {
-                const match = factories.find(x => x.id === f.id);
-                return (
-                  <div key={f.id} className="aic-card-wrap">
-                    {match && (
-                      <div className="aic-match-badge">{match.matchPct}% 매칭</div>
-                    )}
-                    <ManufacturerCard
-                      f={f}
-                      onOpen={() => onOpenFactory?.(f.id)}
-                    />
-                  </div>
-                );
-              })}
+              <button className="aic-context-card" onClick={() => onOpenFactory?.(factoryContext.id)}>
+                <div className="aic-context-thumb" style={{ background: getCardBg(factoryContext) }}>
+                  <div className="mcard-img-stripes"/>
+                  <div className="aic-context-icon">{getCardIcon(factoryContext)}</div>
+                </div>
+                <div className="aic-context-info">
+                  <strong className="aic-context-name">{factoryContext.name}</strong>
+                  <span className="aic-context-city">{factoryContext.city || ''}</span>
+                  {factoryContext.summary && (
+                    <span className="aic-context-summary">{factoryContext.summary.slice(0, 40)}...</span>
+                  )}
+                </div>
+                <Icon name="arrow_right" size={14} stroke={2} style={{ flexShrink: 0, color: '#94a3b8' }}/>
+              </button>
             </div>
           )}
+
+          {/* 추천 제조사 - 스크롤 영역 */}
+          <div className="aic-recommend-section">
+            <div className="aic-results-head">
+              <Icon name="sparkle" size={16} stroke={1.8}/>
+              <span>AI 추천 제조사</span>
+              {resolvedFactories.length > 0 && (
+                <span className="aic-results-count">{resolvedFactories.length}곳</span>
+              )}
+            </div>
+            {resolvedFactories.length === 0 ? (
+              <div className="aic-results-empty">
+                <div className="aic-empty-icon">
+                  <Icon name="search" size={32} stroke={1.2}/>
+                </div>
+                <p>AI와 대화하면<br/>적합한 공장을 찾아드립니다</p>
+              </div>
+            ) : (
+              <div className="aic-cards">
+                {resolvedFactories.map((f) => {
+                  const match = factories.find(x => x.id === f.id);
+                  return (
+                    <div key={f.id} className="aic-card-wrap">
+                      {match && (
+                        <div className="aic-match-badge">{match.matchPct}% 매칭</div>
+                      )}
+                      <ManufacturerCard
+                        f={f}
+                        onOpen={() => onOpenFactory?.(f.id)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
