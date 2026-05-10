@@ -1,6 +1,5 @@
 // Netlify 빌드 시 환경변수 → env-config.js 생성
 const fs = require('fs');
-const path = require('path');
 
 const required = ['GOOGLE_MAPS_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
 const missing = required.filter(k => !process.env[k]);
