@@ -1867,6 +1867,12 @@ const _applyRegionFilter = (q, regionId) => {
   return vals.length === 1 ? q.eq('region', vals[0]) : q.in('region', vals);
 };
 
+const _scrollListToTop = () => {
+  const el = document.querySelector('.list-results');
+  if (el) el.scrollTop = 0;
+  else window.scrollTo(0, 0);
+};
+
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
   const [factories, setFactories] = useStateP(() => window._listFactoriesCache || []);
@@ -2473,7 +2479,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             )}
             {pageCount > 1 && (
               <div className="list-pagination">
-                <button className="pg-btn" onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo(0,0); }} disabled={page === 1}>
+                <button className="pg-btn" onClick={() => { setPage(p => Math.max(1, p - 1)); _scrollListToTop(); }} disabled={page === 1}>
                   <Icon name="arrow_left" size={14} stroke={2}/>
                   이전
                 </button>
@@ -2484,13 +2490,13 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                       : page >= pageCount - 3 ? pageCount - 6 + i
                       : page - 3 + i;
                     return (
-                      <button key={n} className={`pg-num ${page === n ? 'is-active' : ''}`} onClick={() => { setPage(n); window.scrollTo(0,0); }}>
+                      <button key={n} className={`pg-num ${page === n ? 'is-active' : ''}`} onClick={() => { setPage(n); _scrollListToTop(); }}>
                         {n}
                       </button>
                     );
                   })}
                 </div>
-                <button className="pg-btn" onClick={() => { setPage(p => Math.min(pageCount, p + 1)); window.scrollTo(0,0); }} disabled={page === pageCount}>
+                <button className="pg-btn" onClick={() => { setPage(p => Math.min(pageCount, p + 1)); _scrollListToTop(); }} disabled={page === pageCount}>
                   다음
                   <Icon name="arrow_right" size={14} stroke={2}/>
                 </button>
