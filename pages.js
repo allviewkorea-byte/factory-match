@@ -207,13 +207,22 @@ const INDUSTRY_BG = {
   chemical:    'linear-gradient(135deg, #b85c0f 0%, #7a3a08 100%)',
   food:        'linear-gradient(135deg, #2a7d50 0%, #1a5235 100%)',
   textile:     'linear-gradient(135deg, #a02d4a 0%, #6e1a30 100%)',
+  // 추가 색상
+  auto:        'linear-gradient(135deg, #1a6b8a 0%, #0d4560 100%)',
+  plastic:     'linear-gradient(135deg, #7a5a1a 0%, #4a380a 100%)',
+  print:       'linear-gradient(135deg, #3a6b3a 0%, #1e4a1e 100%)',
+  wood:        'linear-gradient(135deg, #7a4a1a 0%, #4a2c0a 100%)',
 };
 const KO_INDUSTRY_MAP = [
-  { key: 'machine',     kws: ['기계','금속','부품','주조','단조','절삭','가공','금형','프레스'] },
-  { key: 'electronics', kws: ['전자','전기','반도체','회로','LED','PCB','디스플레이','광학'] },
-  { key: 'chemical',    kws: ['화학','소재','플라스틱','고무','도료','수지','합성','도금'] },
-  { key: 'food',        kws: ['식품','음료','패키징','포장','제과','제빵','농산'] },
-  { key: 'textile',     kws: ['섬유','의류','봉제','직물','니트','염색'] },
+  { key: 'machine',     kws: ['기계','금속','부품','주조','단조','절삭','가공','금형','프레스','CNC','용접','주물','선반','밸브','스프링','볼트','너트','베어링','펌프','모터','설비','장비','시험기','자동화'] },
+  { key: 'electronics', kws: ['전자','전기','반도체','회로','LED','PCB','디스플레이','광학','센서','통신','배터리','충전','케이블','변압기','인버터','제어'] },
+  { key: 'chemical',    kws: ['화학','소재','플라스틱','고무','도료','수지','합성','도금','코팅','접착','필름','시트','발포','성형','사출','압출','페인트'] },
+  { key: 'food',        kws: ['식품','음료','패키징','포장','제과','제빵','농산','수산','축산','조미','양념','제분','쌀','밀','육가공','유제품'] },
+  { key: 'textile',     kws: ['섬유','의류','봉제','직물','니트','염색','원단','자수','패션','가방','신발','스포츠웨어'] },
+  { key: 'auto',        kws: ['자동차','차량','자동차부품','카시트','범퍼','도어','배기','브레이크','샤시'] },
+  { key: 'plastic',     kws: ['사출','압출','블로우','PET','PP','PE','ABS','폴리','포장재','용기','트레이'] },
+  { key: 'print',       kws: ['인쇄','출판','포장인쇄','라벨','스티커','박스','골판지','종이'] },
+  { key: 'wood',        kws: ['목재','가구','합판','목공','원목','MDF','합판','파티클'] },
 ];
 function _resolveIndustryKey(f) {
   // industries가 문자열로 올 경우 배열로 정규화
@@ -224,9 +233,14 @@ function _resolveIndustryKey(f) {
   // 영문 id 직접 매핑
   const first = inds[0] || '';
   if (INDUSTRY_BG[first]) return first;
-  // 한글 키워드 포함 여부로 판단
+  // 한글 키워드 - industries 필드
   for (const { key, kws } of KO_INDUSTRY_MAP) {
     if (kws.some(kw => allInds.includes(kw))) return key;
+  }
+  // summary + name 텍스트로 판단 (DB 공장 대부분 industries 없음)
+  const text = ((f.summary || '') + ' ' + (f.name || '')).toLowerCase();
+  for (const { key, kws } of KO_INDUSTRY_MAP) {
+    if (kws.some(kw => text.includes(kw.toLowerCase()))) return key;
   }
   return null;
 }
@@ -315,6 +329,18 @@ function getCardKeywords(f) {
   if (kws.length === 0 && f.processes?.length) {
     const { PROCESSES } = window.MFG_DATA;
     kws.push(...f.processes.slice(0, 3).map(p => PROCESSES.find(x => x.id === p)?.label || p));
+  }
+  // summary에서 핵심 키워드 추출 (DB 공장용)
+  if (kws.length === 0 && f.summary) {
+    const key = _resolveIndustryKey(f);
+    const labelMap = { machine: '기계/금속', electronics: '전자/전기', chemical: '화학/소재', food: '식품', textile: '섬유/의류' };
+    if (key && labelMap[key]) kws.push(labelMap[key]);
+    // summary에서 '제조' 앞 단어 추출
+    const m = f.summary.match(/([가-힣]+(?:,\s*[가-힣]+)*)\s*제조/);
+    if (m) {
+      const parts = m[1].split(/[,，、]/).map(s => s.trim()).filter(s => s.length >= 2 && s.length <= 8);
+      kws.push(...parts.slice(0, 2));
+    }
   }
   return kws.slice(0, 3).join(' · ') || (f.name || '').slice(0, 12);
 }
