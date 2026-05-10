@@ -1869,8 +1869,8 @@ const _applyRegionFilter = (q, regionId) => {
 
 const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) => {
   const { PROCESSES } = window.MFG_DATA;
-  const [factories, setFactories] = useStateP([]);
-  const [dbLoading, setDbLoading] = useStateP(true);
+  const [factories, setFactories] = useStateP(() => window._listFactoriesCache || []);
+  const [dbLoading, setDbLoading] = useStateP(() => !(window._listFactoriesCache?.length > 0));
   const [dbError, setDbError] = useStateP(null);
   const [dbTotalCount, setDbTotalCount] = useStateP(null);
   const [regionCounts, setRegionCounts] = useStateP({});
@@ -2132,6 +2132,20 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   useEffectP(() => {
     _listStateCache = { initialQuery, query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort };
   }, [query, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort]);
+
+  // factories 데이터 캐시 저장
+  useEffectP(() => {
+    if (factories.length > 0) window._listFactoriesCache = factories;
+  }, [factories]);
+
+  // 목록으로 돌아왔을 때 스크롤 복원
+  useEffectP(() => {
+    if (window._listScrollY && window._listScrollY > 0) {
+      const y = window._listScrollY;
+      window._listScrollY = 0;
+      setTimeout(() => window.scrollTo({ top: y, behavior: 'instant' }), 100);
+    }
+  }, []);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -3036,7 +3050,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                         </div>
                       </div>
                     )}
-                    <p className="ai-summary-source">🤖 AI가 홈페이지를 분석하여 요약한 정보입니다</p>
+
                   </div>
                 )}
               </div>

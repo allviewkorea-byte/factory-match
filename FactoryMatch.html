@@ -9285,6 +9285,7 @@ function App() {
   const [chatTarget, setChatTarget] = useState(null);
 
   const openFactory = (id, fromRoute) => {
+    window._listScrollY = window.scrollY; // 스크롤 위치 저장
     setFactoryId(id);
     setDetailFrom(fromRoute || (APP_ROUTES.includes(route) ? route : 'list'));
     setRoute('detail');
