@@ -9111,18 +9111,22 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
                 <span>상담 중인 제조사</span>
               </div>
               <button className="aic-context-card" onClick={() => onOpenFactory?.(factoryContext.id)}>
-                <div className="aic-context-thumb" style={{ background: getCardBg(factoryContext) }}>
+                {/* 썸네일 */}
+                <div className="aic-context-thumb-lg" style={{ background: getCardBg(factoryContext) }}>
                   <div className="mcard-img-stripes"/>
-                  <div className="aic-context-icon">{getCardIcon(factoryContext)}</div>
+                  <div className="aic-context-icon-lg">{getCardIcon(factoryContext)}</div>
                 </div>
-                <div className="aic-context-info">
-                  <strong className="aic-context-name">{factoryContext.name}</strong>
-                  <span className="aic-context-city">{factoryContext.city || ''}</span>
+                {/* 정보 */}
+                <div className="aic-context-body">
+                  <strong className="aic-context-name-lg">{factoryContext.name}</strong>
+                  <span className="aic-context-city-lg">
+                    <Icon name="pin" size={11} stroke={2}/> {factoryContext.city || ''}
+                  </span>
                   {factoryContext.summary && (
-                    <span className="aic-context-summary">{factoryContext.summary.slice(0, 40)}...</span>
+                    <p className="aic-context-summary-lg">{factoryContext.summary.slice(0, 60)}{factoryContext.summary.length > 60 ? '…' : ''}</p>
                   )}
+                  <span className="aic-context-link">상세페이지 보기 →</span>
                 </div>
-                <Icon name="arrow_right" size={14} stroke={2} style={{ flexShrink: 0, color: '#94a3b8' }}/>
               </button>
             </div>
           )}
