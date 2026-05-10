@@ -8942,9 +8942,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const [messages, setMessages] = React.useState(() => {
     const saved = window._aiConsultSession?.messages;
     if (saved && saved.length > 0) return saved;
-    // 저장된 세션 없고 factoryContext도 없으면 → 초기 메시지
-    // factoryContext 있으면 useEffect에서 처리하므로 일단 빈 배열
-    return factoryContext ? [] : [AI_INIT_MSG];
+    return []; // 빈 배열로 시작 - 렌더링 시 표시 메시지 결정
   });
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -9073,14 +9071,22 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
           </div>
 
           <div className="aic-messages" ref={msgsContainerRef}>
-            {messages.map((m, i) => (
-              <div key={i} className={`aic-msg ${m.role === 'user' ? 'aic-msg-user' : 'aic-msg-ai'}`}>
-                {m.role === 'ai' && (
-                  <div className="aic-msg-avatar">AI</div>
-                )}
-                <div className="aic-msg-bubble">{m.text}</div>
-              </div>
-            ))}
+            {(() => {
+              // 저장된 메시지 없으면 첫 메시지 결정
+              const displayMessages = messages.length > 0 ? messages : [
+                factoryContext
+                  ? { role: 'ai', text: `${factoryContext.name} 관련해서 궁금하신 점을 말씀해 주세요. 회사 정보 조사, 제품·공정 문의, 유사 제조사 추천까지 도와드리겠습니다.` }
+                  : AI_INIT_MSG
+              ];
+              return displayMessages.map((m, i) => (
+                <div key={i} className={`aic-msg ${m.role === 'user' ? 'aic-msg-user' : 'aic-msg-ai'}`}>
+                  {m.role === 'ai' && (
+                    <div className="aic-msg-avatar">AI</div>
+                  )}
+                  <div className="aic-msg-bubble">{m.text}</div>
+                </div>
+              ));
+            })()}
             {loading && (
               <div className="aic-msg aic-msg-ai">
                 <div className="aic-msg-avatar">AI</div>
