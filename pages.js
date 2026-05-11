@@ -1197,6 +1197,9 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
   const [matchedFactoryDetails, setMatchedFactoryDetails] = useStateP([]);
   const [factoryCount, setFactoryCount] = useStateP(null);
 
+  // AI 상담 탭에서 넘어올 때 body overflow 잠금 해제
+  React.useEffect(() => { document.body.style.overflow = ''; }, []);
+
   // Fetch live factory count from Supabase on mount
   useEffectP(() => {
     if (!window._sb) return;
@@ -9242,7 +9245,10 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   React.useEffect(() => {
     window.scrollTo(0, 0);
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overflowY = '';
+    };
   }, []);
 
   // 메시지 변경 시 채팅 컨테이너 안에서만 스크롤 (window 전체 스크롤 방지)
@@ -9798,6 +9804,12 @@ const GrantsPage = ({ onNav, authed }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [pinnedItems, setPinnedItems] = React.useState([]); // 진행중/마감임박 전체
   const numOfRows = 20;
+
+  // AI 상담 탭에서 넘어올 때 body overflow 잠금 해제
+  React.useEffect(() => {
+    document.body.style.overflow = '';
+    document.body.style.overflowY = '';
+  }, []);
 
   const cat = BIZINFO_CATS[catIdx];
   const rgn = BIZINFO_RGNS[rgnIdx];
