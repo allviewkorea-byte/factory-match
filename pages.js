@@ -4942,7 +4942,6 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
               disabled={!canSubmit}
             >
               {isSignup ? '이메일로 가입' : '로그인'}
-              <Icon name="arrow_right" size={14} stroke={2.4}/>
             </button>
           </form>
 
