@@ -1,6 +1,19 @@
 
 const { useState, useEffect, useRef } = React;
 
+// 비밀 관리자 접근 URL: ?k=030209
+(function() {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('k') === '030209') {
+      localStorage.setItem('fm-admin-secret', '030209');
+      // URL에서 파라미터 제거
+      const clean = window.location.pathname;
+      window.history.replaceState({}, '', clean);
+    }
+  } catch {}
+})();
+
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
   "heroVariant": "split"

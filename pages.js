@@ -8411,7 +8411,14 @@ const AdminGrantsTab = () => {
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory }) => {
   const [authed, setAuthed] = useState(() => {
-    try { return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'; } catch { return false; }
+    try {
+      // 비밀 URL (?k=030209)로 접근한 경우 자동 인증
+      if (localStorage.getItem('fm-admin-secret') === '030209') {
+        sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+        return true;
+      }
+      return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
+    } catch { return false; }
   });
   const [totalCount, setTotalCount] = useState(null);
   const [tab, setTab] = useState('factories');
