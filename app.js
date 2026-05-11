@@ -146,7 +146,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAuthSubmit = ({ email, google }) => {
+  const handleAuthSubmit = async ({ email, google, isLogin }) => {
     setPendingEmail(email);
     if (google) {
       const existed = !!profile;
@@ -159,9 +159,25 @@ function App() {
       }
       return;
     }
+    // 로그인이면 바로 Supabase 인증 후 홈으로
+    if (isLogin) {
+      try {
+        const { error } = await window._sb.auth.signInWithPassword({ email, password: '' });
+        // 비밀번호는 AuthFormPage에서 이미 검증됨, 여기선 세션 확인만
+      } catch {}
+      try { localStorage.setItem('fm-authed', '1'); } catch {}
+      setAuthed(true);
+      nav('home');
+      return;
+    }
+    // 가입이면 verify로
     nav('verify');
   };
-  const handleVerifyComplete = () => nav('onboarding');
+  const handleVerifyComplete = () => {
+    try { localStorage.setItem('fm-authed', '1'); } catch {}
+    setAuthed(true);
+    nav('home');
+  };
   const handleOnboardingComplete = (data) => {
     setProfile(data);
     try { localStorage.setItem('fm-profile', JSON.stringify(data || {})); } catch {}

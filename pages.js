@@ -4756,11 +4756,30 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   const pwLabel = ['', '약함', '보통', '강함', '매우 강함'][pwStrength];
   const pwColor = ['var(--ink-5)', 'var(--rose)', 'var(--amber)', 'var(--brand)', 'var(--emerald)'][pwStrength];
 
+  const [authError, setAuthError] = useAuthState('');
+
   const canSubmit = email.includes('@') && password.length >= 8 && (!isSignup || allAgreed);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (canSubmit) onSubmit({ email });
+    if (!canSubmit) return;
+    setAuthError('');
+    if (!isSignup) {
+      // 로그인: Supabase 인증
+      try {
+        const { error } = await window._sb.auth.signInWithPassword({ email, password });
+        if (error) {
+          if (error.message.includes('Invalid login')) setAuthError('이메일 또는 비밀번호가 올바르지 않습니다.');
+          else setAuthError('로그인에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+        onSubmit({ email, isLogin: true });
+      } catch {
+        setAuthError('로그인 중 오류가 발생했습니다.');
+      }
+    } else {
+      onSubmit({ email });
+    }
   };
 
   return (
@@ -4910,6 +4929,13 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
               </div>
             )}
 
+            {authError && (
+              <div className="sgn-error-box" style={{ marginBottom:8 }}>
+                <Icon name="info" size={14} stroke={2}/>
+                {authError}
+              </div>
+            )}
+
             <button
               type="submit"
               className="btn-primary auth-submit"
@@ -5053,6 +5079,9 @@ function VerifyPage({ email, onNav, onComplete }) {
                   인증번호 받기
                   <Icon name="arrow_right" size={14} stroke={2.4}/>
                 </button>
+                <button className="sgn-skip-btn" onClick={onComplete}>
+                  건너뛰기
+                </button>
                 <div className="auth-skip-note">
                   <Icon name="info" size={12} stroke={2}/>
                   최대 60초 이내 SMS로 6자리 인증번호가 발송됩니다.
@@ -5108,10 +5137,10 @@ function VerifyPage({ email, onNav, onComplete }) {
                 <div className="auth-card-glyph auth-card-glyph-success">
                   <Icon name="check" size={22} stroke={2.6}/>
                 </div>
-                <h1>휴대폰 인증 완료!</h1>
+                <h1>인증 메일을 발송했어요</h1>
                 <p>
-                  이메일 <strong>{email}</strong>로 인증 메일을 발송했어요.<br/>
-                  메일함에서 <strong>인증 링크를 클릭</strong>해주세요.
+                  <strong>{email}</strong>로 인증 링크를 보냈어요.<br/>
+                  메일함을 확인해주세요.
                 </p>
               </div>
               <div className="auth-form">
@@ -5120,19 +5149,18 @@ function VerifyPage({ email, onNav, onComplete }) {
                     <Icon name="mail" size={20} stroke={1.8}/>
                   </div>
                   <div className="auth-mail-text">
-                    <strong>FactoryMatch &lt;noreply@factorymatch.kr&gt;</strong>
+                    <strong>FactoryMatch</strong>
                     <span>이메일 인증을 완료해주세요</span>
                   </div>
                   <div className="auth-mail-pulse"/>
                 </div>
                 <button className="btn-primary auth-submit" onClick={onComplete}>
-                  인증 완료 — 프로필 설정으로
-                  <Icon name="arrow_right" size={14} stroke={2.4}/>
+                  인증 완료
                 </button>
                 <div className="auth-skip-note">
                   <button className="auth-foot-link">메일이 안 왔나요? 재전송</button>
                   ·
-                  <button className="auth-foot-link" onClick={onComplete}>나중에 인증하기</button>
+                  <button className="auth-foot-link" onClick={onComplete}>건너뛰기</button>
                 </div>
               </div>
             </>
