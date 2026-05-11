@@ -8868,6 +8868,7 @@ const AdminDartMismatchTab = () => {
 };
 
 Object.assign(window, { AdminDartMismatchTab });
+Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab, AdminGrantsTab, GateModal });
 
 
 // ──────────────────────────────────────────────────────────
