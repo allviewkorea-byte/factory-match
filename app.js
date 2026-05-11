@@ -319,12 +319,16 @@ function App() {
         />
       )}
       {route === 'mypage' && (
-        <MyPage
-          profile={profile}
-          onSwitchRole={(r) => setProfile(p => ({ ...(p || {}), role: r }))}
-          onOpenFactory={(id) => openFactory(id, 'mypage')}
-          onNav={nav}
-        />
+        authed ? (
+          <MyPage
+            profile={profile}
+            onSwitchRole={(r) => setProfile(p => ({ ...(p || {}), role: r }))}
+            onOpenFactory={(id) => openFactory(id, 'mypage')}
+            onNav={nav}
+          />
+        ) : (
+          <>{nav('login')}</>
+        )
       )}
       {route === 'admin' && (
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
