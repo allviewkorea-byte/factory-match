@@ -9810,24 +9810,19 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
           </div>
         )}
 
-        {/* 공고문 다운로드 */}
-        {f.pdfUrl && (
-          <div className="grants-detail-section">
-            <h2 className="grants-detail-section-title">공고문</h2>
-            <a
-              href={f.pdfUrl}
-              download
-              onClick={e => e.stopPropagation()}
-              style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 18px', borderRadius:8, border:'1px solid var(--line)', background:'var(--bg)', color:'var(--ink-2)', fontSize:13, textDecoration:'none', cursor:'pointer' }}
-            >
-              📄 공고문 다운로드
-            </a>
-          </div>
-        )}
-
-        {/* 버튼 영역 - 1행: 스크랩/링크/목록/원문, 2행: 온라인신청 */}
+        {/* 버튼 영역 - 공고문 다운로드 + 스크랩/링크/목록/원문 같은 행 */}
         <div style={{ marginTop:8 }}>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
+            {f.pdfUrl && (
+              <a
+                href={f.pdfUrl}
+                download
+                onClick={e => e.stopPropagation()}
+                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:'#dc2626', color:'#fff', fontSize:13, fontWeight:600, textDecoration:'none', cursor:'pointer', border:'none' }}
+              >
+                📄 공고문 다운로드
+              </a>
+            )}
             <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
               {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
             </button>
