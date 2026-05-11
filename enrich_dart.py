@@ -166,7 +166,7 @@ def fetch_factories_without_dart(session):
     while True:
         url = (
             f"{SUPABASE_URL}/rest/v1/factories"
-            f"?select=id,name,bizrno,website,email,dart_manual_match"
+            f"?select=id,name,bizrno"
             f"&bizrno=not.is.null"
             f"&dart_corp_code=is.null"
             f"&limit={ps}&offset={offset}"
@@ -185,7 +185,7 @@ def fetch_factories_without_dart(session):
     while True:
         url2 = (
             f"{SUPABASE_URL}/rest/v1/factories"
-            f"?select=id,name,bizrno,website,email,dart_manual_match"
+            f"?select=id,name,bizrno"
             f"&dart_manual_match=eq.true"
             f"&dart_corp_code=eq.MISMATCH"
             f"&limit={ps}&offset={offset2}"
