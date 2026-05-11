@@ -1526,8 +1526,10 @@ function _biz(item) {
     }
   }
 
-  // 날짜 자동 탐지: YYYYMMDD or YYYY-MM-DD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
+  // 날짜 자동 탐지: 작성일/수정일 등 신청기간과 무관한 필드 제외
+  const EXCLUDE_DATE_KEYS = new Set(['creatPnttm','updtPnttm','rgstDt','rgstDate','registDt','creatDt','frstRegistDt']);
   const dateFlds = Object.entries(item)
+    .filter(([k]) => !EXCLUDE_DATE_KEYS.has(k))
     .map(([k, v]) => [k, _normDate(v)])
     .filter(([, v]) => v.length === 8)
     .sort(([, a], [, b]) => a < b ? -1 : 1);
