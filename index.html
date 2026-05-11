@@ -6,7 +6,7 @@
 <title>공장매칭 · FactoryMatch</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
-<link rel="stylesheet" href="styles.min.css"/>
+<link rel="stylesheet" href="/styles.min.css"/>
 </head>
 <body>
 <div id="app"></div>
@@ -16,7 +16,7 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
-<script src="env-config.js" onerror="window._env=window._env||{SUPABASE_URL:'',SUPABASE_ANON_KEY:'',GOOGLE_MAPS_API_KEY:''}"></script>
+<script src="/env-config.js" onerror="window._env=window._env||{SUPABASE_URL:'',SUPABASE_ANON_KEY:'',GOOGLE_MAPS_API_KEY:''}"></script>
 <script>
 window._env = window._env || {};
 window._sb = window.supabase.createClient(
@@ -26,9 +26,9 @@ window._sb = window.supabase.createClient(
 </script>
 
 <!-- 앱 스크립트 (순서 보장) -->
-<script src="data.min.js"></script>
-<script src="visitor_log.min.js"></script>
-<script src="pages.min.js"></script>
-<script src="app.min.js"></script>
+<script src="/data.min.js"></script>
+<script src="/visitor_log.min.js"></script>
+<script src="/pages.min.js"></script>
+<script src="/app.min.js"></script>
 </body>
 </html>
