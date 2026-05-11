@@ -2795,8 +2795,11 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     return () => { cancelled = true; };
   }, [factoryId]);
 
-  const f = resolvedFactory || FACTORIES[0];
+  const f = resolvedFactory || FACTORIES[0] || null;
   const [tab, setTab] = useStateP('overview');
+
+  if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
+
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
   const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
@@ -2816,6 +2819,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   // 관심 제조사 상태
   const [isFav, setIsFav] = useStateP(() => {
     try {
+      if (!f || !f.id) return false;
       const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
       return list.includes(f.id);
     } catch { return false; }
@@ -2948,6 +2952,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
         </button>
         <div className="detail-bar-actions">
           <button className={`icon-btn${isFav ? ' is-active' : ''}`} onClick={() => {
+            if (!f || !f.id) return;
             try {
               const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
               const next = isFav ? list.filter(x => x !== f.id) : [...list, f.id];
