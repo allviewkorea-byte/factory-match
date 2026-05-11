@@ -2964,8 +2964,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               내 공장 정보 수정
             </button>
           )}
-          <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}>
-            ✎ 정보 오류 신고
+          <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}
+            style={{ background:'#fbbf24', color:'#78350f', border:'none', borderRadius:6, padding:'6px 12px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            ✎ 정보 오류 문의
           </button>
         </div>
       </div>
