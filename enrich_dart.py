@@ -35,7 +35,7 @@ SB_HEADERS     = {
     "Prefer":        "return=minimal",
 }
 
-DAILY_LIMIT    = 500
+DAILY_LIMIT    = 10000
 PROGRESS_FILE  = "dart_progress.json"
 TARGET_YEAR    = "2024"   # 최신 결산연도
 
