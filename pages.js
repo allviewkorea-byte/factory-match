@@ -1553,6 +1553,7 @@ function _biz(item) {
     endDate:  combinedEnd || _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
+    pdfUrl:   item.printFlpthNm|| item.printFIpthNm || item.printFileNm || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || item.pbancId      || '',
     regDate:  _d('rgstDt','rgstDate','registDt','creatDt','frstRegistDt'),
   };
@@ -9689,6 +9690,34 @@ const ReportPage = ({ params, onNav }) => {
 // ══════════════════════════════════════════════════════════
 // GRANTS PAGE — 정부지원사업 전체 목록
 // ══════════════════════════════════════════════════════════
+// ─── 공고문 PDF 뷰어 ───────────────────────────────────────
+const GrantPdfViewer = ({ url }) => {
+  const [status, setStatus] = React.useState('loading');
+  return (
+    <div style={{ marginTop:28 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+        <h3 style={{ margin:0, fontSize:15, fontWeight:700 }}>공고문</h3>
+        <a href={url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#2563eb', textDecoration:'none' }}>새 탭에서 열기 ↗</a>
+      </div>
+      {status === 'error' ? (
+        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'32px 24px', textAlign:'center' }}>
+          <p style={{ color:'#64748b', fontSize:13, margin:'0 0 12px' }}>공고문을 미리보기할 수 없습니다.</p>
+          <a href={url} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline" style={{ display:'inline-block' }}>공고문 다운로드</a>
+        </div>
+      ) : (
+        <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'1px solid #e2e8f0' }}>
+          {status === 'loading' && (
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', zIndex:1 }}>
+              <span style={{ color:'#94a3b8', fontSize:13 }}>공고문 불러오는 중...</span>
+            </div>
+          )}
+          <iframe src={url} onLoad={() => setStatus('ok')} onError={() => setStatus('error')} style={{ width:'100%', height:600, border:'none', display:'block' }} title="공고문" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── 정부지원금 상세 페이지 ───────────────────────────────────
 const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
   const f = _biz(item);
@@ -9782,6 +9811,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
           )}
         </div>
         <p className="biz-grant-source" style={{ marginTop: 24 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
+        {f.pdfUrl && <GrantPdfViewer url={f.pdfUrl} />}
       </div>
     </div>
   );
@@ -10060,7 +10090,7 @@ const GrantsPage = ({ onNav, authed }) => {
   );
 };
 
-Object.assign(window, { GrantsHomeSection, GrantsPage, GrantCard, BizGrantCard, GrantDetailPage });
+Object.assign(window, { GrantsHomeSection, GrantsPage, GrantCard, BizGrantCard, GrantDetailPage, GrantPdfViewer });
 
 // SiteFooter — 출처 표기 + 법적 링크
 // ──────────────────────────────────────────────────────────
