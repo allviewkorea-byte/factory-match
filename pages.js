@@ -5797,10 +5797,17 @@ function SignupPage({ onNav }) {
               </div>
               <div className="sgn-field">
                 <span className="auth-field-label">사업자번호 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.businessNumber ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="layers" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="text" placeholder="000-00-00000" maxLength={12}
-                    value={form.businessNumber} onChange={e => upd('businessNumber', fmtBiz(e.target.value))}/>
+                <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                  <div className={`auth-input-wrap ${errors.businessNumber ? 'sgn-wrap-err' : ''}`} style={{ flex:1 }}>
+                    <Icon name="layers" size={15} stroke={1.8}/>
+                    <input className="auth-input" type="text" placeholder="000-00-00000" maxLength={12}
+                      value={form.businessNumber} onChange={e => upd('businessNumber', fmtBiz(e.target.value))}/>
+                  </div>
+                  {form.businessNumber.replace(/\D/g,'').length === 10 && (
+                    <span style={{ fontSize:12, color:'#16a34a', fontWeight:600, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:4 }}>
+                      <Icon name="check" size={13} stroke={2.5}/>형식 확인
+                    </span>
+                  )}
                 </div>
                 {errors.businessNumber && <span className="sgn-err">{errors.businessNumber}</span>}
               </div>
