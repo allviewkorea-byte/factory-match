@@ -5236,13 +5236,15 @@ function OnboardingPage({ onComplete, onNav }) {
           <AuthStep n={4} label="완료"/>
         </div>
 
-        {/* Sub-progress for 4 onboarding sub-steps */}
-        <div className="onb-sub-progress">
+        {/* Sub-progress */}
+        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:24 }}>
           {[0,1,2,3].map(i => (
-            <div key={i} className={`onb-sub-pill ${i === step ? 'is-active' : ''} ${i < step ? 'is-done' : ''}`}>
-              <span className="onb-sub-num">{i < step ? <Icon name="check" size={9} stroke={3}/> : i + 1}</span>
-              <span className="onb-sub-label">{stepTitles[i]}</span>
-            </div>
+            <div key={i} style={{
+              width: i === step ? 24 : 8, height: 8,
+              borderRadius: 4,
+              background: i < step ? 'var(--brand)' : i === step ? 'var(--brand)' : 'var(--line-2)',
+              transition: 'all 0.2s',
+            }}/>
           ))}
         </div>
 
@@ -5275,75 +5277,79 @@ function OnboardingPage({ onComplete, onNav }) {
 
 // ─── Onb Step 0: Role ───
 function OnbStepRole({ data, update }) {
-  const roles = [
-    {
-      id: 'buyer',
-      title: '바이어',
-      en: 'Buyer',
-      tag: '제조사를 찾는 쪽',
-      desc: '제품 개발·구매 담당으로 적합한 제조사를 찾고 견적을 받습니다.',
-      perks: ['제조사 검색·비교', '동시 견적 요청', '관심 공장 저장'],
-      glyph: 'buyer',
-    },
-    {
-      id: 'maker',
-      title: '제조사',
-      en: 'Manufacturer',
-      tag: '공장을 운영하는 쪽',
-      desc: '공장을 등록해 적합한 발주 건을 받고 견적을 제안합니다.',
-      perks: ['공장 프로필 노출', '맞춤 RFQ 수신', '거래 실적 관리'],
-      glyph: 'maker',
-    },
-  ];
   return (
     <div className="onb-step">
       <div className="onb-step-head">
-        <h2>안녕하세요! 어떤 역할로 가입하시나요?</h2>
-        <p>가입 후에도 마이페이지에서 변경할 수 있어요.</p>
+        <h2>어떤 목적으로 사용하시나요?</h2>
+        <p>가입 후 마이페이지에서 변경할 수 있어요</p>
       </div>
       <div className="onb-role-grid">
-        {roles.map(r => (
+        {[
+          {
+            id: 'buyer',
+            icon: (
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="16" cy="11" r="5"/>
+                <path d="M6 28c0-5.5 4.5-10 10-10s10 4.5 10 10"/>
+              </svg>
+            ),
+            title: '바이어',
+            desc: '제조사를 찾고 견적을 받아요',
+          },
+          {
+            id: 'maker',
+            icon: (
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26V14l6 4V12l6 4V8l6 4V6l6 4v16z"/>
+                <path d="M9 26v-5M16 26v-5M23 26v-5"/>
+              </svg>
+            ),
+            title: '제조사',
+            desc: '공장을 등록하고 발주를 받아요',
+          },
+        ].map(r => (
           <button
             key={r.id}
             className={`onb-role ${data.role === r.id ? 'is-selected' : ''}`}
             onClick={() => update({ role: r.id })}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              padding: '32px 24px',
+              borderRadius: 16,
+              border: `2px solid ${data.role === r.id ? 'var(--brand)' : 'var(--line-2)'}`,
+              background: data.role === r.id ? 'var(--brand-50, #eff6ff)' : 'var(--bg)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              position: 'relative',
+            }}
           >
-            <div className="onb-role-glyph">
-              {r.glyph === 'buyer' ? (
-                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="32" cy="22" r="8"/>
-                  <path d="M16 50c0-8 7-14 16-14s16 6 16 14"/>
-                  <path d="M44 30l4 4M48 26l2 2" opacity="0.4"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 50V28l10 6V28l10 6V20l10 6V18l14 8v24z"/>
-                  <path d="M18 50v-8M28 50v-8M38 50v-8M48 50v-8"/>
-                </svg>
-              )}
+            <div style={{
+              width: 60, height: 60, borderRadius: 16,
+              background: data.role === r.id ? 'var(--brand)' : 'var(--bg-soft)',
+              color: data.role === r.id ? '#fff' : 'var(--ink-3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}>
+              {r.icon}
             </div>
-            <div className="onb-role-body">
-              <div className="onb-role-title-row">
-                <h3>
-                  {r.title}
-                  <span className="onb-role-tag">{r.tag}</span>
-                </h3>
-                {data.role === r.id && (
-                  <span className="onb-role-check">
-                    <Icon name="check" size={12} stroke={3}/>
-                  </span>
-                )}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-1)', marginBottom: 4 }}>{r.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.4 }}>{r.desc}</div>
+            </div>
+            {data.role === r.id && (
+              <div style={{
+                position: 'absolute', top: 12, right: 12,
+                width: 20, height: 20, borderRadius: '50%',
+                background: 'var(--brand)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon name="check" size={11} stroke={3} style={{ color: '#fff' }}/>
               </div>
-              <p>{r.desc}</p>
-              <ul className="onb-role-perks">
-                {r.perks.map(p => (
-                  <li key={p}>
-                    <Icon name="check" size={11} stroke={2.6}/>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
           </button>
         ))}
       </div>
