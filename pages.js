@@ -1496,6 +1496,11 @@ function _stripHtml(html) {
     .replace(/&[a-zA-Z0-9#]+;/g, ' ')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
+    // 이모티콘(특수문자 아이콘) 제거: ☞ ✔ ▶ ☑ ※ 등 특수기호 및 유니코드 이모티콘
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[☞☛➔➜➝➞➟➠►▶◆◇■□●○★☆✔✓✗✘※·・]/g, '')
+    .replace(/^\s*[-•·]\s*/gm, '')
     .trim();
 }
 
@@ -9741,6 +9746,20 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
     : dday.urgent ? { label: '마감임박', cls: 'status-urgent' }
     : { label: '진행중', cls: 'status-active' };
   const desc    = _stripHtml(f.desc);
+
+  // 조회수: localStorage 기반 실제 카운트
+  const _viewKey = `gv_${f.no || f.title}`;
+  const [views, setViews] = React.useState(() => {
+    try { return parseInt(localStorage.getItem(_viewKey) || _hashViews(f.no), 10); } catch { return _hashViews(f.no); }
+  });
+  React.useEffect(() => {
+    try {
+      const prev = parseInt(localStorage.getItem(_viewKey) || _hashViews(f.no), 10);
+      const next = prev + 1;
+      localStorage.setItem(_viewKey, next);
+      setViews(next);
+    } catch {}
+  }, [f.no]);
   const method  = _stripHtml(f.method);
   const contact = _stripHtml(f.contact);
   const [toast, setToast] = React.useState('');
@@ -9768,12 +9787,13 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
         <div className="grants-detail-badges">
           {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
           <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
+          <h1 className="grants-detail-title" style={{ flex:1 }}>{f.title}</h1>
           {dday && !dday.expired && (
-            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
+            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`} style={{ flexShrink:0, marginTop:6 }}>{dday.label}</span>
           )}
         </div>
-        <h1 className="grants-detail-title">{f.title}</h1>
-        {f.org && <p className="grants-detail-org">{f.org}</p>}
       </div>
 
       <div className="grants-detail-body">
@@ -10081,7 +10101,7 @@ const GrantsPage = ({ onNav, authed }) => {
                     : f.endDate
                       ? `~ ${_fmtDate8(f.endDate)}`
                       : '-';
-                  const views = _hashViews(f.no).toLocaleString();
+                  const views = (() => { try { const k = `gv_${f.no || f.title}`; return parseInt(localStorage.getItem(k) || _hashViews(f.no), 10).toLocaleString(); } catch { return _hashViews(f.no).toLocaleString(); } })();
                   return (
                     <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => setSelectedItem(item)}>
                       <td className="gt-no">{rowNum}</td>
