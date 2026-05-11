@@ -2954,9 +2954,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               localStorage.setItem('fm-favorites', JSON.stringify(next));
               setIsFav(!isFav);
             } catch {}
-          }}>
-            <Icon name="heart" size={14} stroke={2}/>
-            {isFav ? '관심 취소' : '관심 제조사'}
+          }} style={isFav ? { background:'#fff1f2', color:'#e11d48', borderColor:'#fecdd3' } : {}}>
+            <span style={isFav ? { color:'#e11d48' } : {}}><Icon name="heart" size={14} stroke={2}/></span>
+            관심 제조사
           </button>
           {isOwner && (
             <button className="icon-btn detail-edit-btn" onClick={openEditModal}>
