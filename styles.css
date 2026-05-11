@@ -94,6 +94,7 @@ html, body {
   letter-spacing: -0.005em;
   word-break: keep-all;
   overflow-wrap: break-word;
+  overflow: auto !important;
 }
 body, button, input, select, textarea, h1, h2, h3, h4, h5, p, span, div, label, dt, dd, li, a {
   word-break: keep-all;
