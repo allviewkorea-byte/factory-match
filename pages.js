@@ -3164,6 +3164,13 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
+                {f.email && (
+                  <><dt>이메일</dt><dd>
+                    <span className="detail-email-notice">
+                      해당 메일로 견적 요청이 가능합니다
+                    </span>
+                  </dd></>
+                )}
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
                 {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
                 {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
