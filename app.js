@@ -11,17 +11,23 @@ const AUTH_ROUTES = ['login', 'signup', 'verify', 'onboarding', 'welcome', 'forg
 
 // Parse route and factoryId from current URL once at startup
 function _parseInitialUrl() {
-  const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
-  if (APP_ROUTES.includes(p) || AUTH_ROUTES.includes(p)) return { route: p, factoryId: null };
+  // pathname 기반: /factory/xxx (Netlify redirect 후 도달)
+  const p = window.location.pathname.replace(/\/$/, '');
+  const pm = p.match(/^\/factory\/(.+)$/);
+  if (pm) return { route: 'detail', factoryId: pm[1] };
+  const cleanP = p.replace(/^\//, '');
+  if (APP_ROUTES.includes(cleanP)) return { route: cleanP, factoryId: null };
+  if (AUTH_ROUTES.includes(cleanP)) return { route: cleanP, factoryId: null };
+
+  // hash 기반: #/factory/xxx (기존 방식)
   const h = (window.location.hash || '').replace('#', '');
   const m = h.match(/^\/factory\/(.+)$/);
   if (m) return { route: 'detail', factoryId: m[1] };
   const cleanH = h.replace(/^\//, '');
   if (AUTH_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
   if (APP_ROUTES.includes(cleanH)) return { route: cleanH, factoryId: null };
-  try {
-    return { route: 'home', factoryId: null };
-  } catch { return { route: 'home', factoryId: null }; }
+
+  return { route: 'home', factoryId: null };
 }
 
 // Parse route/factoryId from any hash string
@@ -33,11 +39,19 @@ function _parseHash(h) {
   return null;
 }
 
-// Build hash string from route + factoryId
+// Build URL for route + factoryId
+// detail 페이지는 pathname 방식(/factory/xxx)으로 공유 가능한 URL 생성
 function _buildHash(route, factoryId) {
   if (route === 'detail' && factoryId) return `/factory/${factoryId}`;
   if (route === 'home') return '';
   return route;
+}
+
+// detail 페이지 URL: pathname 기반으로 생성 (공유 가능)
+function _buildUrl(route, factoryId) {
+  if (route === 'detail' && factoryId) return `/factory/${factoryId}`;
+  if (route === 'home') return '/';
+  return `/#${route}`;
 }
 
 const _INITIAL = _parseInitialUrl();
@@ -88,14 +102,20 @@ function App() {
   }, [tweaks.density]);
 
   // Keep URL in sync with route + factoryId
+  // detail 페이지는 /factory/xxx (pathname) 방식으로 공유 가능한 URL 사용
   useEffect(() => {
-    const hashPart = _buildHash(route, factoryId);
-    const url = hashPart ? `#${hashPart}` : (window.location.pathname + window.location.search);
-    const currentHash = (window.location.hash || '').replace('#', '');
-    const parsed = _parseHash(currentHash);
-    const currentRoute = parsed ? parsed.route : (currentHash.replace(/^\//, '') || 'home');
-    const currentFactoryId = parsed?.factoryId ?? null;
-    const urlMatchesState = currentRoute === route && (route !== 'detail' || currentFactoryId === factoryId);
+    let url;
+    if (route === 'detail' && factoryId) {
+      url = `/factory/${factoryId}`;
+    } else if (route === 'home') {
+      url = '/';
+    } else {
+      url = `/#${route}`;
+    }
+
+    // 현재 URL과 목표 URL이 같으면 pushState 스킵
+    const currentPath = window.location.pathname + window.location.hash;
+    const urlMatchesState = currentPath === url || currentPath === url + '/';
 
     if (initialMount.current) {
       history.replaceState({ route, factoryId, detailFrom }, '', url);
@@ -122,6 +142,15 @@ function App() {
 
   useEffect(() => {
     const onPopState = (e) => {
+      // pathname 방식 먼저 체크 (/factory/xxx)
+      const p = window.location.pathname.replace(/\/$/, '');
+      const pm = p.match(/^\/factory\/(.+)$/);
+      if (pm) {
+        setFactoryId(pm[1]);
+        setRoute('detail');
+        return;
+      }
+      // hash 방식 fallback
       const h = (window.location.hash || '').replace('#', '');
       const parsed = _parseHash(h);
       if (parsed) {
