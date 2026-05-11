@@ -5753,6 +5753,50 @@ function WelcomePage({ data, onEnter }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ── 대분류+소분류 선택기 컴포넌트 ──
+function CatSelector({ categories, selected, onChange, idKey }) {
+  const [openCats, setOpenCats] = React.useState({});
+  const getKey = (item) => idKey === 'label' ? item.label : item.id;
+  const tog = (key) => selected.includes(key)
+    ? onChange(selected.filter(x => x !== key))
+    : onChange([...selected, key]);
+  const toggleCat = (catId) => setOpenCats(prev => ({ ...prev, [catId]: !prev[catId] }));
+  const catSelectedCount = (cat) => cat.items.filter(i => selected.includes(getKey(i))).length;
+
+  return (
+    <div className="cat-selector">
+      {categories.map(cat => {
+        const count = catSelectedCount(cat);
+        const isOpen = openCats[cat.id];
+        return (
+          <div key={cat.id} className="cat-sel-group">
+            <button className={'cat-sel-header' + (isOpen ? ' is-open' : '') + (count > 0 ? ' has-selected' : '')}
+              onClick={() => toggleCat(cat.id)}>
+              <span className="cat-sel-label">{cat.label}</span>
+              {count > 0 && <span className="cat-sel-count">{count}</span>}
+              <span className="cat-sel-arrow">{isOpen ? '▲' : '▼'}</span>
+            </button>
+            {isOpen && (
+              <div className="cat-sel-items">
+                {cat.items.map(item => {
+                  const key = getKey(item);
+                  return (
+                    <button key={key}
+                      className={'cat-sel-item' + (selected.includes(key) ? ' is-on' : '')}
+                      onClick={() => tog(key)}>
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // SignupPage — 회원가입 (5단계)
 // ═══════════════════════════════════════════════════════════
 function SignupPage({ onNav }) {
@@ -6091,22 +6135,21 @@ function SignupPage({ onNav }) {
             <div className="sgn-form">
               {userType === 'buyer' ? (<>
                 <div className="sgn-section">
-                  <div className="sgn-section-ttl">필요한 가공방식</div>
-                  <div className="sgn-chips">
-                    {PROCESSES.map(p => (
-                      <button key={p.id} className={`sgn-chip ${form.neededProcesses.includes(p.id) ? 'is-on' : ''}`}
-                        onClick={() => upd('neededProcesses', tog(form.neededProcesses, p.id))}>{p.label}</button>
-                    ))}
-                  </div>
+                  <div className="sgn-section-ttl">필요한 가공방식 <span style={{color:'var(--ink-4)',fontWeight:400}}>({form.neededProcesses.length}개 선택)</span></div>
+                  <CatSelector
+                    categories={window.MFG_DATA.PROCESS_CATEGORIES}
+                    selected={form.neededProcesses}
+                    onChange={v => upd('neededProcesses', v)}
+                  />
                 </div>
                 <div className="sgn-section">
-                  <div className="sgn-section-ttl">주요 소재</div>
-                  <div className="sgn-chips">
-                    {SGN_MATERIALS.map(m => (
-                      <button key={m} className={`sgn-chip ${form.neededMaterials.includes(m) ? 'is-on' : ''}`}
-                        onClick={() => upd('neededMaterials', tog(form.neededMaterials, m))}>{m}</button>
-                    ))}
-                  </div>
+                  <div className="sgn-section-ttl">주요 소재 <span style={{color:'var(--ink-4)',fontWeight:400}}>({form.neededMaterials.length}개 선택)</span></div>
+                  <CatSelector
+                    categories={window.MFG_DATA.MATERIAL_CATEGORIES}
+                    selected={form.neededMaterials}
+                    onChange={v => upd('neededMaterials', v)}
+                    idKey="label"
+                  />
                 </div>
                 <div className="sgn-section">
                   <div className="sgn-section-ttl">발주 예상 규모</div>
@@ -6119,22 +6162,21 @@ function SignupPage({ onNav }) {
                 </div>
               </>) : (<>
                 <div className="sgn-section">
-                  <div className="sgn-section-ttl">보유 공정</div>
-                  <div className="sgn-chips">
-                    {PROCESSES.map(p => (
-                      <button key={p.id} className={`sgn-chip ${form.ownedProcesses.includes(p.id) ? 'is-on' : ''}`}
-                        onClick={() => upd('ownedProcesses', tog(form.ownedProcesses, p.id))}>{p.label}</button>
-                    ))}
-                  </div>
+                  <div className="sgn-section-ttl">보유 공정 <span style={{color:'var(--ink-4)',fontWeight:400}}>({form.ownedProcesses.length}개 선택)</span></div>
+                  <CatSelector
+                    categories={window.MFG_DATA.PROCESS_CATEGORIES}
+                    selected={form.ownedProcesses}
+                    onChange={v => upd('ownedProcesses', v)}
+                  />
                 </div>
                 <div className="sgn-section">
-                  <div className="sgn-section-ttl">주력 소재</div>
-                  <div className="sgn-chips">
-                    {SGN_MATERIALS.map(m => (
-                      <button key={m} className={`sgn-chip ${form.ownedMaterials.includes(m) ? 'is-on' : ''}`}
-                        onClick={() => upd('ownedMaterials', tog(form.ownedMaterials, m))}>{m}</button>
-                    ))}
-                  </div>
+                  <div className="sgn-section-ttl">주력 소재 <span style={{color:'var(--ink-4)',fontWeight:400}}>({form.ownedMaterials.length}개 선택)</span></div>
+                  <CatSelector
+                    categories={window.MFG_DATA.MATERIAL_CATEGORIES}
+                    selected={form.ownedMaterials}
+                    onChange={v => upd('ownedMaterials', v)}
+                    idKey="label"
+                  />
                 </div>
                 <div className="sgn-section">
                   <div className="sgn-section-ttl">보유 인증</div>

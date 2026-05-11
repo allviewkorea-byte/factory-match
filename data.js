@@ -8,16 +8,224 @@ const INDUSTRIES = [
   { id: 'textile', label: '섬유 / 의류', en: 'Textile' },
 ];
 
-const PROCESSES = [
-  { id: 'cnc', label: 'CNC 가공', en: 'CNC Machining' },
-  { id: 'injection', label: '사출', en: 'Injection Molding' },
-  { id: 'press', label: '프레스', en: 'Pressing' },
-  { id: 'mold', label: '금형', en: 'Mold' },
-  { id: 'cutting', label: '절삭', en: 'Cutting' },
-  { id: 'welding', label: '용접', en: 'Welding' },
-  { id: 'painting', label: '도장', en: 'Painting' },
-  { id: 'assembly', label: '조립', en: 'Assembly' },
+// 공정 대분류+소분류 구조
+const PROCESS_CATEGORIES = [
+  {
+    id: 'cutting_machining', label: '절삭/기계가공',
+    items: [
+      { id: 'cnc', label: 'CNC 가공' },
+      { id: 'cutting', label: '절삭 가공' },
+      { id: 'lathe', label: '선반 가공' },
+      { id: 'milling', label: '밀링 가공' },
+      { id: 'grinding', label: '연삭 가공' },
+      { id: 'edm', label: '방전 가공(EDM)' },
+      { id: 'laser_cut', label: '레이저 커팅' },
+      { id: 'waterjet', label: '워터젯' },
+      { id: 'plasma_cut', label: '플라즈마 커팅' },
+    ]
+  },
+  {
+    id: 'forming', label: '성형/변형',
+    items: [
+      { id: 'press', label: '프레스' },
+      { id: 'forging', label: '단조' },
+      { id: 'casting', label: '주조' },
+      { id: 'die_casting', label: '다이캐스팅' },
+      { id: 'extrusion', label: '압출' },
+      { id: 'drawing', label: '인발' },
+      { id: 'rolling', label: '압연' },
+      { id: 'stamping', label: '스탬핑' },
+    ]
+  },
+  {
+    id: 'plastic', label: '플라스틱/고무 가공',
+    items: [
+      { id: 'injection', label: '사출 성형' },
+      { id: 'injection_multi', label: '다색 사출' },
+      { id: 'injection_insert', label: '인서트 사출' },
+      { id: 'blow_molding', label: '블로우 성형' },
+      { id: 'vacuum_forming', label: '진공 성형' },
+      { id: 'roto_molding', label: '회전 성형' },
+      { id: 'rubber_molding', label: '고무 성형' },
+      { id: 'silicone_molding', label: '실리콘 성형' },
+    ]
+  },
+  {
+    id: 'mold_tool', label: '금형/툴링',
+    items: [
+      { id: 'mold', label: '금형 제작' },
+      { id: 'jig_fixture', label: '지그/픽스처' },
+      { id: 'die_making', label: '다이 제작' },
+    ]
+  },
+  {
+    id: 'joining', label: '접합/용접',
+    items: [
+      { id: 'welding', label: '용접 (일반)' },
+      { id: 'tig_welding', label: 'TIG 용접' },
+      { id: 'mig_welding', label: 'MIG 용접' },
+      { id: 'laser_welding', label: '레이저 용접' },
+      { id: 'spot_welding', label: '스폿 용접' },
+      { id: 'brazing', label: '브레이징/납땜' },
+      { id: 'adhesive', label: '접착/본딩' },
+    ]
+  },
+  {
+    id: 'surface', label: '표면처리/도장',
+    items: [
+      { id: 'painting', label: '도장 (일반)' },
+      { id: 'powder_coating', label: '분체 도장' },
+      { id: 'anodizing', label: '아노다이징' },
+      { id: 'plating', label: '도금' },
+      { id: 'heat_treat', label: '열처리' },
+      { id: 'sandblasting', label: '샌드블라스팅' },
+      { id: 'polishing', label: '연마/폴리싱' },
+      { id: 'coating', label: '코팅 (특수)' },
+    ]
+  },
+  {
+    id: 'electronics_pcb', label: '전자/PCB',
+    items: [
+      { id: 'pcb_mfg', label: 'PCB 제조' },
+      { id: 'smt', label: 'SMT 실장' },
+      { id: 'pcb_assembly', label: 'PCB 조립' },
+      { id: 'wire_harness', label: '와이어 하네스' },
+      { id: 'potting', label: '포팅/몰딩' },
+    ]
+  },
+  {
+    id: 'textile_sewing', label: '섬유/봉제',
+    items: [
+      { id: 'sewing', label: '봉제' },
+      { id: 'cutting_fabric', label: '재단' },
+      { id: 'knitting', label: '편직' },
+      { id: 'dyeing', label: '염색' },
+      { id: 'embroidery', label: '자수' },
+      { id: 'printing_fabric', label: '원단 인쇄' },
+    ]
+  },
+  {
+    id: 'additive', label: '적층/3D프린팅',
+    items: [
+      { id: '3d_fdm', label: 'FDM 3D프린팅' },
+      { id: '3d_sla', label: 'SLA 3D프린팅' },
+      { id: '3d_sls', label: 'SLS 3D프린팅' },
+      { id: '3d_metal', label: '금속 3D프린팅' },
+    ]
+  },
+  {
+    id: 'food_pharma', label: '식품/제약 제조',
+    items: [
+      { id: 'food_processing', label: '식품 가공' },
+      { id: 'packaging', label: '패키징/포장' },
+      { id: 'filling', label: '충전/충전 포장' },
+      { id: 'pharma', label: '제약/의약품 제조' },
+    ]
+  },
+  {
+    id: 'finishing', label: '마감/조립',
+    items: [
+      { id: 'assembly', label: '조립' },
+      { id: 'inspection', label: '검사/검수' },
+      { id: 'packing', label: '포장/출하' },
+      { id: 'printing', label: '인쇄/실크' },
+      { id: 'laser_marking', label: '레이저 마킹' },
+    ]
+  },
 ];
+
+// 소재 대분류+소분류 구조
+const MATERIAL_CATEGORIES = [
+  {
+    id: 'metal_common', label: '일반 금속',
+    items: [
+      { id: 'aluminum', label: '알루미늄' },
+      { id: 'ss400', label: 'SS400 (일반강)' },
+      { id: 'sus304', label: 'SUS304 (스테인리스)' },
+      { id: 'sus316', label: 'SUS316' },
+      { id: 'carbon_steel', label: '탄소강' },
+      { id: 'alloy_steel', label: '합금강' },
+      { id: 'iron_cast', label: '주철' },
+    ]
+  },
+  {
+    id: 'metal_special', label: '특수 금속',
+    items: [
+      { id: 'titanium', label: '티타늄' },
+      { id: 'copper', label: '구리' },
+      { id: 'brass', label: '황동' },
+      { id: 'magnesium', label: '마그네슘' },
+      { id: 'zinc', label: '아연' },
+      { id: 'nickel', label: '니켈' },
+      { id: 'tungsten', label: '텅스텐' },
+      { id: 'inconel', label: '인코넬' },
+    ]
+  },
+  {
+    id: 'plastic_hard', label: '경질 플라스틱',
+    items: [
+      { id: 'abs', label: 'ABS' },
+      { id: 'pc', label: 'PC (폴리카보네이트)' },
+      { id: 'pp', label: 'PP (폴리프로필렌)' },
+      { id: 'pet', label: 'PET' },
+      { id: 'pa', label: 'PA (나일론)' },
+      { id: 'pom', label: 'POM (아세탈)' },
+      { id: 'pmma', label: 'PMMA (아크릴)' },
+      { id: 'pe', label: 'PE (폴리에틸렌)' },
+      { id: 'pps', label: 'PPS' },
+      { id: 'peek', label: 'PEEK' },
+    ]
+  },
+  {
+    id: 'rubber_soft', label: '고무/연질',
+    items: [
+      { id: 'nbr', label: 'NBR 고무' },
+      { id: 'silicone', label: '실리콘' },
+      { id: 'epdm', label: 'EPDM' },
+      { id: 'pu', label: 'PU (폴리우레탄)' },
+      { id: 'tpe', label: 'TPE' },
+    ]
+  },
+  {
+    id: 'electronics_mat', label: '전자/기판',
+    items: [
+      { id: 'fr4', label: 'FR-4 (PCB 기판)' },
+      { id: 'ceramic', label: '세라믹' },
+      { id: 'glass', label: '유리' },
+      { id: 'silicon', label: '실리콘 웨이퍼' },
+    ]
+  },
+  {
+    id: 'textile_mat', label: '섬유/원단',
+    items: [
+      { id: 'cotton', label: '면 (Cotton)' },
+      { id: 'polyester', label: '폴리에스터' },
+      { id: 'nylon_fabric', label: '나일론 원단' },
+      { id: 'spandex', label: '스판덱스' },
+      { id: 'leather', label: '가죽' },
+      { id: 'nonwoven', label: '부직포' },
+    ]
+  },
+  {
+    id: 'composite', label: '복합재/기타',
+    items: [
+      { id: 'cfrp', label: '탄소섬유 (CFRP)' },
+      { id: 'gfrp', label: '유리섬유 (GFRP)' },
+      { id: 'wood', label: '목재/MDF' },
+      { id: 'foam', label: '폼/스펀지' },
+      { id: 'paper', label: '종이/판지' },
+    ]
+  },
+];
+
+// 기존 호환용 flat 배열 (DB 검색, 필터 등에서 사용)
+const PROCESSES = PROCESS_CATEGORIES.flatMap(cat =>
+  cat.items.map(item => ({ id: item.id, label: item.label, en: item.label, category: cat.id, categoryLabel: cat.label }))
+);
+
+const MATERIALS_FLAT = MATERIAL_CATEGORIES.flatMap(cat =>
+  cat.items.map(item => ({ id: item.id, label: item.label, category: cat.id, categoryLabel: cat.label }))
+);
 
 const PRODUCTS = [
   { id: 'auto', label: '자동차 부품' },
@@ -49,6 +257,7 @@ const TRENDING_SEARCHES = [
 
 window.MFG_DATA = {
   INDUSTRIES, PROCESSES, PRODUCTS, FACTORIES, CATEGORY_CARDS, TRENDING_SEARCHES,
+  PROCESS_CATEGORIES, MATERIAL_CATEGORIES, MATERIALS_FLAT,
 };
 
 // Supabase DB row → JS factory object
