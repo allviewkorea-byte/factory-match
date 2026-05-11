@@ -9830,19 +9830,9 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
           </div>
         )}
 
-        {/* 버튼 영역 - 공고문 다운로드 + 스크랩/링크/목록/원문 같은 행 */}
+        {/* 버튼 영역 - 스크랩/링크/목록/원문/공고문 같은 행 */}
         <div style={{ marginTop:8 }}>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
-            {f.pdfUrl && (
-              <a
-                href={f.pdfUrl}
-                download
-                onClick={e => e.stopPropagation()}
-                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:600, textDecoration:'none', cursor:'pointer', border:'none' }}
-              >
-                📄 공고문 다운로드
-              </a>
-            )}
             <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
               {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
             </button>
@@ -9850,6 +9840,12 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
             <button className="grants-detail-btn grants-detail-btn-ghost" onClick={onBack}>목록으로</button>
             {f.viewUrl && (
               <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기</a>
+            )}
+            {f.pdfUrl && (
+              <a href={f.pdfUrl} download onClick={e => e.stopPropagation()}
+                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:600, textDecoration:'none', cursor:'pointer', border:'none' }}>
+                📄 공고문 다운로드
+              </a>
             )}
           </div>
           {(f.onlineApplyUrl || f.applyUrl) && (
