@@ -5649,7 +5649,18 @@ function SignupPage({ onNav }) {
 
       setStep(5);
     } catch (err) {
-      setErrors({ submit: err.message || '가입 중 오류가 발생했습니다' });
+      const errMsg = err.message || '';
+      let friendlyMsg = '가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      if (errMsg.includes('rate limit') || errMsg.includes('Email rate limit')) {
+        friendlyMsg = '잠시 후 다시 시도해주세요. (이메일 발송 한도 초과)';
+      } else if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
+        friendlyMsg = '이미 가입된 이메일입니다. 로그인을 이용해주세요.';
+      } else if (errMsg.includes('Invalid email')) {
+        friendlyMsg = '올바른 이메일 형식을 입력해주세요.';
+      } else if (errMsg.includes('Password')) {
+        friendlyMsg = '비밀번호는 8자 이상이어야 합니다.';
+      }
+      setErrors({ submit: friendlyMsg });
     } finally {
       setLoading(false);
     }
