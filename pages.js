@@ -74,7 +74,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
             if (route === 'home' && authed) window.dispatchEvent(new CustomEvent('home-reset'));
             else onNav('home');
           }}>
-            <img src="/logo.png" alt="공장매칭 FactoryMatch" className="hdr-logo-img" />
+            <img src="/logo.svg" alt="공장매칭 FactoryMatch" className="hdr-logo-img" />
           </button>
           <nav className="hdr-nav">
             {navItems.map(n => (
