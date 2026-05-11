@@ -2501,8 +2501,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               </div>
             </div>
             <div className="list-results-grid">
-              {dbLoading && paginated.length === 0
-                ? Array.from({ length: 4 }).map((_, i) => (
+              {(dbLoading || regionLoading) && paginated.length === 0
+                ? Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="list-result-wrap">
                       <ManufacturerCardSkeleton />
                     </div>
@@ -2532,7 +2532,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   ))
               }
             </div>
-            {!dbLoading && filtered.length === 0 && (
+            {!dbLoading && !regionLoading && filtered.length === 0 && (
               <div className="list-empty">
                 <Icon name="search" size={36} stroke={1.4}/>
                 <p className="list-empty-msg">
