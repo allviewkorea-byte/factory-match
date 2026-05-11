@@ -9693,27 +9693,39 @@ const ReportPage = ({ params, onNav }) => {
 // ─── 공고문 PDF 뷰어 ───────────────────────────────────────
 const GrantPdfViewer = ({ url }) => {
   const [status, setStatus] = React.useState('loading');
+
+  React.useEffect(() => {
+    // 3초 안에 로드 안되면 error 처리 (CORS 차단시 onError 미발생)
+    const t = setTimeout(() => setStatus(s => s === 'loading' ? 'error' : s), 3000);
+    return () => clearTimeout(t);
+  }, [url]);
+
+  if (status === 'error') {
+    return (
+      <div style={{ marginTop:28 }}>
+        <h3 style={{ margin:'0 0 10px', fontSize:15, fontWeight:700 }}>공고문</h3>
+        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'28px 24px', textAlign:'center' }}>
+          <p style={{ color:'#64748b', fontSize:13, margin:'0 0 14px' }}>공고문을 미리보기할 수 없습니다. (외부 접근 제한)</p>
+          <a href={url} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline" style={{ display:'inline-block' }}>공고문 새 탭에서 열기 ↗</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginTop:28 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <h3 style={{ margin:0, fontSize:15, fontWeight:700 }}>공고문</h3>
         <a href={url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'#2563eb', textDecoration:'none' }}>새 탭에서 열기 ↗</a>
       </div>
-      {status === 'error' ? (
-        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:'32px 24px', textAlign:'center' }}>
-          <p style={{ color:'#64748b', fontSize:13, margin:'0 0 12px' }}>공고문을 미리보기할 수 없습니다.</p>
-          <a href={url} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline" style={{ display:'inline-block' }}>공고문 다운로드</a>
-        </div>
-      ) : (
-        <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'1px solid #e2e8f0' }}>
-          {status === 'loading' && (
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', zIndex:1 }}>
-              <span style={{ color:'#94a3b8', fontSize:13 }}>공고문 불러오는 중...</span>
-            </div>
-          )}
-          <iframe src={url} onLoad={() => setStatus('ok')} onError={() => setStatus('error')} style={{ width:'100%', height:600, border:'none', display:'block' }} title="공고문" />
-        </div>
-      )}
+      <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'1px solid #e2e8f0' }}>
+        {status === 'loading' && (
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', zIndex:1 }}>
+            <span style={{ color:'#94a3b8', fontSize:13 }}>공고문 불러오는 중...</span>
+          </div>
+        )}
+        <iframe src={url} onLoad={() => setStatus('ok')} onError={() => setStatus('error')} style={{ width:'100%', height:600, border:'none', display:'block' }} title="공고문" />
+      </div>
     </div>
   );
 };
