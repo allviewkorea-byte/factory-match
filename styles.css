@@ -263,7 +263,7 @@ a { color: inherit; text-decoration: none; }
 .page { max-width: 1280px; margin: 0 auto; padding: 0 32px 80px; }
 .page.grants-page { max-width: 100%; padding: 0 60px 80px; }
 .page-list, .page-rfq { padding-top: 24px; }
-.page-detail { padding-top: 16px; }
+.page-detail { padding-top: 16px; background: #fff; min-height: 100vh; }
 
 .section { margin-top: var(--d-section-gap); }
 .section-head {
