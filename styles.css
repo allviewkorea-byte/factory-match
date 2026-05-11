@@ -5839,10 +5839,11 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: transparent !important;
   position: relative;
   padding: 100px 24px 60px;
 }
+.ldg3-hero-light::before { display: none !important; }
 .ldg3-h1-light {
   font-size: 40px; font-weight: 900;
   line-height: 1.2; letter-spacing: -0.03em;
