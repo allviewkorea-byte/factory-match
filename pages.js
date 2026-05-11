@@ -6229,14 +6229,14 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
 
   React.useEffect(() => {
     if (!ids || ids.length === 0) { setLoading(false); return; }
-    window._sb.from('factories').select('id,name,city,road_address,region,ai_summary').in('id', ids)
+    window._sb.from('factories').select('id,name,city,region').in('id', ids)
       .then(({ data }) => {
         if (data) setFactories(data.map(window._dbRowToFactory));
         setLoading(false);
       }).catch(() => setLoading(false));
   }, [ids.join(',')]);
 
-  if (loading) return <div style={{ padding:40, textAlign:'center', color:'var(--ink-3)' }}>불러오는 중…</div>;
+  if (loading) return <div style={{ padding:24, textAlign:'center', color:'var(--ink-3)', fontSize:13 }}>불러오는 중…</div>;
 
   return (
     <section className={compact ? '' : 'mypage-card mypage-card-full'}>
@@ -6253,16 +6253,16 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
             window.location.reload();
           };
           return (
-            <li key={id}>
+            <li key={id} style={{ position:'relative' }}>
               <button className="fav-row" onClick={() => onOpenFactory && onOpenFactory(id)}>
-                <div className="fav-img" style={{ background: f ? getCardBg(f) : '#3a5882' }}><div className="mcard-img-stripes"/></div>
                 <div className="fav-body">
-                  <h4>{f ? f.name : id}</h4>
+                  <h4>{f ? f.name : '불러오는 중…'}</h4>
                   <span>{f ? (f.city || f.regionRaw || '') : ''}</span>
                 </div>
                 <Icon name="chevron_right" size={14} stroke={2} className="fav-arrow"/>
               </button>
-              <button onClick={handleRemove} style={{ position:'absolute', right:40, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#e11d48', cursor:'pointer', fontSize:18 }}>♥</button>
+              <button onClick={handleRemove} title="관심 취소"
+                style={{ position:'absolute', right:32, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#e11d48', cursor:'pointer', fontSize:16, lineHeight:1 }}>♥</button>
             </li>
           );
         })}
