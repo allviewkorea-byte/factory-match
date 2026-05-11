@@ -167,9 +167,7 @@ def fetch_factories_without_dart(session):
         url = (
             f"{SUPABASE_URL}/rest/v1/factories"
             f"?select=id,name,bizrno,website,email,dart_manual_match"
-            f"&bizrno=not.is.null&bizrno=neq."
-            f"&website=not.is.null&website=neq."
-            f"&email=not.is.null&email=neq."
+            f"&bizrno=not.is.null"
             f"&dart_corp_code=is.null"
             f"&limit={ps}&offset={offset}"
         )
