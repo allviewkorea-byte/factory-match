@@ -6402,9 +6402,9 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
                 </span>
               )}
             </div>
-            <h1>{name}</h1>
+            <h1>{name === '—' ? <span style={{ color:'var(--ink-4)', fontSize:16, fontWeight:400 }}>이름을 입력해주세요</span> : name}</h1>
             <div className="mypage-hero-meta">
-              <span>{company}</span>
+              <span>{company === '—' ? <span style={{ color:'var(--ink-4)' }}>회사명 미입력</span> : company}</span>
               <span className="dot">·</span>
               <span>{email}</span>
               {joinedAt !== '—' && (
