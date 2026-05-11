@@ -1315,7 +1315,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
 
         {!hasResults && !loading && (
           <div className="home-stats-bar">
-            전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+            전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
           </div>
         )}
       </div>
@@ -4615,7 +4615,7 @@ function LandingPage({ onNav, authed }) {
         </section>
 
         <div className="ldg2-stats">
-          전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+          전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
         </div>
       </main>
 
@@ -5107,7 +5107,7 @@ function OnboardingPage({ onComplete, onNav }) {
     if (step < 3) setStep(step + 1);
     else onComplete(data);
   };
-  const prev = () => step > 0 ? setStep(step - 1) : onNav('verify');
+  const prev = () => step > 0 ? setStep(step - 1) : onNav('login');
 
   const stepTitles = ['역할 선택', '회사 정보', '관심 분야', '알림 설정'];
 
@@ -5481,13 +5481,13 @@ function WelcomePage({ data, onEnter }) {
 
           <div className="welcome-stats">
             <div className="welcome-stat">
-              <div className="welcome-stat-n">12,138</div>
+              <div className="welcome-stat-n">217,054</div>
               <div className="welcome-stat-l">공장 DB</div>
             </div>
             <div className="welcome-stat-divider"/>
             <div className="welcome-stat">
-              <div className="welcome-stat-n">2,847</div>
-              <div className="welcome-stat-l">검증 제조사</div>
+              <div className="welcome-stat-n">34,655</div>
+              <div className="welcome-stat-l">웹사이트 보유</div>
             </div>
           </div>
 
@@ -5605,7 +5605,6 @@ function SignupPage({ onNav }) {
   };
 
   const handleSubmit = async () => {
-    if (!form.businessDoc) return;
     setLoading(true);
     setErrors({});
     try {
@@ -6670,7 +6669,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
               <dt>사업자번호</dt><dd>{businessNumber}</dd>
               <dt>역할</dt><dd>{role === 'buyer' ? '바이어 (구매)' : '제조사 (판매)'}</dd>
               <dt>가입 상태</dt>
-              <dd>{profile.status === 'approved' ? '승인됨' : profile.status === 'pending' ? '승인 대기중' : profile.status || '—'}</dd>
+              <dd>{profile.status === 'approved' || profile.status === 'active' ? '정상' : profile.status === 'pending' ? '승인 대기중' : profile.status || '—'}</dd>
             </dl>
           </div>
         </section>
