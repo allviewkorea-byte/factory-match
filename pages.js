@@ -4838,7 +4838,7 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
 
           <div className="auth-divider">
             <span className="auth-divider-line"/>
-            <span className="auth-divider-text">또는 이메일로 계속하기</span>
+            <span className="auth-divider-text">또는 이메일로 로그인</span>
             <span className="auth-divider-line"/>
           </div>
 

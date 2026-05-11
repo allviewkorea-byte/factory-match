@@ -2705,8 +2705,8 @@ a { color: inherit; text-decoration: none; }
   flex: 1; height: 1px; background: var(--line);
 }
 .auth-divider-text {
-  font-size: 11.5px; color: var(--ink-4);
-  font-weight: 500;
+  font-size: 12px; color: var(--ink-3);
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -2879,9 +2879,9 @@ a { color: inherit; text-decoration: none; }
 }
 .auth-submit:disabled {
   background: var(--ink-5);
-  color: #fff;
+  color: var(--ink-3);
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.75;
 }
 
 .auth-skip-note {
