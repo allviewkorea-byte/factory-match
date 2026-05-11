@@ -4615,7 +4615,7 @@ function LandingPage({ onNav, authed }) {
         </section>
 
         <div className="ldg2-stats">
-          전국 <strong>12,138개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
+          전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>1,192개</strong> 사업자 인증
         </div>
       </main>
 
@@ -4623,7 +4623,7 @@ function LandingPage({ onNav, authed }) {
         <div className="ldg2-modal-overlay">
           <div className="ldg2-modal">
             <h2 className="ldg2-modal-title">검색하려면 가입이 필요합니다</h2>
-            <p className="ldg2-modal-sub">무료로 가입하면 전국 12,138개 공장 DB를 검색할 수 있습니다.</p>
+            <p className="ldg2-modal-sub">무료로 가입하면 전국 217,054개 공장 DB를 검색할 수 있습니다.</p>
             <div className="ldg2-modal-btns">
               <button className="ldg2-modal-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'landing_search_modal' }); onNav('signup'); }}>무료로 시작하기</button>
               <button className="ldg2-modal-login-btn" onClick={() => onNav('login')}>로그인</button>
@@ -5645,7 +5645,7 @@ function SignupPage({ onNav }) {
         contact_email: form.email,
         interests,
         document_url: documentUrl,
-        status: 'pending',
+        status: 'active',
       });
 
       setStep(5);
@@ -5901,13 +5901,13 @@ function SignupPage({ onNav }) {
           {step === 4 && (<>
             <div className="auth-card-head sgn-step-head">
               <h1>서류 업로드</h1>
-              <p>본인 확인을 위해 사업자등록증이 필요합니다</p>
+              <p>사업자등록증을 올리면 인증 뱃지와 상세페이지 편집 권한을 드려요</p>
             </div>
             <div className="sgn-form">
               <div className="sgn-upload-block">
                 <div className="sgn-upload-ttl">
                   사업자등록증
-                  <span className="sgn-badge-req">필수</span>
+                  <span className="sgn-badge-opt">선택</span>
                 </div>
                 <label className={`sgn-drop-zone ${form.businessDoc ? 'has-file' : ''}`}>
                   <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
@@ -5951,11 +5951,14 @@ function SignupPage({ onNav }) {
                 </div>
               )}
             </div>
-            <button className={`btn-primary sgn-btn ${!form.businessDoc || loading ? 'sgn-btn-off' : ''}`}
-              onClick={form.businessDoc && !loading ? handleSubmit : undefined}>
+            <button className={`btn-primary sgn-btn ${loading ? 'sgn-btn-off' : ''}`}
+              onClick={!loading ? handleSubmit : undefined}>
               {loading
-                ? <><div className="sgn-spin"/>신청 중...</>
-                : <>가입 신청하기 <Icon name="arrow_right" size={14} stroke={2.4}/></>}
+                ? <><div className="sgn-spin"/>가입 중...</>
+                : <>가입 완료하기 <Icon name="arrow_right" size={14} stroke={2.4}/></>}
+            </button>
+            <button className="sgn-skip-btn" onClick={!loading ? handleSubmit : undefined}>
+              건너뛰고 바로 시작하기
             </button>
             <p className="sgn-privacy">제출 서류는 본인 확인 목적으로만 사용되며 암호화하여 보관됩니다.</p>
           </>)}
@@ -5969,19 +5972,36 @@ function SignupPage({ onNav }) {
                   <polyline points="8 12 11 15 16 9"/>
                 </svg>
               </div>
-              <h2 className="sgn-complete-ttl">가입 신청이 완료되었습니다</h2>
-              <p className="sgn-complete-sub">
-                담당자 검토 후 승인 이메일을 보내드립니다<br/>
-                <strong>영업일 1–2일</strong> 소요됩니다
-              </p>
+              <h2 className="sgn-complete-ttl">가입이 완료되었습니다!</h2>
+              <p className="sgn-complete-sub">지금 바로 공장매칭을 이용하실 수 있어요</p>
               <div className="sgn-complete-card">
                 <div className="sgn-cr"><span className="sgn-ck">이메일</span><span className="sgn-cv">{form.email}</span></div>
                 <div className="sgn-cr"><span className="sgn-ck">유형</span><span className="sgn-cv">{userType === 'buyer' ? '바이어' : '제조사'}</span></div>
-                <div className="sgn-cr"><span className="sgn-ck">DB 규모</span><span className="sgn-cv">전국 12,138개 공장</span></div>
+                <div className="sgn-cr"><span className="sgn-ck">DB 규모</span><span className="sgn-cv">전국 217,054개 공장</span></div>
               </div>
-              <button className="btn-primary sgn-btn" onClick={() => onNav('landing')}>
-                홈으로 이동
-              </button>
+              {/* SMS 알림 수신 여부 */}
+              <div style={{ margin:'16px 0', padding:'16px', background:'#f8fafc', borderRadius:10, border:'1px solid #e2e8f0', textAlign:'left' }}>
+                <p style={{ margin:'0 0 12px', fontSize:14, fontWeight:600, color:'#1e293b' }}>
+                  📱 {userType === 'buyer' ? '견적 요청 및 회신' : '견적 수신'} 시 문자 알림을 받으시겠어요?
+                </p>
+                <p style={{ margin:'0 0 12px', fontSize:13, color:'#64748b' }}>
+                  {form.contactPhone ? `등록된 번호 ${form.contactPhone}로 발송됩니다` : '연락처를 마이페이지에서 등록하시면 설정할 수 있어요'}
+                </p>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={() => {
+                    try { localStorage.setItem('fm-sms-notify', '1'); } catch {}
+                    onNav('home');
+                  }} style={{ flex:1, padding:'10px', background:'#2563eb', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                    받을게요
+                  </button>
+                  <button onClick={() => {
+                    try { localStorage.setItem('fm-sms-notify', '0'); } catch {}
+                    onNav('home');
+                  }} style={{ flex:1, padding:'10px', background:'#fff', color:'#64748b', border:'1px solid #e2e8f0', borderRadius:8, fontSize:14, cursor:'pointer' }}>
+                    나중에 설정할게요
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -6396,7 +6416,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
                 <Icon name={role === 'buyer' ? 'search' : 'factory'} size={11} stroke={2.2}/>
                 {role === 'buyer' ? '바이어' : '제조사'}
               </span>
-              {profile.status && profile.status !== 'approved' && (
+              {profile.status && profile.status !== 'approved' && profile.status !== 'active' && (
                 <span className="myp-status-badge myp-status-pending">
                   {profile.status === 'pending' ? '승인 대기중' : '미승인'}
                 </span>
