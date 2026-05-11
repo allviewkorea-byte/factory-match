@@ -154,19 +154,17 @@ def fetch_financials(corp_code, year=TARGET_YEAR):
 
 # ── Supabase ──────────────────────────────────────────────────────────────
 def fetch_factories_without_dart(session):
-    """검증된 공장만 조회: bizrno + website + email 모두 있고 dart 미수집"""
+    """검증된 공장만 조회: (bizrno+website+email 모두 있거나 수동승인) + dart 미수집"""
     records, offset, ps = [], 0, 1000
+
+    # ① 자동 검증: bizrno + website + email 모두 있고 dart 미수집
     while True:
-        # 3가지 검증 조건: bizrno + website + email 모두 존재
         url = (
             f"{SUPABASE_URL}/rest/v1/factories"
-            f"?select=id,name,bizrno,website,email"
-            f"&bizrno=not.is.null"
-            f"&bizrno=neq."
-            f"&website=not.is.null"
-            f"&website=neq."
-            f"&email=not.is.null"
-            f"&email=neq."
+            f"?select=id,name,bizrno,website,email,dart_manual_match"
+            f"&bizrno=not.is.null&bizrno=neq."
+            f"&website=not.is.null&website=neq."
+            f"&email=not.is.null&email=neq."
             f"&dart_corp_code=is.null"
             f"&limit={ps}&offset={offset}"
         )
@@ -178,6 +176,26 @@ def fetch_factories_without_dart(session):
         print(f"  {len(records):,}개 로드...", end="\r")
         if len(chunk) < ps: break
         offset += ps
+
+    # ② 수동 승인된 공장 (MISMATCH였지만 관리자가 승인)
+    offset2 = 0
+    while True:
+        url2 = (
+            f"{SUPABASE_URL}/rest/v1/factories"
+            f"?select=id,name,bizrno,website,email,dart_manual_match"
+            f"&dart_manual_match=eq.true"
+            f"&dart_corp_code=eq.MISMATCH"
+            f"&limit={ps}&offset={offset2}"
+        )
+        resp2 = session.get(url2, headers=SB_HEADERS)
+        resp2.raise_for_status()
+        chunk2 = resp2.json()
+        if not chunk2: break
+        records.extend(chunk2)
+        print(f"  {len(records):,}개 로드 (수동승인 포함)...", end="\r")
+        if len(chunk2) < ps: break
+        offset2 += ps
+
     print()
     return records
 
@@ -252,7 +270,10 @@ def main():
         )
         if not name_ok:
             print(f"  ⚠️  상호명 불일치 스킵: DB='{db_name}' / DART='{corp_name}'")
-            patch_factory(session, fid, {"dart_corp_code": "MISMATCH"})
+            patch_factory(session, fid, {
+                "dart_corp_code":     "MISMATCH",
+                "dart_mismatch_name": corp_name,   # DART에서 찾은 회사명 저장
+            })
             done_ids.add(fid)
             processed += 1
             continue

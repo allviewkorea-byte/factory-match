@@ -8625,10 +8625,10 @@ const AdminDartMismatchTab = () => {
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
   const SB_HEADERS = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
 
-  const [rows, setRows]       = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError]     = React.useState(null);
-  const [filter, setFilter]   = React.useState('MISMATCH'); // MISMATCH | NONE | ALL
+  const [rows, setRows]           = React.useState([]);
+  const [loading, setLoading]     = React.useState(true);
+  const [error, setError]         = React.useState(null);
+  const [filter, setFilter]       = React.useState('MISMATCH');
   const [actionMsg, setActionMsg] = React.useState('');
 
   React.useEffect(() => { loadData(); }, [filter]);
@@ -8636,10 +8636,11 @@ const AdminDartMismatchTab = () => {
   const loadData = async () => {
     setLoading(true); setError(null);
     try {
-      let url = `${SUPABASE_URL}/rest/v1/factories?select=id,name,bizrno,website,email,dart_corp_code&limit=500`;
-      if (filter === 'MISMATCH') url += '&dart_corp_code=eq.MISMATCH';
-      else if (filter === 'NONE') url += '&dart_corp_code=eq.NONE';
-      else url += '&dart_corp_code=in.(MISMATCH,NONE)';
+      let url = `${SUPABASE_URL}/rest/v1/factories?select=id,name,bizrno,website,email,dart_corp_code,dart_mismatch_name,dart_manual_match&limit=500`;
+      if (filter === 'MISMATCH')       url += '&dart_corp_code=eq.MISMATCH&dart_manual_match=eq.false';
+      else if (filter === 'NONE')      url += '&dart_corp_code=eq.NONE';
+      else if (filter === 'APPROVED')  url += '&dart_manual_match=eq.true';
+      else                             url += '&dart_corp_code=in.(MISMATCH,NONE)';
       const res = await fetch(url, { headers: SB_HEADERS });
       const data = await res.json();
       setRows(Array.isArray(data) ? data : []);
@@ -8647,38 +8648,51 @@ const AdminDartMismatchTab = () => {
     setLoading(false);
   };
 
-  // bizrno 초기화 (재수집 가능하도록)
-  const resetBizrno = async (id, name) => {
-    if (!confirm(`"${name}" 의 bizrno와 dart_corp_code를 초기화할까요?`)) return;
+  const patch = async (id, payload) => {
     await fetch(`${SUPABASE_URL}/rest/v1/factories?id=eq.${id}`, {
       method: 'PATCH',
       headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ bizrno: null, dart_corp_code: null }),
+      body: JSON.stringify(payload),
     });
-    setActionMsg(`✅ "${name}" bizrno 초기화 완료`);
+  };
+
+  // 수동 매칭 승인 → dart_manual_match = true, dart_corp_code 유지
+  const approveMatch = async (id, name) => {
+    await patch(id, { dart_manual_match: true });
+    setActionMsg(`✅ "${name}" 수동 매칭 승인 완료 → 다음 enrich_dart 실행 시 재무제표 수집 대상에 포함됩니다`);
     loadData();
   };
 
-  // dart_corp_code만 초기화 (bizrno는 유지, 재매칭 시도)
+  // DART만 초기화 (bizrno 유지)
   const resetDartOnly = async (id, name) => {
-    if (!confirm(`"${name}" 의 dart_corp_code만 초기화할까요? (bizrno 유지)`)) return;
-    await fetch(`${SUPABASE_URL}/rest/v1/factories?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ dart_corp_code: null }),
-    });
-    setActionMsg(`✅ "${name}" dart_corp_code 초기화 완료`);
+    if (!confirm(`"${name}" 의 dart 정보만 초기화할까요?`)) return;
+    await patch(id, { dart_corp_code: null, dart_mismatch_name: null, dart_manual_match: false });
+    setActionMsg(`🔄 "${name}" dart 초기화 완료`);
+    loadData();
+  };
+
+  // bizrno 전체 초기화
+  const resetBizrno = async (id, name) => {
+    if (!confirm(`"${name}" 의 bizrno를 초기화할까요? (처음부터 재수집)`)) return;
+    await patch(id, { bizrno: null, dart_corp_code: null, dart_mismatch_name: null, dart_manual_match: false });
+    setActionMsg(`🗑 "${name}" bizrno 초기화 완료`);
     loadData();
   };
 
   // CSV 다운로드
   const downloadCSV = () => {
-    const headers = ['id', '회사명', '사업자번호', '웹사이트', '이메일', 'dart_corp_code'];
+    const headers = ['id', 'DB 회사명', 'DART 회사명', '사업자번호', '웹사이트', '이메일', '상태', '수동승인'];
     const csvRows = [
       headers.join(','),
       ...rows.map(r => [
-        r.id, `"${(r.name||'').replace(/"/g,'""')}"`,
-        r.bizrno||'', `"${r.website||''}"`, `"${r.email||''}"`, r.dart_corp_code||''
+        r.id,
+        `"${(r.name||'').replace(/"/g,'""')}"`,
+        `"${(r.dart_mismatch_name||'').replace(/"/g,'""')}"`,
+        r.bizrno||'',
+        `"${r.website||''}"`,
+        `"${r.email||''}"`,
+        r.dart_corp_code||'',
+        r.dart_manual_match ? '승인' : '',
       ].join(','))
     ];
     const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -8688,39 +8702,41 @@ const AdminDartMismatchTab = () => {
     a.click();
   };
 
+  const FILTERS = [
+    { id: 'MISMATCH',  label: '🔴 상호명 불일치' },
+    { id: 'NONE',      label: '🟡 corp_code 없음' },
+    { id: 'APPROVED',  label: '✅ 수동 승인됨' },
+    { id: 'ALL',       label: '전체' },
+  ];
+
   return (
     <section className="admin-panel">
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
-        <div style={{ display:'flex', gap:8 }}>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           <h3 style={{ margin:0, fontSize:15, fontWeight:600 }}>DART 불일치 관리</h3>
-          <span style={{ fontSize:13, color:'#888', alignSelf:'center' }}>총 {rows.length}건</span>
+          <span style={{ fontSize:13, color:'#888' }}>총 {rows.length}건</span>
         </div>
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-          {['MISMATCH','NONE','ALL'].map(f => (
-            <button key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', border:'1px solid',
-                background: filter===f ? '#2563eb' : '#fff',
-                color: filter===f ? '#fff' : '#444',
-                borderColor: filter===f ? '#2563eb' : '#ddd',
-              }}>
-              {f === 'MISMATCH' ? '🔴 상호명 불일치' : f === 'NONE' ? '🟡 corp_code 없음' : '전체'}
-            </button>
+          {FILTERS.map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)} style={{
+              padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', border:'1px solid',
+              background: filter===f.id ? '#2563eb' : '#fff',
+              color:      filter===f.id ? '#fff'    : '#444',
+              borderColor:filter===f.id ? '#2563eb' : '#ddd',
+            }}>{f.label}</button>
           ))}
-          <button onClick={downloadCSV}
-            style={{ padding:'5px 14px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#16a34a', color:'#fff', border:'none' }}>
+          <button onClick={downloadCSV} style={{ padding:'5px 14px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#16a34a', color:'#fff', border:'none' }}>
             ⬇ CSV 다운로드
           </button>
-          <button onClick={loadData}
-            style={{ padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#f3f4f6', color:'#444', border:'1px solid #ddd' }}>
+          <button onClick={loadData} style={{ padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#f3f4f6', color:'#444', border:'1px solid #ddd' }}>
             🔄 새로고침
           </button>
         </div>
       </div>
 
       {actionMsg && (
-        <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:'8px 14px', marginBottom:12, fontSize:13, color:'#166534' }}>
+        <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:'8px 14px', marginBottom:12, fontSize:13, color:'#166534' }}
+          onClick={() => setActionMsg('')} title="클릭하여 닫기">
           {actionMsg}
         </div>
       )}
@@ -8733,49 +8749,69 @@ const AdminDartMismatchTab = () => {
           <table className="admin-table">
             <thead>
               <tr>
-                <th style={{width:40}}>#</th>
-                <th>회사명</th>
+                <th style={{width:36}}>#</th>
+                <th>DB 회사명</th>
+                <th>DART 회사명</th>
                 <th>사업자번호</th>
                 <th>웹사이트</th>
-                <th>이메일</th>
-                <th style={{width:90}}>상태</th>
-                <th style={{width:180}}>조치</th>
+                <th style={{width:100}}>상태</th>
+                <th style={{width:220}}>조치</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr><td colSpan="7" className="admin-table-empty">해당 항목이 없습니다</td></tr>
               )}
-              {rows.map((r, i) => (
-                <tr key={r.id}>
-                  <td style={{ color:'#aaa', fontSize:12 }}>{i+1}</td>
-                  <td style={{ fontWeight:500 }}>{r.name}</td>
-                  <td style={{ fontFamily:'monospace', fontSize:12 }}>{r.bizrno || '-'}</td>
-                  <td style={{ fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {r.website ? <a href={r.website} target="_blank" rel="noreferrer" style={{ color:'#2563eb' }}>{r.website}</a> : '-'}
-                  </td>
-                  <td style={{ fontSize:12 }}>{r.email || '-'}</td>
-                  <td>
-                    <span style={{
-                      display:'inline-block', padding:'2px 8px', borderRadius:99, fontSize:11,
-                      background: r.dart_corp_code==='MISMATCH' ? '#fee2e2' : '#fef9c3',
-                      color:      r.dart_corp_code==='MISMATCH' ? '#b91c1c' : '#92400e',
-                    }}>
-                      {r.dart_corp_code==='MISMATCH' ? '상호명 불일치' : 'corp_code 없음'}
-                    </span>
-                  </td>
-                  <td style={{ display:'flex', gap:6 }}>
-                    <button onClick={() => resetDartOnly(r.id, r.name)}
-                      style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe' }}>
-                      DART만 초기화
-                    </button>
-                    <button onClick={() => resetBizrno(r.id, r.name)}
-                      style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#fef2f2', color:'#b91c1c', border:'1px solid #fecaca' }}>
-                      bizrno 초기화
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((r, i) => {
+                const isMismatch = r.dart_corp_code === 'MISMATCH';
+                const isApproved = r.dart_manual_match;
+                return (
+                  <tr key={r.id} style={{ background: isApproved ? '#f0fdf4' : undefined }}>
+                    <td style={{ color:'#aaa', fontSize:12 }}>{i+1}</td>
+                    <td style={{ fontWeight:600 }}>{r.name}</td>
+                    <td>
+                      {r.dart_mismatch_name ? (
+                        <span style={{
+                          color: r.dart_mismatch_name === r.name ? '#16a34a' : '#dc2626',
+                          fontWeight: 500,
+                        }}>
+                          {r.dart_mismatch_name}
+                        </span>
+                      ) : <span style={{ color:'#aaa' }}>-</span>}
+                    </td>
+                    <td style={{ fontFamily:'monospace', fontSize:12 }}>{r.bizrno || '-'}</td>
+                    <td style={{ fontSize:12, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {r.website
+                        ? <a href={r.website} target="_blank" rel="noreferrer" style={{ color:'#2563eb' }}>{r.website}</a>
+                        : <span style={{ color:'#aaa' }}>-</span>}
+                    </td>
+                    <td>
+                      {isApproved ? (
+                        <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:99, fontSize:11, background:'#dcfce7', color:'#166534' }}>✅ 수동승인</span>
+                      ) : isMismatch ? (
+                        <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:99, fontSize:11, background:'#fee2e2', color:'#b91c1c' }}>상호명 불일치</span>
+                      ) : (
+                        <span style={{ display:'inline-block', padding:'2px 8px', borderRadius:99, fontSize:11, background:'#fef9c3', color:'#92400e' }}>corp없음</span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display:'flex', gap:5 }}>
+                        {isMismatch && !isApproved && (
+                          <button onClick={() => approveMatch(r.id, r.name)} style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#dcfce7', color:'#166534', border:'1px solid #86efac', whiteSpace:'nowrap' }}>
+                            ✅ 수동 매칭
+                          </button>
+                        )}
+                        <button onClick={() => resetDartOnly(r.id, r.name)} style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe', whiteSpace:'nowrap' }}>
+                          DART 초기화
+                        </button>
+                        <button onClick={() => resetBizrno(r.id, r.name)} style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#fef2f2', color:'#b91c1c', border:'1px solid #fecaca', whiteSpace:'nowrap' }}>
+                          bizrno 초기화
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
