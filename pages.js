@@ -70,17 +70,11 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
     <header className="hdr" style={{ height: isCompact ? 56 : 64 }}>
       <div className="hdr-inner">
         <div className="hdr-left">
-          <button className="logo" onClick={() => {
+          <button className="logo logo-img-btn" onClick={() => {
             if (route === 'home' && authed) window.dispatchEvent(new CustomEvent('home-reset'));
             else onNav('home');
           }}>
-            <span className="logo-mark">
-              <span className="logo-mark-inner"/>
-            </span>
-            <span className="logo-text">
-              <span className="logo-ko">공장매칭</span>
-              <span className="logo-en">FactoryMatch</span>
-            </span>
+            <img src="/logo.png" alt="공장매칭 FactoryMatch" className="hdr-logo-img" />
           </button>
           <nav className="hdr-nav">
             {navItems.map(n => (
