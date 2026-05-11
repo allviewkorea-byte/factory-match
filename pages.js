@@ -9784,16 +9784,16 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
       {toast && <div className="grants-toast">{toast}</div>}
 
       <div className="grants-detail-header">
-        <div className="grants-detail-badges">
-          {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
-          <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{f.cat}</span>}
+            <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+            {dday && !dday.expired && (
+              <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`}>{dday.label}</span>
+            )}
+          </div>
         </div>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
-          <h1 className="grants-detail-title" style={{ flex:1 }}>{f.title}</h1>
-          {dday && !dday.expired && (
-            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`} style={{ flexShrink:0, marginTop:6 }}>{dday.label}</span>
-          )}
-        </div>
+        <h1 className="grants-detail-title">{f.title}</h1>
       </div>
 
       <div className="grants-detail-body">
@@ -9832,7 +9832,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
 
         {/* 버튼 영역 - 공고문 다운로드 + 스크랩/링크/목록/원문 같은 행 */}
         <div style={{ marginTop:8 }}>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
             {f.pdfUrl && (
               <a
                 href={f.pdfUrl}
