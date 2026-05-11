@@ -151,33 +151,43 @@ def _api_call(company_name, attempt=1):
                 "cmpnyNm":    company_name,
                 "pageNo":     "1",
                 "numOfRows":  "5",
-                "type":       "json",
             },
-            timeout=(10, 20),  # (connect 10초, read 20초) 분리
+            timeout=(10, 20),
         )
         print("    [API] 응답 수신: HTTP {0}".format(r.status_code))
         if r.status_code != 200:
             return [], True
 
-        data = r.json()
+        # XML 파싱
+        import xml.etree.ElementTree as ET
+        try:
+            root = ET.fromstring(r.text)
+        except Exception as xe:
+            print("    [API] XML 파싱 오류: {0}".format(xe))
+            return [], True
 
         # 결과코드 확인
-        result_code = (
-            data.get("response", {})
-                .get("header", {})
-                .get("resultCode", "")
-        )
+        result_code = root.findtext(".//resultCode") or ""
         if result_code not in ("00", "000", ""):
             print("    [API] 결과코드: {0} (결과 없음)".format(result_code))
-            return [], False  # 정상 응답이나 결과 없음
+            return [], False
 
-        items = (
-            data.get("response", {})
-                .get("body", {})
-                .get("items", {})
-                .get("item", [])
-        )
-        # 단일 결과는 dict로 반환되는 경우 처리
+        # 아이템 추출
+        raw_items = root.findall(".//item")
+        items = []
+        for item in raw_items:
+            d = {c.tag: c.text for c in item}
+            # KICOX 필드명 → enrich_factoryon 필드명 매핑
+            mapped = {
+                "cmpnyNm":        d.get("cmpnyNm"),
+                "rnAdres":        d.get("rnAdres"),
+                "cmpnyTelno":     d.get("cmpnyTelno"),
+                "rprsntvNm":      d.get("rprsntvNm"),
+                "irsttNm":        d.get("irsttNm"),
+                "fctryDongBuldAr": d.get("fctryDongBuldAr"),
+            }
+            items.append(mapped)
+        # 단일 결과 처리 (items가 이미 list)
         if isinstance(items, dict):
             items = [items]
         result = items if isinstance(items, list) else []
