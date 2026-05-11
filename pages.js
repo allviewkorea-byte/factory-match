@@ -2416,8 +2416,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
               </div>
             </div>
 
-            {/* ── 인증 ── */}
-            <div className={`acc-section ${openSections.has('cert') ? 'acc-open' : ''}`}>
+            {/* ── 인증 ── 데이터 수집 후 노출 예정 */}
+            {/* <div className={`acc-section ${openSections.has('cert') ? 'acc-open' : ''}`}>
               <button className="acc-header" onClick={() => toggleSection('cert')}>
                 <span className="acc-title">인증</span>
                 <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2433,10 +2433,10 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   ))}
                 </div>
               </div>
-            </div>
+            </div> */}
 
-            {/* ── 리드타임 ── */}
-            <div className={`acc-section ${openSections.has('lead') ? 'acc-open' : ''}`}>
+            {/* ── 리드타임 ── 데이터 수집 후 노출 예정 */}
+            {/* <div className={`acc-section ${openSections.has('lead') ? 'acc-open' : ''}`}>
               <button className="acc-header" onClick={() => toggleSection('lead')}>
                 <span className="acc-title">리드타임</span>
                 <svg className="acc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2452,7 +2452,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                   ))}
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* ── 기타 필터 ── */}
             <div className={`acc-section ${openSections.has('misc') ? 'acc-open' : ''}`}>
