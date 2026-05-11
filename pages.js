@@ -5983,83 +5983,102 @@ function SignupPage({ onNav }) {
           {/* ── 2단계: 기본 정보 ── */}
           {step === 2 && (<>
             <div className="auth-card-head sgn-step-head">
-              <h1>기본 정보 입력</h1>
+              <h1>회원 정보 입력</h1>
               <p>{userType === 'buyer' ? '바이어' : '제조사'} 계정을 만들어 드릴게요</p>
             </div>
-            <div className="sgn-form">
+            <div className="sgn-form sgn-form-clean">
+
               <div className="sgn-field">
-                <span className="auth-field-label">이메일 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.email ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="mail" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="email" placeholder="company@email.com"
+                <label className="sgn-label">성명 <em className="sgn-req">*</em></label>
+                <div className={`sgn-input-box ${errors.contactName ? 'is-err' : ''}`}>
+                  <input className="sgn-input" type="text" placeholder="홍길동"
+                    value={form.contactName} onChange={e => upd('contactName', e.target.value)}/>
+                </div>
+                {errors.contactName && <span className="sgn-err">{errors.contactName}</span>}
+              </div>
+
+              <div className="sgn-field">
+                <label className="sgn-label">휴대폰 번호 <em className="sgn-req">*</em></label>
+                <div className="sgn-phone-row">
+                  <div className={`sgn-input-box ${errors.contactPhone ? 'is-err' : ''}`} style={{ flex:1 }}>
+                    <input className="sgn-input" type="text" placeholder="010-0000-0000" maxLength={13}
+                      value={form.contactPhone} onChange={e => upd('contactPhone', fmtPhone(e.target.value))}/>
+                  </div>
+                  <button className="sgn-verify-btn" type="button" onClick={() => {}}>인증번호 받기</button>
+                </div>
+                {errors.contactPhone && <span className="sgn-err">{errors.contactPhone}</span>}
+              </div>
+
+              <div className="sgn-field">
+                <label className="sgn-label">인증번호 <em className="sgn-req">*</em></label>
+                <div className="sgn-phone-row">
+                  <div className="sgn-input-box" style={{ flex:1 }}>
+                    <input className="sgn-input" type="text" placeholder="인증번호를 입력하세요" maxLength={6}/>
+                  </div>
+                  <button className="sgn-verify-confirm-btn" type="button" onClick={() => {}}>인증번호 확인</button>
+                </div>
+                <span className="sgn-timer">남은 시간: 4:52</span>
+              </div>
+
+              <div className="sgn-sep"/>
+
+              <div className="sgn-field">
+                <label className="sgn-label">이메일 <em className="sgn-req">*</em></label>
+                <div className={`sgn-input-box ${errors.email ? 'is-err' : ''}`}>
+                  <input className="sgn-input" type="email" placeholder="company@email.com"
                     value={form.email} onChange={e => upd('email', e.target.value)} autoComplete="email"/>
                 </div>
                 {errors.email && <span className="sgn-err">{errors.email}</span>}
               </div>
+
               <div className="sgn-field">
-                <span className="auth-field-label">비밀번호 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.password ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="lock" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="password" placeholder="8자 이상"
+                <label className="sgn-label">비밀번호 <em className="sgn-req">*</em></label>
+                <div className={`sgn-input-box ${errors.password ? 'is-err' : ''}`}>
+                  <input className="sgn-input" type="password" placeholder="8자 이상"
                     value={form.password} onChange={e => upd('password', e.target.value)} autoComplete="new-password"/>
                 </div>
                 {errors.password && <span className="sgn-err">{errors.password}</span>}
               </div>
+
               <div className="sgn-field">
-                <span className="auth-field-label">비밀번호 확인 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.passwordConfirm ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="lock" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="password" placeholder="비밀번호 재입력"
+                <label className="sgn-label">비밀번호 확인 <em className="sgn-req">*</em></label>
+                <div className={`sgn-input-box ${errors.passwordConfirm ? 'is-err' : ''}`}>
+                  <input className="sgn-input" type="password" placeholder="비밀번호 재입력"
                     value={form.passwordConfirm} onChange={e => upd('passwordConfirm', e.target.value)} autoComplete="new-password"/>
                 </div>
                 {errors.passwordConfirm && <span className="sgn-err">{errors.passwordConfirm}</span>}
               </div>
+
               <div className="sgn-sep"/>
+
               <div className="sgn-field">
-                <span className="auth-field-label">회사명 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.companyName ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="building" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="text" placeholder="(주)회사명"
+                <label className="sgn-label">회사명 <em className="sgn-req">*</em></label>
+                <div className={`sgn-input-box ${errors.companyName ? 'is-err' : ''}`}>
+                  <input className="sgn-input" type="text" placeholder="(주)회사명"
                     value={form.companyName} onChange={e => upd('companyName', e.target.value)}/>
                 </div>
                 {errors.companyName && <span className="sgn-err">{errors.companyName}</span>}
               </div>
+
               <div className="sgn-field">
-                <span className="auth-field-label">사업자번호 <em className="sgn-req">*</em></span>
-                <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                  <div className={`auth-input-wrap ${errors.businessNumber ? 'sgn-wrap-err' : ''}`} style={{ flex:1 }}>
-                    <Icon name="layers" size={15} stroke={1.8}/>
-                    <input className="auth-input" type="text" placeholder="000-00-00000" maxLength={12}
+                <label className="sgn-label">사업자번호 <em className="sgn-req">*</em></label>
+                <div className="sgn-phone-row">
+                  <div className={`sgn-input-box ${errors.businessNumber ? 'is-err' : ''}`} style={{ flex:1 }}>
+                    <input className="sgn-input" type="text" placeholder="000-00-00000" maxLength={12}
                       value={form.businessNumber} onChange={e => upd('businessNumber', fmtBiz(e.target.value))}/>
                   </div>
                   {form.businessNumber.replace(/\D/g,'').length === 10 && (
-                    <span style={{ fontSize:12, color:'#16a34a', fontWeight:600, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:4 }}>
-                      <Icon name="check" size={13} stroke={2.5}/>형식 확인
+                    <span className="sgn-check-badge">
+                      <Icon name="check" size={13} stroke={2.5}/> 확인
                     </span>
                   )}
                 </div>
                 {errors.businessNumber && <span className="sgn-err">{errors.businessNumber}</span>}
               </div>
-              <div className="sgn-field">
-                <span className="auth-field-label">담당자명 <em className="sgn-req">*</em></span>
-                <div className={`auth-input-wrap ${errors.contactName ? 'sgn-wrap-err' : ''}`}>
-                  <Icon name="user" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="text" placeholder="홍길동"
-                    value={form.contactName} onChange={e => upd('contactName', e.target.value)}/>
-                </div>
-                {errors.contactName && <span className="sgn-err">{errors.contactName}</span>}
-              </div>
-              <div className="sgn-field">
-                <span className="auth-field-label">연락처</span>
-                <div className="auth-input-wrap">
-                  <Icon name="phone" size={15} stroke={1.8}/>
-                  <input className="auth-input" type="text" placeholder="010-0000-0000" maxLength={13}
-                    value={form.contactPhone} onChange={e => upd('contactPhone', fmtPhone(e.target.value))}/>
-                </div>
-              </div>
+
             </div>
-            <button className="btn-primary sgn-btn" onClick={goNext}>
-              다음 단계 <Icon name="arrow_right" size={14} stroke={2.4}/>
+            <button className="sgn-submit-btn" onClick={goNext}>
+              다음 단계
             </button>
           </>)}
 
