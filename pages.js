@@ -8170,7 +8170,7 @@ const AdminVisitorTab = () => {
 
 // AdminFactoriesTab — 제조사 관리 (서버사이드 페이지네이션 + 검색 + 편집)
 const AdminFactoriesTab = ({ onOpenFactory }) => {
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [filterVisible, setFilterVisible] = useState('all'); // all|public|private
@@ -8222,7 +8222,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
     if (!window._sb) return;
     let mounted = true;
     setLoading(true);
-    let sq = window._sb.from('factories').select('*', { count: 'exact' });
+    let sq = window._sb.from('factories').select('id,name,city,phone,email,website,hidden,ai_summary', { count: 'exact' });
     if (debouncedQ) sq = sq.or(`name.ilike.%${debouncedQ}%,city.ilike.%${debouncedQ}%`);
     if (filterVisible === 'public')  sq = sq.eq('hidden', false);
     if (filterVisible === 'private') sq = sq.eq('hidden', true);
