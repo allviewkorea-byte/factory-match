@@ -9708,7 +9708,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
               </svg>
             </div>
             <div>
-              <div className="aic-chat-title">공장매칭 AI 컨설턴트</div>
+              <div className="aic-chat-title">AI매칭봇</div>
               <div className="aic-chat-subtitle">제품 정보를 알려주시면 최적의 공장을 찾아드립니다</div>
             </div>
           </div>
