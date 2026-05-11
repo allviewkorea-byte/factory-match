@@ -5840,11 +5840,11 @@ a { color: inherit; text-decoration: none; }
 .ldg3-hero-light {
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background: transparent !important;
   position: relative;
-  padding: 100px 24px 60px;
+  padding: 140px 24px 60px;
 }
 .ldg3-hero-light::before { display: none !important; }
 .ldg3-h1-light {
