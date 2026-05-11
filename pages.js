@@ -10025,6 +10025,14 @@ const GrantsPage = ({ onNav, authed }) => {
     displayItems = [...filteredPinned, ...filteredClosed];
   }
 
+  // 클라이언트 페이지네이션 (pinnedItems 기반일 때)
+  const isClientPaged = statusFilter !== 'all' || pinnedItems.length > 0;
+  const pagedDisplayItems = isClientPaged
+    ? displayItems.slice((pageNo - 1) * numOfRows, pageNo * numOfRows)
+    : displayItems;
+  const clientTotalPages = Math.max(1, Math.ceil(displayItems.length / numOfRows));
+  const effectiveTotalPages = pinnedItems.length > 0 ? clientTotalPages : totalPages;
+
   if (selectedItem) {
     return <GrantDetailPage item={selectedItem} onBack={closeDetail} authed={authed} onNav={onNav} />;
   }
@@ -10107,7 +10115,7 @@ const GrantsPage = ({ onNav, authed }) => {
                 </tr>
               </thead>
               <tbody>
-                {displayItems.map((item, i) => {
+                {pagedDisplayItems.map((item, i) => {
                   const f = _biz(item);
                   const dday = calcDday(f.endDate);
                   const catLabel = f.cat;
@@ -10149,12 +10157,12 @@ const GrantsPage = ({ onNav, authed }) => {
               </tbody>
             </table>
           </div>
-          {totalPages > 1 && (
+          {effectiveTotalPages > 1 && (
             <div className="grants-pagination">
               <button className="grants-page-btn" disabled={pageNo <= 1}
                 onClick={() => { setPageNo(p => p - 1); window.scrollTo(0, 0); }}>이전</button>
-              <span className="grants-page-info">{pageNo} / {totalPages}</span>
-              <button className="grants-page-btn" disabled={pageNo >= totalPages}
+              <span className="grants-page-info">{pageNo} / {effectiveTotalPages}</span>
+              <button className="grants-page-btn" disabled={pageNo >= effectiveTotalPages}
                 onClick={() => { setPageNo(p => p + 1); window.scrollTo(0, 0); }}>다음</button>
             </div>
           )}
