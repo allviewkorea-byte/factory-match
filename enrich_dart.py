@@ -91,13 +91,15 @@ def load_corp_codes():
     import xml.etree.ElementTree as ET
     root = ET.fromstring(content)
 
-    mapping = {}  # bizrno → corp_code
+    mapping = {}  # corp_name → corp_code (bizr_no 미제공으로 회사명 매핑)
     for item in root.findall(".//list"):
         corp_code = (item.findtext("corp_code") or "").strip()
-        bizrno    = (item.findtext("bizr_no")   or "").strip().replace("-", "")
         corp_name = (item.findtext("corp_name")  or "").strip()
-        if corp_code and bizrno:
-            mapping[bizrno] = {"corp_code": corp_code, "corp_name": corp_name}
+        if corp_code and corp_name:
+            # 회사명 정규화: (주), 주식회사 등 제거 후 소문자로
+            key = corp_name.replace("(", "").replace(")", "").replace("주식회사", "").replace("(주)", "").replace("㈜", "").strip()
+            mapping[key] = {"corp_code": corp_code, "corp_name": corp_name}
+            mapping[corp_name] = {"corp_code": corp_code, "corp_name": corp_name}
 
     with open(CORP_CODE_FILE, "w", encoding="utf-8") as f:
         json.dump(mapping, f, ensure_ascii=False)
@@ -253,8 +255,12 @@ def main():
         if fid in done_ids or not bizrno:
             continue
 
-        # corp_code 매핑
-        corp_info = corp_map.get(bizrno)
+        # corp_code 매핑 - 회사명 기반
+        corp_info = corp_map.get(name)
+        if not corp_info:
+            # 회사명 정규화 후 재시도
+            norm = name.replace("(", "").replace(")", "").replace("주식회사", "").replace("(주)", "").replace("㈜", "").strip()
+            corp_info = corp_map.get(norm)
         if not corp_info:
             # corp_code 없음 → NULL 표시로 스킵 (재시도 방지)
             patch_factory(session, fid, {"dart_corp_code": "NONE"})
