@@ -10312,19 +10312,27 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
     : { label: '진행중', cls: 'status-active' };
   const desc    = _stripHtml(f.desc);
 
-  // 조회수: localStorage 기반 실제 카운트
-  const _viewKey = `gv_${f.no || f.title}`;
-  const [views, setViews] = React.useState(() => {
-    try { return parseInt(localStorage.getItem(_viewKey) || _hashViews(f.no), 10); } catch { return _hashViews(f.no); }
-  });
+  // 조회수: DB 기반 실제 카운트 (base_count = 기존 해시값 유지)
+  const _noKey = f.no || f.title;
+  const [views, setViews] = React.useState(_hashViews(f.no));
   React.useEffect(() => {
-    try {
-      const prev = parseInt(localStorage.getItem(_viewKey) || _hashViews(f.no), 10);
-      const next = prev + 1;
-      localStorage.setItem(_viewKey, next);
-      setViews(next);
-    } catch {}
-  }, [f.no]);
+    if (!_noKey || !window._sb) return;
+    const sb = window._sb;
+    // DB에서 조회수 읽기 + 없으면 해시값으로 초기화
+    sb.from('grant_views').select('view_count,base_count').eq('no', String(_noKey)).single()
+      .then(({ data }) => {
+        if (data) {
+          setViews((data.base_count || 0) + (data.view_count || 0));
+          // view_count +1
+          sb.from('grant_views').update({ view_count: (data.view_count || 0) + 1 }).eq('no', String(_noKey));
+        } else {
+          // 신규: 해시값을 base_count로 저장
+          const base = _hashViews(f.no);
+          sb.from('grant_views').insert({ no: String(_noKey), base_count: base, view_count: 1 });
+          setViews(base + 1);
+        }
+      }).catch(() => {});
+  }, [_noKey]);
   const method  = _stripHtml(f.method);
   const contact = _stripHtml(f.contact);
   const [toast, setToast] = React.useState('');
@@ -10741,7 +10749,7 @@ const GrantsPage = ({ onNav, authed, onGate }) => {
                     : f.endDate
                       ? `~ ${_fmtDate8(f.endDate)}`
                       : '-';
-                  const views = (() => { try { const k = `gv_${f.no || f.title}`; return parseInt(localStorage.getItem(k) || _hashViews(f.no), 10).toLocaleString(); } catch { return _hashViews(f.no).toLocaleString(); } })();
+                  const views = _hashViews(f.no).toLocaleString();
                   return (
                     <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => openDetail(item)}>
                       <td className="gt-no">{rowNum}</td>
