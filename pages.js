@@ -8320,6 +8320,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'analytics', label: '통계' },
           { id: 'visitors',  label: '비회원 활동' },
           { id: 'grants',    label: '지원사업 관리' },
+          { id: 'dart',      label: 'DART 불일치' },
         ].map(t => (
           <button
             key={t.id}
@@ -8392,6 +8393,8 @@ const AdminPage = ({ onOpenFactory }) => {
       )}
 
       {tab === 'grants' && <AdminGrantsTab />}
+
+      {tab === 'dart' && <AdminDartMismatchTab />}
 
       {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
@@ -8616,7 +8619,172 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
-Object.assign(window, { ChatPage, MyPage, AdminPage, AdminReportsTab, AdminSignupTab, AdminVisitorTab, AdminGrantsTab, GateModal });
+// ─── AdminDartMismatchTab ────────────────────────────────────────────────
+const AdminDartMismatchTab = () => {
+  const SUPABASE_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
+  const SB_HEADERS = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+  const [rows, setRows]       = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError]     = React.useState(null);
+  const [filter, setFilter]   = React.useState('MISMATCH'); // MISMATCH | NONE | ALL
+  const [actionMsg, setActionMsg] = React.useState('');
+
+  React.useEffect(() => { loadData(); }, [filter]);
+
+  const loadData = async () => {
+    setLoading(true); setError(null);
+    try {
+      let url = `${SUPABASE_URL}/rest/v1/factories?select=id,name,bizrno,website,email,dart_corp_code&limit=500`;
+      if (filter === 'MISMATCH') url += '&dart_corp_code=eq.MISMATCH';
+      else if (filter === 'NONE') url += '&dart_corp_code=eq.NONE';
+      else url += '&dart_corp_code=in.(MISMATCH,NONE)';
+      const res = await fetch(url, { headers: SB_HEADERS });
+      const data = await res.json();
+      setRows(Array.isArray(data) ? data : []);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  // bizrno 초기화 (재수집 가능하도록)
+  const resetBizrno = async (id, name) => {
+    if (!confirm(`"${name}" 의 bizrno와 dart_corp_code를 초기화할까요?`)) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/factories?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ bizrno: null, dart_corp_code: null }),
+    });
+    setActionMsg(`✅ "${name}" bizrno 초기화 완료`);
+    loadData();
+  };
+
+  // dart_corp_code만 초기화 (bizrno는 유지, 재매칭 시도)
+  const resetDartOnly = async (id, name) => {
+    if (!confirm(`"${name}" 의 dart_corp_code만 초기화할까요? (bizrno 유지)`)) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/factories?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...SB_HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ dart_corp_code: null }),
+    });
+    setActionMsg(`✅ "${name}" dart_corp_code 초기화 완료`);
+    loadData();
+  };
+
+  // CSV 다운로드
+  const downloadCSV = () => {
+    const headers = ['id', '회사명', '사업자번호', '웹사이트', '이메일', 'dart_corp_code'];
+    const csvRows = [
+      headers.join(','),
+      ...rows.map(r => [
+        r.id, `"${(r.name||'').replace(/"/g,'""')}"`,
+        r.bizrno||'', `"${r.website||''}"`, `"${r.email||''}"`, r.dart_corp_code||''
+      ].join(','))
+    ];
+    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `dart_mismatch_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  };
+
+  return (
+    <section className="admin-panel">
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:8 }}>
+        <div style={{ display:'flex', gap:8 }}>
+          <h3 style={{ margin:0, fontSize:15, fontWeight:600 }}>DART 불일치 관리</h3>
+          <span style={{ fontSize:13, color:'#888', alignSelf:'center' }}>총 {rows.length}건</span>
+        </div>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          {['MISMATCH','NONE','ALL'].map(f => (
+            <button key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', border:'1px solid',
+                background: filter===f ? '#2563eb' : '#fff',
+                color: filter===f ? '#fff' : '#444',
+                borderColor: filter===f ? '#2563eb' : '#ddd',
+              }}>
+              {f === 'MISMATCH' ? '🔴 상호명 불일치' : f === 'NONE' ? '🟡 corp_code 없음' : '전체'}
+            </button>
+          ))}
+          <button onClick={downloadCSV}
+            style={{ padding:'5px 14px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#16a34a', color:'#fff', border:'none' }}>
+            ⬇ CSV 다운로드
+          </button>
+          <button onClick={loadData}
+            style={{ padding:'5px 12px', borderRadius:6, fontSize:12, cursor:'pointer', background:'#f3f4f6', color:'#444', border:'1px solid #ddd' }}>
+            🔄 새로고침
+          </button>
+        </div>
+      </div>
+
+      {actionMsg && (
+        <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:'8px 14px', marginBottom:12, fontSize:13, color:'#166534' }}>
+          {actionMsg}
+        </div>
+      )}
+
+      {loading && <div style={{ textAlign:'center', padding:40, color:'#888' }}>로딩 중…</div>}
+      {error   && <div style={{ color:'#ef4444', padding:12 }}>오류: {error}</div>}
+
+      {!loading && !error && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th style={{width:40}}>#</th>
+                <th>회사명</th>
+                <th>사업자번호</th>
+                <th>웹사이트</th>
+                <th>이메일</th>
+                <th style={{width:90}}>상태</th>
+                <th style={{width:180}}>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 && (
+                <tr><td colSpan="7" className="admin-table-empty">해당 항목이 없습니다</td></tr>
+              )}
+              {rows.map((r, i) => (
+                <tr key={r.id}>
+                  <td style={{ color:'#aaa', fontSize:12 }}>{i+1}</td>
+                  <td style={{ fontWeight:500 }}>{r.name}</td>
+                  <td style={{ fontFamily:'monospace', fontSize:12 }}>{r.bizrno || '-'}</td>
+                  <td style={{ fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {r.website ? <a href={r.website} target="_blank" rel="noreferrer" style={{ color:'#2563eb' }}>{r.website}</a> : '-'}
+                  </td>
+                  <td style={{ fontSize:12 }}>{r.email || '-'}</td>
+                  <td>
+                    <span style={{
+                      display:'inline-block', padding:'2px 8px', borderRadius:99, fontSize:11,
+                      background: r.dart_corp_code==='MISMATCH' ? '#fee2e2' : '#fef9c3',
+                      color:      r.dart_corp_code==='MISMATCH' ? '#b91c1c' : '#92400e',
+                    }}>
+                      {r.dart_corp_code==='MISMATCH' ? '상호명 불일치' : 'corp_code 없음'}
+                    </span>
+                  </td>
+                  <td style={{ display:'flex', gap:6 }}>
+                    <button onClick={() => resetDartOnly(r.id, r.name)}
+                      style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe' }}>
+                      DART만 초기화
+                    </button>
+                    <button onClick={() => resetBizrno(r.id, r.name)}
+                      style={{ padding:'3px 8px', fontSize:11, borderRadius:5, cursor:'pointer', background:'#fef2f2', color:'#b91c1c', border:'1px solid #fecaca' }}>
+                      bizrno 초기화
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+};
+
+Object.assign(window, { AdminDartMismatchTab });
 
 
 // ──────────────────────────────────────────────────────────
