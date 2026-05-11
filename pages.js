@@ -3158,6 +3158,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
                 {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
+                {f.email && <><dt>이메일</dt><dd><a href={`mailto:${f.email}`} className="detail-link">{f.email}</a></dd></>
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
