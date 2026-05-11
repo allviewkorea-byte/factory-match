@@ -4579,6 +4579,51 @@ const AuthLogo = ({ size = 36 }) => (
 // ═══════════════════════════════════════════════════════════
 // 1) LANDING (로그아웃 상태)
 // ═══════════════════════════════════════════════════════════
+// ── 랜딩 유틸: 스크롤 감지 ──
+function useLdgInView(ref, threshold) {
+  const [inView, setInView] = React.useState(false);
+  React.useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold: threshold || 0.15 });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return inView;
+}
+
+// 숫자 카운트업
+function LdgCountUp({ target, suffix }) {
+  const [val, setVal] = React.useState(0);
+  const ref = React.useRef(null);
+  const inView = useLdgInView(ref, 0.3);
+  React.useEffect(() => {
+    if (!inView) return;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / 1600, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setVal(Math.floor(ease * target));
+      if (p < 1) requestAnimationFrame(step); else setVal(target);
+    };
+    requestAnimationFrame(step);
+  }, [inView]);
+  return <span ref={ref}>{val.toLocaleString()}{suffix || ''}</span>;
+}
+
+// FadeUp 래퍼
+function LdgFade({ children, delay, cls }) {
+  const ref = React.useRef(null);
+  const inView = useLdgInView(ref, 0.1);
+  return (
+    <div ref={ref} className={cls || ''} style={{
+      opacity: inView ? 1 : 0,
+      transform: inView ? 'translateY(0)' : 'translateY(28px)',
+      transition: `opacity 0.65s ease ${delay || 0}s, transform 0.65s ease ${delay || 0}s`,
+    }}>{children}</div>
+  );
+}
+
 function LandingPage({ onNav, authed }) {
   const [q, setQ] = useAuthState('');
   const [showModal, setShowModal] = useAuthState(false);
@@ -4589,44 +4634,174 @@ function LandingPage({ onNav, authed }) {
     setShowModal(true);
   };
 
+  const WHY = [
+    { icon: '🏭', title: '전국 20만 공장 DB', desc: '국내 모든 제조사 데이터를 한 곳에. 업종·공정·지역별 즉시 검색 가능합니다.' },
+    { icon: '🤖', title: 'AI 자동 매칭', desc: '공정과 소재를 입력하면 AI가 가장 적합한 공장을 추천해 드립니다.' },
+    { icon: '📋', title: '한 번에 견적 요청', desc: '여러 공장에 동시에 견적 요청. 비교하고 최적의 파트너를 선택하세요.' },
+    { icon: '🏛️', title: '정부지원사업 연계', desc: '제조업 지원사업 정보를 한눈에. 놓치는 기회 없이 성장하세요.' },
+  ];
+
+  const STEPS = [
+    { n: '01', title: '공정 입력', desc: '필요한 공정과 소재를 입력' },
+    { n: '02', title: 'AI 매칭', desc: 'AI가 최적 공장 후보 선별' },
+    { n: '03', title: '견적 요청', desc: '원하는 공장에 견적 요청' },
+    { n: '04', title: '파트너 확정', desc: '비교 후 최적 파트너 선택' },
+  ];
+
   return (
-    <div className="ldg2">
+    <div className="ldg3">
       <ParticleCanvas />
 
-      <main className="ldg2-main">
-        <section className="ldg2-hero">
-          <h1 className="ldg2-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="ldg2-headline-accent">제조공장</span></h1>
-          <p className="ldg2-sub">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
-
-          <div className="ldg2-search-wrap">
-            <input
-              type="text"
-              className="ldg2-search-input"
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-              placeholder="예: CNC 알루미늄 가공"
-              autoComplete="off"
-            />
-            <button className="ldg2-search-btn" onClick={handleSearch}>
-              <Icon name="search" size={20} stroke={2.2}/>
-            </button>
-          </div>
-
-          <div className="ldg2-tag-row">
-            {HOME_TAGS.map(tag => (
-              <button key={tag} className="ldg2-tag" onClick={() => handleSearch(tag)}>
-                {tag}
+      {/* ── HERO ── */}
+      <section className="ldg3-hero">
+        <div className="ldg3-hero-inner">
+          <LdgFade delay={0}>
+            <div className="ldg3-eyebrow">🇰🇷 국내 최대 제조사 매칭 플랫폼</div>
+          </LdgFade>
+          <LdgFade delay={0.08}>
+            <h1 className="ldg3-h1">
+              20만 공장 빅데이터<br/>
+              <span className="ldg3-h1-accent">1분만에 연결되는</span><br/>
+              최적의 공장 자동매칭
+            </h1>
+          </LdgFade>
+          <LdgFade delay={0.16}>
+            <p className="ldg3-hero-desc">공정과 소재만 입력하세요. AI가 최적의 제조 파트너를 찾아드립니다.</p>
+          </LdgFade>
+          <LdgFade delay={0.22}>
+            <div className="ldg3-search-wrap">
+              <input
+                type="text"
+                className="ldg3-search-input"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+                placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
+                autoComplete="off"
+              />
+              <button className="ldg3-search-btn" onClick={handleSearch}>
+                공장 찾기
               </button>
+            </div>
+            <div className="ldg3-tag-row">
+              {['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공', '금형'].map(tag => (
+                <button key={tag} className="ldg3-tag" onClick={() => handleSearch(tag)}>{tag}</button>
+              ))}
+            </div>
+          </LdgFade>
+        </div>
+      </section>
+
+      {/* ── 숫자 통계 ── */}
+      <section className="ldg3-stats-band">
+        <LdgFade delay={0} cls="ldg3-stats-inner">
+          <div className="ldg3-stat-item">
+            <div className="ldg3-stat-n"><LdgCountUp target={217054} suffix="개"/></div>
+            <div className="ldg3-stat-l">전국 공장 DB</div>
+          </div>
+          <div className="ldg3-stat-div"/>
+          <div className="ldg3-stat-item">
+            <div className="ldg3-stat-n"><LdgCountUp target={34655} suffix="개"/></div>
+            <div className="ldg3-stat-l">웹사이트 보유 공장</div>
+          </div>
+          <div className="ldg3-stat-div"/>
+          <div className="ldg3-stat-item">
+            <div className="ldg3-stat-n"><LdgCountUp target={92} suffix="%"/></div>
+            <div className="ldg3-stat-l">매칭 만족도</div>
+          </div>
+          <div className="ldg3-stat-div"/>
+          <div className="ldg3-stat-item">
+            <div className="ldg3-stat-n"><LdgCountUp target={1} suffix="분"/></div>
+            <div className="ldg3-stat-l">평균 매칭 소요시간</div>
+          </div>
+        </LdgFade>
+      </section>
+
+      {/* ── PAIN POINT ── */}
+      <section className="ldg3-pain">
+        <LdgFade delay={0} cls="ldg3-section-inner">
+          <div className="ldg3-section-eyebrow">공장 소싱, 이런 어려움 있으셨나요?</div>
+          <h2 className="ldg3-section-h2">공장 찾는 데만 <span className="ldg3-accent">며칠씩</span> 쓰고 계신가요?</h2>
+          <div className="ldg3-pain-grid">
+            {[
+              { icon: '⏰', text: '전화해도 안 받고
+며칠씩 기다리고' },
+              { icon: '🤷', text: '견적은 제각각
+비교도 어렵고' },
+              { icon: '😰', text: '믿을 수 있는 곳인지
+알 수가 없고' },
+              { icon: '📂', text: '거래처 정보가
+여기저기 흩어지고' },
+            ].map((p, i) => (
+              <LdgFade key={i} delay={i * 0.08} cls="ldg3-pain-card">
+                <div className="ldg3-pain-icon">{p.icon}</div>
+                <p className="ldg3-pain-text">{p.text}</p>
+              </LdgFade>
             ))}
           </div>
-        </section>
+          <LdgFade delay={0.35} cls="ldg3-pain-cta-wrap">
+            <div className="ldg3-pain-arrow">↓</div>
+            <p className="ldg3-pain-solve">공장매칭이 해결해 드립니다</p>
+          </LdgFade>
+        </LdgFade>
+      </section>
 
-        <div className="ldg2-stats">
-          전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
+      {/* ── WHY 공장매칭 ── */}
+      <section className="ldg3-why">
+        <div className="ldg3-section-inner">
+          <LdgFade delay={0}>
+            <div className="ldg3-section-eyebrow light">WHY 공장매칭</div>
+            <h2 className="ldg3-section-h2 light">검증된 데이터와 AI로<br/><span className="ldg3-accent-light">가장 빠르게</span> 연결합니다</h2>
+          </LdgFade>
+          <div className="ldg3-why-grid">
+            {WHY.map((w, i) => (
+              <LdgFade key={i} delay={i * 0.1} cls="ldg3-why-card">
+                <div className="ldg3-why-icon">{w.icon}</div>
+                <h3 className="ldg3-why-title">{w.title}</h3>
+                <p className="ldg3-why-desc">{w.desc}</p>
+              </LdgFade>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
 
+      {/* ── HOW IT WORKS ── */}
+      <section className="ldg3-how">
+        <div className="ldg3-section-inner">
+          <LdgFade delay={0}>
+            <div className="ldg3-section-eyebrow">HOW IT WORKS</div>
+            <h2 className="ldg3-section-h2">단 4단계로<br/><span className="ldg3-accent">최적의 공장</span>을 찾으세요</h2>
+          </LdgFade>
+          <div className="ldg3-steps">
+            {STEPS.map((s, i) => (
+              <LdgFade key={i} delay={i * 0.1} cls="ldg3-step">
+                <div className="ldg3-step-n">{s.n}</div>
+                <div className="ldg3-step-bar"/>
+                <h3 className="ldg3-step-title">{s.title}</h3>
+                <p className="ldg3-step-desc">{s.desc}</p>
+              </LdgFade>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="ldg3-cta">
+        <LdgFade delay={0} cls="ldg3-cta-inner">
+          <h2 className="ldg3-cta-h2">지금 바로 시작하세요</h2>
+          <p className="ldg3-cta-sub">무료 가입 후 전국 217,054개 공장 DB를 자유롭게 검색할 수 있습니다.</p>
+          <div className="ldg3-cta-btns">
+            <button className="ldg3-cta-primary" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'landing_cta' }); onNav('signup'); }}>
+              무료로 시작하기
+            </button>
+            <button className="ldg3-cta-secondary" onClick={() => onNav('login')}>
+              로그인
+            </button>
+          </div>
+        </LdgFade>
+      </section>
+
+      {/* ── 검색 게이트 모달 ── */}
       {showModal && (
         <div className="ldg2-modal-overlay">
           <div className="ldg2-modal">
