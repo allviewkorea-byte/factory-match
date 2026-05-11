@@ -67,7 +67,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
   ];
   const isCompact = density === 'compact';
   return (
-    <header className="hdr" style={{ height: isCompact ? 56 : 64 }}>
+    <header className="hdr" style={{ height: isCompact ? 64 : 76 }}>
       <div className="hdr-inner">
         <div className="hdr-left">
           <button className="logo logo-img-btn" onClick={() => {
