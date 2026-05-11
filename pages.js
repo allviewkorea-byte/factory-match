@@ -3057,8 +3057,11 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
           <div className="detail-cta">
             <button
-              className={`btn btn-primary btn-lg ${inRfq ? 'is-added' : ''}`}
-              onClick={() => onAddRFQ(f.id)}
+              className={`btn btn-lg ${inRfq ? 'btn-primary is-added' : f.email ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => f.email ? onAddRFQ(f.id) : null}
+              disabled={!f.email && !inRfq}
+              title={!f.email ? '이메일 정보가 없어 견적 요청이 불가합니다' : ''}
+              style={!f.email ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
             >
               {inRfq ? <><Icon name="check" size={15} stroke={2.4}/> 견적함에 추가됨</> : <><Icon name="plus" size={15} stroke={2.4}/> 견적 요청하기</>}
             </button>
@@ -3158,7 +3161,6 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
                 )}
                 {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
-                {f.email && <><dt>이메일</dt><dd><a href={`mailto:${f.email}`} className="detail-link">{f.email}</a></dd></>
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
@@ -8167,6 +8169,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
   const [filterVisible, setFilterVisible] = useState('all'); // all|public|private
   const [filterWebsite, setFilterWebsite] = useState('all'); // all|yes|no
   const [filterContact, setFilterContact] = useState('all'); // all|yes|no
+  const [filterEmail, setFilterEmail] = useState('all'); // all|yes|no
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(null);
@@ -8180,7 +8183,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
     return () => clearTimeout(t);
   }, [q]);
 
-  useEffect(() => { setPage(1); }, [debouncedQ, filterVisible, filterWebsite, filterContact]);
+  useEffect(() => { setPage(1); }, [debouncedQ, filterVisible, filterWebsite, filterContact, filterEmail]);
 
   useEffect(() => {
     if (!window._sb) return;
@@ -8194,6 +8197,8 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
     if (filterWebsite === 'no')  sq = sq.is('website', null);
     if (filterContact === 'yes') sq = sq.not('phone', 'is', null);
     if (filterContact === 'no')  sq = sq.is('phone', null);
+    if (filterEmail === 'yes') sq = sq.not('email', 'is', null).neq('email', '');
+    if (filterEmail === 'no')  sq = sq.or('email.is.null,email.eq.');
     const from = (page - 1) * PAGE_SIZE;
     sq.order('id', { ascending: true }).range(from, from + PAGE_SIZE - 1)
       .then(({ data, count, error }) => {
@@ -8275,6 +8280,11 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
             <button key={s.id} className={'seg-btn '+(filterContact===s.id?'is-active':'')} onClick={() => setFilterContact(s.id)}>{s.label}</button>
           ))}
         </div>
+        <div className="admin-segmented">
+          {[{id:'all',label:'이메일'},{id:'yes',label:'있음'},{id:'no',label:'없음'}].map(s => (
+            <button key={s.id} className={'seg-btn '+(filterEmail===s.id?'is-active':'')} onClick={() => setFilterEmail(s.id)}>{s.label}</button>
+          ))}
+        </div>
         <span className="admin-toolbar-count">{loading ? '…' : (totalCount ?? 0).toLocaleString()}곳</span>
       </div>
 
@@ -8285,6 +8295,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
               <th>제조사명</th>
               <th>도시</th>
               <th>연락처</th>
+              <th>이메일</th>
               <th>웹사이트</th>
               <th>공개</th>
               <th></th>
@@ -8292,9 +8303,9 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
           </thead>
           <tbody>
             {loading && rows.length === 0 ? (
-              <tr><td colSpan="6" className="admin-table-empty">로딩 중…</td></tr>
+              <tr><td colSpan="7" className="admin-table-empty">로딩 중…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan="6" className="admin-table-empty">검색 결과가 없습니다</td></tr>
+              <tr><td colSpan="7" className="admin-table-empty">검색 결과가 없습니다</td></tr>
             ) : rows.map(f => (
               <tr key={f.id}>
                 <td>
@@ -8306,6 +8317,11 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
                 </td>
                 <td>{f.city || '—'}</td>
                 <td>{f.phone || '—'}</td>
+                <td>
+                  {f.email
+                    ? <span className="admin-link-cell">{f.email}</span>
+                    : <span style={{color:'#ccc'}}>—</span>}
+                </td>
                 <td>
                   {f.website
                     ? <span className="admin-link-cell" title={f.website}>{f.website.replace(/^https?:\/\//, '').slice(0, 28)}</span>
