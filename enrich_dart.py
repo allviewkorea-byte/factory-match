@@ -154,16 +154,19 @@ def fetch_financials(corp_code, year=TARGET_YEAR):
 
 # ── Supabase ──────────────────────────────────────────────────────────────
 def fetch_factories_without_dart(session):
-    """bizrno 있고 dart_corp_code 없는 공장 조회"""
+    """검증된 공장만 조회: bizrno + website + email 모두 있고 dart 미수집"""
     records, offset, ps = [], 0, 1000
     while True:
-        # params dict는 동일 키를 마지막 값으로 덮어쓰므로
-        # bizrno 조건 2개를 URL 쿼리스트링으로 직접 조합
+        # 3가지 검증 조건: bizrno + website + email 모두 존재
         url = (
             f"{SUPABASE_URL}/rest/v1/factories"
-            f"?select=id,name,bizrno"
+            f"?select=id,name,bizrno,website,email"
             f"&bizrno=not.is.null"
             f"&bizrno=neq."
+            f"&website=not.is.null"
+            f"&website=neq."
+            f"&email=not.is.null"
+            f"&email=neq."
             f"&dart_corp_code=is.null"
             f"&limit={ps}&offset={offset}"
         )
@@ -235,6 +238,21 @@ def main():
             # corp_code 없음 → NULL 표시로 스킵 (재시도 방지)
             patch_factory(session, fid, {"dart_corp_code": "NONE"})
             fail_no_corp += 1
+            done_ids.add(fid)
+            processed += 1
+            continue
+
+        # 상호명 일치 검증 (DART corp_name vs DB name)
+        corp_name = corp_info.get("corp_name", "")
+        db_name   = (name or "").strip()
+        name_ok = (
+            corp_name == db_name
+            or corp_name in db_name
+            or db_name in corp_name
+        )
+        if not name_ok:
+            print(f"  ⚠️  상호명 불일치 스킵: DB='{db_name}' / DART='{corp_name}'")
+            patch_factory(session, fid, {"dart_corp_code": "MISMATCH"})
             done_ids.add(fid)
             processed += 1
             continue
