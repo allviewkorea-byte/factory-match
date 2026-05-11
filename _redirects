@@ -1,1 +1,5 @@
+# Netlify Functions는 그대로 통과
+/.netlify/functions/* /.netlify/functions/:splat 200
+
+# SPA 라우팅 - 모든 경로를 index.html로
 /* /index.html 200
