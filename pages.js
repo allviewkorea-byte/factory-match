@@ -10020,17 +10020,17 @@ const GrantsPage = ({ onNav, authed }) => {
                       </td>
                       <td className="gt-title">{f.title || '(제목 없음)'}</td>
                       <td className="gt-period">
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <span>{period}</span>
-                          {dday && !dday.expired && (
-                            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`} style={{ fontSize: 11, width: 'fit-content' }}>{dday.label}</span>
-                          )}
-                        </div>
+                        <span>{period}</span>
                       </td>
                       <td className="gt-org">{f.org}</td>
                       <td className="gt-views">{views}</td>
                       <td className="gt-status">
-                        <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                          <span className={`grants-status-badge ${status.cls}`}>{status.label}</span>
+                          {dday && !dday.expired && (
+                            <span className={`grant-dday${dday.urgent ? ' is-urgent' : ''}`} style={{ fontSize:11 }}>{dday.label}</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
