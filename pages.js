@@ -2813,6 +2813,14 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   const [editSaving, setEditSaving] = useStateP(false);
   const [editToast, setEditToast] = useStateP('');
 
+  // 관심 제조사 상태
+  const [isFav, setIsFav] = useStateP(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
+      return list.includes(f.id);
+    } catch { return false; }
+  });
+
   // 소유자 확인
   useEffectP(() => {
     setIsOwner(false);
@@ -2939,13 +2947,16 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           {backLabel || '제조사 목록으로'}
         </button>
         <div className="detail-bar-actions">
-          <button className="icon-btn">
+          <button className={`icon-btn${isFav ? ' is-active' : ''}`} onClick={() => {
+            try {
+              const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
+              const next = isFav ? list.filter(x => x !== f.id) : [...list, f.id];
+              localStorage.setItem('fm-favorites', JSON.stringify(next));
+              setIsFav(!isFav);
+            } catch {}
+          }}>
             <Icon name="heart" size={14} stroke={2}/>
-            관심 제조사
-          </button>
-          <button className="icon-btn" onClick={() => onChat?.(f.id)}>
-            <Icon name="chat" size={14} stroke={2}/>
-            채팅 시작
+            {isFav ? '관심 취소' : '관심 제조사'}
           </button>
           {isOwner && (
             <button className="icon-btn detail-edit-btn" onClick={openEditModal}>
@@ -2954,7 +2965,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             </button>
           )}
           <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}>
-            ⚠ 이 정보 신고
+            ✎ 정보 오류 신고
           </button>
         </div>
       </div>
