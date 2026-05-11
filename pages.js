@@ -5573,66 +5573,21 @@ function WelcomePage({ data, onEnter }) {
     <div className="auth-shell welcome-shell">
       <div className="auth-shell-bg"/>
       <div className="welcome-inner">
-        <div className="welcome-confetti">
-          {[...Array(20)].map((_, i) => (
-            <span key={i} style={{
-              left: `${(i * 5.3) % 100}%`,
-              animationDelay: `${(i * 0.07) % 1.4}s`,
-              background: ['var(--brand)', 'var(--emerald)', 'var(--amber)', 'var(--rose)'][i % 4],
-            }}/>
-          ))}
-        </div>
-
         <div className="welcome-card">
           <div className="welcome-glyph">
-            <Icon name="check" size={36} stroke={2.6}/>
+            <Icon name="check" size={28} stroke={2.4}/>
           </div>
-          <div className="welcome-eyebrow">가입 완료 · STEP 4/4</div>
           <h1 className="welcome-title">
-            환영합니다, <span className="welcome-name">{data?.company || '바이어'}</span>님!
+            {data?.company || '바이어'}님,<br/>
+            <span className="welcome-name">좋은 공장을 찾는 일</span><br/>
+            이제 더 빠르게 됩니다.
           </h1>
           <p className="welcome-sub">
-            관심 분야 <strong>{data?.interests?.length || 0}개</strong>를 기반으로 맞춤 제조사를 준비했어요.<br/>
-            첫 매칭 정확도 <strong>92%</strong> · 평균 견적 응답 <strong>4시간</strong>.
+            국내 217,054개 제조사 데이터와 AI가<br/>
+            최적의 파트너를 연결해 드립니다.
           </p>
-
-          <div className="welcome-stats">
-            <div className="welcome-stat">
-              <div className="welcome-stat-n">217,054</div>
-              <div className="welcome-stat-l">공장 DB</div>
-            </div>
-            <div className="welcome-stat-divider"/>
-            <div className="welcome-stat">
-              <div className="welcome-stat-n">34,655</div>
-              <div className="welcome-stat-l">웹사이트 보유</div>
-            </div>
-          </div>
-
-          <div className="welcome-next">
-            <div className="welcome-next-title">이제 무엇을 해볼까요?</div>
-            <div className="welcome-next-grid">
-              <button className="welcome-next-card" onClick={onEnter}>
-                <div className="welcome-next-icon"><Icon name="sparkle" size={18} stroke={2}/></div>
-                <div className="welcome-next-text">
-                  <strong>맞춤 추천 보기</strong>
-                  <span>관심 분야 기반 제조사 12곳</span>
-                </div>
-                <Icon name="arrow_right" size={14} stroke={2.4} className="welcome-next-arrow"/>
-              </button>
-              <button className="welcome-next-card" onClick={onEnter}>
-                <div className="welcome-next-icon"><Icon name="search" size={18} stroke={2}/></div>
-                <div className="welcome-next-text">
-                  <strong>키워드로 검색</strong>
-                  <span>예: "음료자판기", "CNC 알루미늄"</span>
-                </div>
-                <Icon name="arrow_right" size={14} stroke={2.4} className="welcome-next-arrow"/>
-              </button>
-            </div>
-          </div>
-
           <button className="btn-primary welcome-cta" onClick={onEnter}>
-            메인으로 이동
-            <Icon name="arrow_right" size={15} stroke={2.4}/>
+            시작하기
           </button>
         </div>
       </div>
