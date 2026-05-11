@@ -4653,49 +4653,48 @@ function LandingPage({ onNav, authed }) {
     { icon: '📂', line1: '거래처 정보가', line2: '여기저기 흩어지고' },
   ];
 
-  const TAGS = ['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공', '금형'];
+  const TAGS = ['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공'];
 
   return (
     <div className="ldg3">
       <ParticleCanvas />
 
-      <section className="ldg3-hero">
+      {/* ── HERO: 기존 홈과 동일한 흰 배경 스타일 ── */}
+      <section className="ldg3-hero ldg3-hero-light">
         <div className="ldg3-hero-inner">
-          <LdgFade delay={0}>
-            <div className="ldg3-eyebrow">🇰🇷 국내 최대 제조사 매칭 플랫폼</div>
-          </LdgFade>
-          <LdgFade delay={0.08}>
-            <h1 className="ldg3-h1">
-              20만 공장 빅데이터<br/>
-              <span className="ldg3-h1-accent">1분만에 연결되는</span><br/>
-              최적의 공장 자동매칭
-            </h1>
-          </LdgFade>
-          <LdgFade delay={0.16}>
-            <p className="ldg3-hero-desc">공정과 소재만 입력하세요. AI가 최적의 제조 파트너를 찾아드립니다.</p>
-          </LdgFade>
-          <LdgFade delay={0.22}>
-            <div className="ldg3-search-wrap">
-              <input
-                type="text"
-                className="ldg3-search-input"
-                value={q}
-                onChange={e => setQ(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-                placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
-                autoComplete="off"
-              />
-              <button className="ldg3-search-btn" onClick={() => handleSearch()}>공장 찾기</button>
-            </div>
-            <div className="ldg3-tag-row">
-              {TAGS.map(tag => (
-                <button key={tag} className="ldg3-tag" onClick={() => handleSearch(tag)}>{tag}</button>
-              ))}
-            </div>
-          </LdgFade>
+          <h1 className="ldg3-h1-light">
+            AI가 찾아주는 우리 회사에 딱 맞는 <span className="ldg3-h1-accent-blue">제조공장</span>
+          </h1>
+          <p className="ldg3-hero-desc-light">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
+          <div className="ldg3-search-wrap-light">
+            <input
+              type="text"
+              className="ldg3-search-input-light"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+              placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
+              autoComplete="off"
+            />
+            <button className="ldg3-search-btn-light" onClick={() => handleSearch()}>
+              <Icon name="search" size={20} stroke={2.2}/>
+            </button>
+          </div>
+          <div className="ldg3-tag-row-light">
+            {TAGS.map(tag => (
+              <button key={tag} className="ldg3-tag-light" onClick={() => handleSearch(tag)}>{tag}</button>
+            ))}
+          </div>
+          <div className="ldg3-stats-light">
+            전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
+          </div>
+          <button className="ldg3-signup-cta" onClick={() => { window.logVisitor && window.logVisitor('signup_triggered', { trigger: 'landing_hero' }); onNav('signup'); }}>
+            무료로 시작하기
+          </button>
         </div>
       </section>
 
+      {/* ── 숫자 통계 ── */}
       <section className="ldg3-stats-band">
         <LdgFade delay={0} cls="ldg3-stats-inner">
           <div className="ldg3-stat-item">
@@ -4720,6 +4719,7 @@ function LandingPage({ onNav, authed }) {
         </LdgFade>
       </section>
 
+      {/* ── 페인포인트 ── */}
       <section className="ldg3-pain">
         <div className="ldg3-section-inner">
           <LdgFade delay={0}>
@@ -4741,6 +4741,7 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
+      {/* ── WHY ── */}
       <section className="ldg3-why">
         <div className="ldg3-section-inner">
           <LdgFade delay={0}>
@@ -4759,6 +4760,7 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
+      {/* ── HOW IT WORKS ── */}
       <section className="ldg3-how">
         <div className="ldg3-section-inner">
           <LdgFade delay={0}>
@@ -4777,6 +4779,7 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
+      {/* ── CTA ── */}
       <section className="ldg3-cta">
         <LdgFade delay={0} cls="ldg3-cta-inner">
           <h2 className="ldg3-cta-h2">지금 바로 시작하세요</h2>
@@ -4788,6 +4791,7 @@ function LandingPage({ onNav, authed }) {
         </LdgFade>
       </section>
 
+      {/* ── 검색 게이트 모달 ── */}
       {showModal && (
         <div className="ldg2-modal-overlay">
           <div className="ldg2-modal">
