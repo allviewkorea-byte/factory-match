@@ -16,11 +16,12 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
-<script src="env-config.js"></script>
+<script src="env-config.js" onerror="window._env=window._env||{SUPABASE_URL:'',SUPABASE_ANON_KEY:'',GOOGLE_MAPS_API_KEY:''}"></script>
 <script>
+window._env = window._env || {};
 window._sb = window.supabase.createClient(
-  window._env.SUPABASE_URL,
-  window._env.SUPABASE_ANON_KEY
+  window._env.SUPABASE_URL || 'https://yezxwlzyiqgewpkkyget.supabase.co',
+  window._env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs'
 );
 </script>
 
