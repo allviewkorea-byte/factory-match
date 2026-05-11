@@ -140,8 +140,8 @@ const GATE_MESSAGES = {
   factory_view: { title: '더 많은 공장을 보려면 가입하세요', sub: '회원 가입 후 모든 공장 상세 정보와 연락처를 확인할 수 있어요.' },
   rfq:          { title: '견적 요청은 회원만 이용 가능합니다', sub: '가입하면 여러 공장에 동시에 견적을 요청할 수 있어요.' },
   ai_consult:   { title: 'AI 상담을 계속하려면 가입하세요', sub: '가입하면 AI 상담을 무제한으로 이용하고 공장 추천을 받을 수 있어요.' },
+  grants:       { title: '지원사업 상세는 회원만 볼 수 있어요', sub: '무료로 가입하면 정부지원금 상세 내용과 신청 링크를 바로 확인할 수 있어요.' },
 };
-
 const GateModal = ({ reason, onSignup, onLogin, onClose }) => {
   const msg = GATE_MESSAGES[reason] || GATE_MESSAGES.search;
   React.useEffect(() => {
@@ -9964,7 +9964,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
 };
 
 // ─── 정부지원금 목록 페이지 ───────────────────────────────────
-const GrantsPage = ({ onNav, authed }) => {
+const GrantsPage = ({ onNav, authed, onGate }) => {
   const [selectedItem, setSelectedItem] = React.useState(null);
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -9979,6 +9979,10 @@ const GrantsPage = ({ onNav, authed }) => {
 
   // 상세 진입 시 history push, 뒤로/앞으로가기 처리
   const openDetail = (item) => {
+    if (!authed) {
+      onGate?.('grants');
+      return;
+    }
     history.pushState({ grantsDetail: true }, '');
     setSelectedItem(item);
     window.scrollTo(0, 0);

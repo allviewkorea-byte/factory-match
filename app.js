@@ -333,7 +333,7 @@ function App() {
       {route === 'admin' && (
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
       )}
-      {route === 'grants' && <GrantsPage onNav={nav} authed={authed}/>}
+      {route === 'grants' && <GrantsPage onNav={nav} authed={authed} onGate={showGate}/>}
       {route === 'terms' && <TermsPage />}
       {route === 'privacy' && <PrivacyPage />}
       {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}
