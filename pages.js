@@ -2815,16 +2815,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
   const f = resolvedFactory || FACTORIES[0] || null;
 
-  if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
-
-  const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
-
-  const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
-  const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
-  const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label).filter(Boolean);
-  const inRfq = rfqIds.includes(f.id);
-
-  // 소유자 확인
+  // 소유자 확인 (Hook은 early return 전에)
   useEffectP(() => {
     setIsOwner(false);
     (async () => {
@@ -2836,10 +2827,19 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           .select('factory_id, status')
           .eq('id', user.id)
           .maybeSingle();
-        if (data?.factory_id === f.id && data?.status === 'approved') setIsOwner(true);
+        if (data?.factory_id === factoryId && data?.status === 'approved') setIsOwner(true);
       } catch {}
     })();
-  }, [f.id]);
+  }, [factoryId]);
+
+  if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
+
+  const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
+
+  const procLabels = f.processes.map(p => PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
+  const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
+  const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label).filter(Boolean);
+  const inRfq = rfqIds.includes(f.id);
 
   const openEditModal = () => {
     setEditForm({
@@ -2926,6 +2926,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   }));
 
   useEffect(() => {
+    if (!f) return;
     if (tab === 'reviews' && !isSample) setTab('overview');
     if (tab === 'certs' && f.certs.length === 0 && !isSample) setTab('overview');
     if (tab === 'capability' && procLabels.length === 0 && (f.materials || []).length === 0 && prodLabels.length === 0) setTab('overview');
