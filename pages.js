@@ -1516,12 +1516,13 @@ function _biz(item) {
   let combinedStt = '', combinedEnd = '';
   if (item.reqstBeginEndDe) {
     const raw = String(item.reqstBeginEndDe);
-    const parts = raw.split(/[~\-]/);
+    // "2026-04-30 ~ 2026-09-30" 또는 "20260101~20260531" 형태 모두 처리
+    const parts = raw.split(/\s*[~\-]\s*/).filter(p => p.trim().length >= 8);
     if (parts.length >= 2) {
       combinedStt = _normDate(parts[0].trim());
       combinedEnd = _normDate(parts[parts.length - 1].trim());
-    } else {
-      combinedEnd = _normDate(raw.trim());
+    } else if (parts.length === 1) {
+      combinedEnd = _normDate(parts[0].trim());
     }
   }
 
