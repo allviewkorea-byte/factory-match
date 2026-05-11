@@ -172,7 +172,7 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 10px;
 }
 .logo-img-btn { background: none; border: none; cursor: pointer; padding: 0; }
-.hdr-logo-img { height: 68px; width: auto; object-fit: contain; display: block; }
+.hdr-logo-img { height: 52px; width: auto; object-fit: contain; display: block; }
 .logo-mark {
   width: 32px; height: 32px;
   background: var(--brand);
