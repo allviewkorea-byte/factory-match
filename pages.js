@@ -9876,11 +9876,20 @@ const GrantsPage = ({ onNav, authed }) => {
   // 검색어/탭 필터 적용
   const applyFilters = (list) => {
     let r = list;
+    // 검색어 필터
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       r = r.filter(item => {
         const f = _biz(item);
         return (f.title||'').toLowerCase().includes(q) || (f.org||'').toLowerCase().includes(q);
+      });
+    }
+    // 지역 클라이언트 필터 (API가 지역 코드를 완벽히 필터링 못하는 경우 대비)
+    if (rgn.code) {
+      r = r.filter(item => {
+        const org = (item.jrsdInsttNm || item.mnofcDeptNm || item.instNm || '');
+        const title = (item.pblancNm || item.pbancNm || '');
+        return org.includes(rgn.label) || title.includes(rgn.label);
       });
     }
     if (statusFilter === 'urgent') r = r.filter(item => { const d = calcDday(_biz(item).endDate); return d && !d.expired && d.urgent; });
@@ -10008,9 +10017,7 @@ const GrantsPage = ({ onNav, authed }) => {
                     ? `${_fmtDate8(f.sttDate)} ~ ${_fmtDate8(f.endDate)}`
                     : f.endDate
                       ? `~ ${_fmtDate8(f.endDate)}`
-                      : f.regDate
-                        ? `등록 ${_fmtDate8(f.regDate)}`
-                        : '-';
+                      : '-';
                   const views = _hashViews(f.no).toLocaleString();
                   return (
                     <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => setSelectedItem(item)}>
