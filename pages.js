@@ -1503,8 +1503,8 @@ function _stripHtml(html) {
 function _normDate(v) {
   if (!v) return '';
   const s = String(v).trim();
-  // YYYY-MM-DD 또는 YYYY/MM/DD 또는 YYYY.MM.DD
-  const m = s.match(/^(\d{4})[-\/\.](\d{2})[-\/\.](\d{2})/);
+  // YYYY-MM-DD 또는 YYYY/MM/DD
+  const m = s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
   if (m) return m[1] + m[2] + m[3];
   // YYYYMMDD
   if (/^\d{8}$/.test(s)) return s;
@@ -1525,6 +1525,14 @@ function _biz(item) {
     }
   }
 
+  // 날짜 자동 탐지: YYYYMMDD or YYYY-MM-DD 형식의 필드를 오름차순 정렬해 시작/종료일 추정
+  const dateFlds = Object.entries(item)
+    .map(([k, v]) => [k, _normDate(v)])
+    .filter(([, v]) => v.length === 8)
+    .sort(([, a], [, b]) => a < b ? -1 : 1);
+  const autoStt = dateFlds[0]?.[1] || '';
+  const autoEnd = dateFlds[dateFlds.length - 1]?.[1] || '';
+
   // 날짜 필드 추출 헬퍼
   const _d = (...keys) => { for (const k of keys) { const v = _normDate(item[k]); if (v) return v; } return ''; };
 
@@ -1537,9 +1545,9 @@ function _biz(item) {
     method:   item.rcptMthdCdNm|| item.applyMthdNm  || item.rcptMthd    || item.applyMthd   || '',
     contact:  item.mainCntcInsttNm || item.chargerNm || item.cntcNm      || item.telNm       || item.cntcTelno || '',
     target:   item.sprtTrgetNm || item.trgetNm      || item.sprtObjNm   || item.sprtTrget   || '',
-    // 신청기간: reqstBeginEndDe(합산필드) 최우선 → 명시적 개별 필드만 사용 (자동탐지 제거 - 게시일 등 오염 방지)
-    sttDate:  combinedStt || _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe'),
-    endDate:  combinedEnd || _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe'),
+    // 신청기간: reqstBeginEndDe(합산필드) 최우선 → 개별 필드 → 자동 탐지
+    sttDate:  combinedStt || _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe') || autoStt,
+    endDate:  combinedEnd || _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
     applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
     viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || item.pbancId      || '',
