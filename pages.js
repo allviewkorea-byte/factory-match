@@ -1551,9 +1551,10 @@ function _biz(item) {
     // 신청기간: reqstBeginEndDe(합산필드) 최우선 → 개별 필드 → 자동 탐지
     sttDate:  combinedStt || _d('rcptBgnDe','pbancBgngDt','bizPbancBgngDe','rcptSttDate','sprtSttDate','applyBgngDe','applyStDt','rcptBgngDe','pbancBgngDe','bizApplyBgngDe') || autoStt,
     endDate:  combinedEnd || _d('rcptEndDe','pbancEndDt','bizPbancEndDe','rcptEndDate','sprtEndDate','applyEndDe','applyEdDt','pbancEndDe','bizApplyEndDe') || autoEnd,
-    applyUrl: item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
-    viewUrl:  item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
-    pdfUrl:   item.printFlpthNm|| item.printFIpthNm || item.printFileNm || '',
+    applyUrl:        item.pbancUrl    || item.pblancUrl    || item.applyUrl    || item.detailUrl    || item.hmpgUrl   || '',
+    viewUrl:         item.pblancUrl   || item.pbancUrl     || item.hmpgUrl     || '',
+    pdfUrl:          item.printFlpthNm|| item.printFIpthNm || item.printFileNm || '',
+    onlineApplyUrl:  item.rcptEngnHmpgUrl || item.rceptEngnHmpgUrl || '',
     no:       item.pblancNo    || item.pblancId     || item.bizId       || item.pbancId      || '',
     regDate:  _d('rgstDt','rgstDate','registDt','creatDt','frstRegistDt'),
   };
@@ -9809,21 +9810,46 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
           </div>
         )}
 
-        <div className="grants-detail-actions">
-          <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
-            {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
-          </button>
-          <button className="grants-detail-btn grants-detail-btn-ghost" onClick={copyLink}>링크 복사</button>
-          <button className="grants-detail-btn grants-detail-btn-ghost" onClick={onBack}>목록으로</button>
-          {f.viewUrl && (
-            <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기</a>
-          )}
-          {f.applyUrl && (
-            <a href={f.applyUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-primary">신청하기</a>
+        {/* 공고문 다운로드 */}
+        {f.pdfUrl && (
+          <div className="grants-detail-section">
+            <h2 className="grants-detail-section-title">공고문</h2>
+            <a
+              href={f.pdfUrl}
+              download
+              onClick={e => e.stopPropagation()}
+              style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 18px', borderRadius:8, border:'1px solid var(--line)', background:'var(--bg)', color:'var(--ink-2)', fontSize:13, textDecoration:'none', cursor:'pointer' }}
+            >
+              📄 공고문 다운로드
+            </a>
+          </div>
+        )}
+
+        {/* 버튼 영역 - 1행: 스크랩/링크/목록/원문, 2행: 온라인신청 */}
+        <div style={{ marginTop:8 }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
+            <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
+              {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
+            </button>
+            <button className="grants-detail-btn grants-detail-btn-ghost" onClick={copyLink}>링크 복사</button>
+            <button className="grants-detail-btn grants-detail-btn-ghost" onClick={onBack}>목록으로</button>
+            {f.viewUrl && (
+              <a href={f.viewUrl} target="_blank" rel="noreferrer" className="grants-detail-btn grants-detail-btn-outline">원문 보기</a>
+            )}
+          </div>
+          {(f.onlineApplyUrl || f.applyUrl) && (
+            <a
+              href={f.onlineApplyUrl || f.applyUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display:'block', width:'100%', textAlign:'center', padding:'16px', borderRadius:10, background:'#2563eb', color:'#fff', fontSize:16, fontWeight:700, textDecoration:'none', letterSpacing:'-0.01em' }}
+            >
+              온라인 신청 바로가기
+            </a>
           )}
         </div>
-        <p className="biz-grant-source" style={{ marginTop: 24 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
-        {f.pdfUrl && <GrantPdfViewer url={f.pdfUrl} />}
+
+        <p className="biz-grant-source" style={{ marginTop:24 }}>출처: 중소벤처기업부 기업마당 (bizinfo.go.kr)</p>
       </div>
     </div>
   );
