@@ -4591,7 +4591,6 @@ function useLdgInView(ref, threshold) {
   return inView;
 }
 
-// 숫자 카운트업
 function LdgCountUp({ target, suffix }) {
   const [val, setVal] = React.useState(0);
   const ref = React.useRef(null);
@@ -4608,10 +4607,9 @@ function LdgCountUp({ target, suffix }) {
     };
     requestAnimationFrame(step);
   }, [inView]);
-  return <span ref={ref}>{val.toLocaleString()}{suffix || ''}</span>;
+  return React.createElement('span', { ref }, val.toLocaleString() + (suffix || ''));
 }
 
-// FadeUp 래퍼
 function LdgFade({ children, delay, cls }) {
   const ref = React.useRef(null);
   const inView = useLdgInView(ref, 0.1);
@@ -4619,7 +4617,7 @@ function LdgFade({ children, delay, cls }) {
     <div ref={ref} className={cls || ''} style={{
       opacity: inView ? 1 : 0,
       transform: inView ? 'translateY(0)' : 'translateY(28px)',
-      transition: `opacity 0.65s ease ${delay || 0}s, transform 0.65s ease ${delay || 0}s`,
+      transition: 'opacity 0.65s ease ' + (delay || 0) + 's, transform 0.65s ease ' + (delay || 0) + 's',
     }}>{children}</div>
   );
 }
@@ -4629,7 +4627,7 @@ function LandingPage({ onNav, authed }) {
   const [showModal, setShowModal] = useAuthState(false);
 
   const handleSearch = (val) => {
-    const query = (val ?? q).trim();
+    const query = (val !== undefined ? val : q).trim();
     if (!query) return;
     setShowModal(true);
   };
@@ -4648,11 +4646,19 @@ function LandingPage({ onNav, authed }) {
     { n: '04', title: '파트너 확정', desc: '비교 후 최적 파트너 선택' },
   ];
 
+  const PAINS = [
+    { icon: '⏰', line1: '전화해도 안 받고', line2: '며칠씩 기다리고' },
+    { icon: '🤷', line1: '견적은 제각각', line2: '비교도 어렵고' },
+    { icon: '😰', line1: '믿을 수 있는 곳인지', line2: '알 수가 없고' },
+    { icon: '📂', line1: '거래처 정보가', line2: '여기저기 흩어지고' },
+  ];
+
+  const TAGS = ['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공', '금형'];
+
   return (
     <div className="ldg3">
       <ParticleCanvas />
 
-      {/* ── HERO ── */}
       <section className="ldg3-hero">
         <div className="ldg3-hero-inner">
           <LdgFade delay={0}>
@@ -4679,12 +4685,10 @@ function LandingPage({ onNav, authed }) {
                 placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
                 autoComplete="off"
               />
-              <button className="ldg3-search-btn" onClick={handleSearch}>
-                공장 찾기
-              </button>
+              <button className="ldg3-search-btn" onClick={() => handleSearch()}>공장 찾기</button>
             </div>
             <div className="ldg3-tag-row">
-              {['CNC 가공', '사출 성형', '프레스', '봉제', '식품가공', '금형'].map(tag => (
+              {TAGS.map(tag => (
                 <button key={tag} className="ldg3-tag" onClick={() => handleSearch(tag)}>{tag}</button>
               ))}
             </div>
@@ -4692,7 +4696,6 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
-      {/* ── 숫자 통계 ── */}
       <section className="ldg3-stats-band">
         <LdgFade delay={0} cls="ldg3-stats-inner">
           <div className="ldg3-stat-item">
@@ -4717,25 +4720,17 @@ function LandingPage({ onNav, authed }) {
         </LdgFade>
       </section>
 
-      {/* ── PAIN POINT ── */}
       <section className="ldg3-pain">
-        <LdgFade delay={0} cls="ldg3-section-inner">
-          <div className="ldg3-section-eyebrow">공장 소싱, 이런 어려움 있으셨나요?</div>
-          <h2 className="ldg3-section-h2">공장 찾는 데만 <span className="ldg3-accent">며칠씩</span> 쓰고 계신가요?</h2>
+        <div className="ldg3-section-inner">
+          <LdgFade delay={0}>
+            <div className="ldg3-section-eyebrow">공장 소싱, 이런 어려움 있으셨나요?</div>
+            <h2 className="ldg3-section-h2">공장 찾는 데만 <span className="ldg3-accent">며칠씩</span> 쓰고 계신가요?</h2>
+          </LdgFade>
           <div className="ldg3-pain-grid">
-            {[
-              { icon: '⏰', text: '전화해도 안 받고
-며칠씩 기다리고' },
-              { icon: '🤷', text: '견적은 제각각
-비교도 어렵고' },
-              { icon: '😰', text: '믿을 수 있는 곳인지
-알 수가 없고' },
-              { icon: '📂', text: '거래처 정보가
-여기저기 흩어지고' },
-            ].map((p, i) => (
+            {PAINS.map((p, i) => (
               <LdgFade key={i} delay={i * 0.08} cls="ldg3-pain-card">
                 <div className="ldg3-pain-icon">{p.icon}</div>
-                <p className="ldg3-pain-text">{p.text}</p>
+                <p className="ldg3-pain-text">{p.line1}<br/>{p.line2}</p>
               </LdgFade>
             ))}
           </div>
@@ -4743,10 +4738,9 @@ function LandingPage({ onNav, authed }) {
             <div className="ldg3-pain-arrow">↓</div>
             <p className="ldg3-pain-solve">공장매칭이 해결해 드립니다</p>
           </LdgFade>
-        </LdgFade>
+        </div>
       </section>
 
-      {/* ── WHY 공장매칭 ── */}
       <section className="ldg3-why">
         <div className="ldg3-section-inner">
           <LdgFade delay={0}>
@@ -4765,7 +4759,6 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
       <section className="ldg3-how">
         <div className="ldg3-section-inner">
           <LdgFade delay={0}>
@@ -4776,7 +4769,6 @@ function LandingPage({ onNav, authed }) {
             {STEPS.map((s, i) => (
               <LdgFade key={i} delay={i * 0.1} cls="ldg3-step">
                 <div className="ldg3-step-n">{s.n}</div>
-                <div className="ldg3-step-bar"/>
                 <h3 className="ldg3-step-title">{s.title}</h3>
                 <p className="ldg3-step-desc">{s.desc}</p>
               </LdgFade>
@@ -4785,30 +4777,24 @@ function LandingPage({ onNav, authed }) {
         </div>
       </section>
 
-      {/* ── CTA ── */}
       <section className="ldg3-cta">
         <LdgFade delay={0} cls="ldg3-cta-inner">
           <h2 className="ldg3-cta-h2">지금 바로 시작하세요</h2>
           <p className="ldg3-cta-sub">무료 가입 후 전국 217,054개 공장 DB를 자유롭게 검색할 수 있습니다.</p>
           <div className="ldg3-cta-btns">
-            <button className="ldg3-cta-primary" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'landing_cta' }); onNav('signup'); }}>
-              무료로 시작하기
-            </button>
-            <button className="ldg3-cta-secondary" onClick={() => onNav('login')}>
-              로그인
-            </button>
+            <button className="ldg3-cta-primary" onClick={() => { window.logVisitor && window.logVisitor('signup_triggered', { trigger: 'landing_cta' }); onNav('signup'); }}>무료로 시작하기</button>
+            <button className="ldg3-cta-secondary" onClick={() => onNav('login')}>로그인</button>
           </div>
         </LdgFade>
       </section>
 
-      {/* ── 검색 게이트 모달 ── */}
       {showModal && (
         <div className="ldg2-modal-overlay">
           <div className="ldg2-modal">
             <h2 className="ldg2-modal-title">검색하려면 가입이 필요합니다</h2>
             <p className="ldg2-modal-sub">무료로 가입하면 전국 217,054개 공장 DB를 검색할 수 있습니다.</p>
             <div className="ldg2-modal-btns">
-              <button className="ldg2-modal-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'landing_search_modal' }); onNav('signup'); }}>무료로 시작하기</button>
+              <button className="ldg2-modal-signup-btn" onClick={() => { window.logVisitor && window.logVisitor('signup_triggered', { trigger: 'landing_search_modal' }); onNav('signup'); }}>무료로 시작하기</button>
               <button className="ldg2-modal-login-btn" onClick={() => onNav('login')}>로그인</button>
             </div>
           </div>
@@ -4817,6 +4803,7 @@ function LandingPage({ onNav, authed }) {
     </div>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // 2) AUTH FORM (회원가입 / 로그인)
