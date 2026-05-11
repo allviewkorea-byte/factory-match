@@ -9838,7 +9838,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
                 href={f.pdfUrl}
                 download
                 onClick={e => e.stopPropagation()}
-                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:'#dc2626', color:'#fff', fontSize:13, fontWeight:600, textDecoration:'none', cursor:'pointer', border:'none' }}
+                style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:600, textDecoration:'none', cursor:'pointer', border:'none' }}
               >
                 📄 공고문 다운로드
               </a>
