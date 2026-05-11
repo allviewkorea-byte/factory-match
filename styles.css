@@ -5838,13 +5838,13 @@ a { color: inherit; text-decoration: none; }
 
 /* HERO Light (비로그인 - 홈과 동일한 흰 배경) */
 .ldg3-hero-light {
-  min-height: calc(100vh - 76px);
+  min-height: calc(100vh - 76px - 100px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   background: transparent !important;
   position: relative;
-  padding: 72px 24px 0px;
+  padding: 56px 24px 0px;
 }
 .ldg3-hero-light::before { display: none !important; }
 .ldg3-h1-light {
@@ -6020,7 +6020,7 @@ a { color: inherit; text-decoration: none; }
 /* 통계 밴드 */
 .ldg3-stats-band {
   background: #1e3a5f;
-  padding: 40px 24px;
+  padding: 24px 24px;
 }
 .ldg3-stats-inner {
   max-width: 900px; margin: 0 auto;
@@ -6029,10 +6029,10 @@ a { color: inherit; text-decoration: none; }
 }
 .ldg3-stat-item {
   flex: 1; min-width: 140px;
-  text-align: center; padding: 12px 24px;
+  text-align: center; padding: 8px 24px;
 }
 .ldg3-stat-n {
-  font-size: 32px; font-weight: 900;
+  font-size: 26px; font-weight: 900;
   color: #fff; letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
