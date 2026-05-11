@@ -6222,6 +6222,55 @@ const ChatPage = ({ initialFactoryId, onBack, onOpenFactory }) => {
 };
 
 // ──────────────────────────────────────────────────────────
+// 관심 제조사 탭 - DB에서 직접 조회
+const FavoritesTab = ({ ids, onOpenFactory, onNav }) => {
+  const [factories, setFactories] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!ids || ids.length === 0) { setLoading(false); return; }
+    window._sb.from('factories').select('id,name,city,road_address,region,ai_summary').in('id', ids)
+      .then(({ data }) => {
+        if (data) setFactories(data.map(window._dbRowToFactory));
+        setLoading(false);
+      }).catch(() => setLoading(false));
+  }, [ids.join(',')]);
+
+  if (loading) return <div style={{ padding:40, textAlign:'center', color:'var(--ink-3)' }}>불러오는 중…</div>;
+
+  return (
+    <section className="mypage-card mypage-card-full">
+      <header className="mypage-card-head"><h3>관심 제조사</h3></header>
+      <ul className="fav-list">
+        {ids.map(id => {
+          const f = factories.find(x => x.id === id);
+          const handleRemove = (e) => {
+            e.stopPropagation();
+            try {
+              const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
+              localStorage.setItem('fm-favorites', JSON.stringify(list.filter(x => x !== id)));
+            } catch {}
+            window.location.reload();
+          };
+          return (
+            <li key={id}>
+              <button className="fav-row" onClick={() => onOpenFactory && onOpenFactory(id)}>
+                <div className="fav-img" style={{ background: f ? getCardBg(f) : '#3a5882' }}><div className="mcard-img-stripes"/></div>
+                <div className="fav-body">
+                  <h4>{f ? f.name : id}</h4>
+                  <span>{f ? (f.city || f.regionRaw || '') : ''}</span>
+                </div>
+                <Icon name="chevron_right" size={14} stroke={2} className="fav-arrow"/>
+              </button>
+              <button onClick={handleRemove} style={{ position:'absolute', right:40, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#e11d48', cursor:'pointer', fontSize:18 }}>♥</button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+};
+
 // MyPage
 // ──────────────────────────────────────────────────────────
 const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) => {
@@ -6552,27 +6601,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
             <EmptyState icon="heart" msg="찜한 제조사가 없습니다. 공장 상세 페이지에서 ♥를 눌러 저장하세요." btnLabel="제조사 찾기" onBtnClick={() => onNav && onNav('list')}/>
           </div>
         ) : (
-          <section className="mypage-card mypage-card-full">
-            <header className="mypage-card-head"><h3>관심 제조사</h3></header>
-            <ul className="fav-list">
-              {favorites.map(id => {
-                const f = FACTORIES_AC.find(x => x.id === id);
-                if (!f) return null;
-                return (
-                  <li key={id}>
-                    <button className="fav-row" onClick={() => onOpenFactory && onOpenFactory(id)}>
-                      <div className="fav-img" style={{ background: f.image }}><div className="mcard-img-stripes"/></div>
-                      <div className="fav-body">
-                        <h4>{f.name}</h4>
-                        <span>{f.city}{f.moq > 0 ? ` · MOQ ${f.moq.toLocaleString()}` : ''}{f.leadDays > 0 ? ` · 리드 ${f.leadDays}일` : ''}</span>
-                      </div>
-                      <Icon name="chevron_right" size={14} stroke={2} className="fav-arrow"/>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <FavoritesTab ids={favorites} onOpenFactory={onOpenFactory} onNav={onNav} />
         )
       )}
 
