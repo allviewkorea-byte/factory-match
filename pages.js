@@ -9241,10 +9241,9 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const msgsEndRef = React.useRef(null);
   const msgsContainerRef = React.useRef(null);
 
-  // 마운트 시 window 스크롤 위치만 초기화 (overflow 제어는 app.js 래퍼 div가 담당)
+  // 마운트 시 스크롤 위치 초기화
   React.useEffect(() => {
     window.scrollTo(0, 0);
-    return () => {};
   }, []);
 
   // 메시지 변경 시 채팅 컨테이너 안에서만 스크롤 (window 전체 스크롤 방지)

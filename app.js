@@ -57,6 +57,11 @@ function App() {
   const [route, setRoute] = useState(_INITIAL.route);
   const [factoryId, setFactoryId] = useState(_INITIAL.factoryId);
 
+  // AI 탭일 때만 body 스크롤 잠금, 다른 탭은 항상 해제
+  useEffect(() => {
+    document.body.style.overflow = (route === 'ai') ? 'hidden' : '';
+  }, [route]);
+
   const initialMount = useRef(true);
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
