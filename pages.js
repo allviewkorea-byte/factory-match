@@ -9883,6 +9883,27 @@ const GrantsPage = ({ onNav, authed }) => {
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('smart');
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // 상세 진입 시 history push, 뒤로/앞으로가기 처리
+  const openDetail = (item) => {
+    history.pushState({ grantsDetail: true }, '');
+    setSelectedItem(item);
+    window.scrollTo(0, 0);
+  };
+  const closeDetail = () => {
+    setSelectedItem(null);
+    window.scrollTo(0, 0);
+  };
+  React.useEffect(() => {
+    const onPop = (e) => {
+      if (selectedItem) {
+        setSelectedItem(null);
+        window.scrollTo(0, 0);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [selectedItem]);
   const [pinnedItems, setPinnedItems] = React.useState([]); // 진행중/마감임박 전체
   const numOfRows = 20;
 
@@ -10005,7 +10026,7 @@ const GrantsPage = ({ onNav, authed }) => {
   }
 
   if (selectedItem) {
-    return <GrantDetailPage item={selectedItem} onBack={() => { setSelectedItem(null); window.scrollTo(0, 0); }} authed={authed} onNav={onNav} />;
+    return <GrantDetailPage item={selectedItem} onBack={closeDetail} authed={authed} onNav={onNav} />;
   }
 
   return (
@@ -10103,7 +10124,7 @@ const GrantsPage = ({ onNav, authed }) => {
                       : '-';
                   const views = (() => { try { const k = `gv_${f.no || f.title}`; return parseInt(localStorage.getItem(k) || _hashViews(f.no), 10).toLocaleString(); } catch { return _hashViews(f.no).toLocaleString(); } })();
                   return (
-                    <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => setSelectedItem(item)}>
+                    <tr key={f.no || i} className={`grants-table-row${(!dday || dday.expired) ? " is-closed" : ""}`} onClick={() => openDetail(item)}>
                       <td className="gt-no">{rowNum}</td>
                       <td className="gt-cat">
                         {catStyle && <span className="grant-cat-badge" style={{ background: catStyle.bg, color: catStyle.color }}>{catLabel}</span>}
