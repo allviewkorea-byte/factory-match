@@ -2832,6 +2832,17 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     })();
   }, [factoryId]);
 
+  useEffect(() => {
+    if (!resolvedFactory) return;
+    const _f = resolvedFactory;
+    const _isSample = /^f(\d+)$/.test(_f.id) && parseInt(_f.id.slice(1)) <= 14;
+    const _procLabels = (_f.processes || []).map(p => window.MFG_DATA.PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
+    const _prodLabels = (_f.products || []).map(p => window.MFG_DATA.PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
+    if (tab === 'reviews' && !_isSample) setTab('overview');
+    if (tab === 'certs' && (_f.certs || []).length === 0 && !_isSample) setTab('overview');
+    if (tab === 'capability' && _procLabels.length === 0 && (_f.materials || []).length === 0 && _prodLabels.length === 0) setTab('overview');
+  }, [factoryId]);
+
   if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
 
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
@@ -2924,13 +2935,6 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     ...prev,
     [field]: prev[field].filter(x => x !== val),
   }));
-
-  useEffect(() => {
-    if (!f) return;
-    if (tab === 'reviews' && !isSample) setTab('overview');
-    if (tab === 'certs' && f.certs.length === 0 && !isSample) setTab('overview');
-    if (tab === 'capability' && procLabels.length === 0 && (f.materials || []).length === 0 && prodLabels.length === 0) setTab('overview');
-  }, [factoryId]);
 
   if (detailLoading) {
     return (
