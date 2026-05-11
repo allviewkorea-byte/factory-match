@@ -10009,29 +10009,55 @@ const GrantsPage = ({ onNav, authed }) => {
 
   let displayItems;
   if (statusFilter === 'active') {
-    displayItems = applyFilters(pinnedItems);
-  } else if (statusFilter === 'closed') {
-    displayItems = applyFilters(pageClosedItems);
+    // 진행중: 마감임박 아닌 것 (D-day 제외 7일 초과)
+    displayItems = applyFilters(pinnedItems).filter(item => {
+      const d = calcDday(_biz(item).endDate);
+      return d && !d.expired && !d.urgent;
+    });
   } else if (statusFilter === 'urgent') {
-    displayItems = applyFilters(pinnedItems).filter(item => { const d = calcDday(_biz(item).endDate); return d && d.urgent; });
+    // 마감임박: D-day 포함 7일 이내
+    displayItems = applyFilters(pinnedItems).filter(item => {
+      const d = calcDday(_biz(item).endDate);
+      return d && !d.expired && d.urgent;
+    });
+  } else if (statusFilter === 'closed') {
+    // 마감: pinnedItems 외 전체 API 결과에서 마감된 것
+    displayItems = applyFilters([...pinnedItems, ...items]).filter(item => {
+      const d = calcDday(_biz(item).endDate);
+      return !d || d.expired;
+    });
+    // 중복 제거
+    const seen = new Set();
+    displayItems = displayItems.filter(item => {
+      const key = _biz(item).no || JSON.stringify(item).slice(0, 50);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   } else {
-    // 전체: 진행중 상단 고정 + 마감 하단
+    // 전체: 진행중+마감임박 상단 고정 + 마감 하단
     const filteredPinned = applyFilters(pinnedItems);
-    const filteredClosed = applyFilters(pageClosedItems);
-    // 최신순이면 마감도 no 기준 내림차순
+    const allItems = applyFilters([...pinnedItems, ...items]);
+    const filteredClosed = allItems.filter(item => {
+      const d = calcDday(_biz(item).endDate);
+      return !d || d.expired;
+    });
+    const seen = new Set();
+    const deduped = filteredClosed.filter(item => {
+      const key = _biz(item).no || JSON.stringify(item).slice(0, 50);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     if (sortBy === 'latest') {
-      filteredClosed.sort((a,b) => { const ra=_biz(a).no||'', rb=_biz(b).no||''; return rb>ra?1:rb<ra?-1:0; });
+      deduped.sort((a,b) => { const ra=_biz(a).no||'', rb=_biz(b).no||''; return rb>ra?1:rb<ra?-1:0; });
     }
-    displayItems = [...filteredPinned, ...filteredClosed];
+    displayItems = [...filteredPinned, ...deduped];
   }
 
-  // 클라이언트 페이지네이션 (pinnedItems 기반일 때)
-  const isClientPaged = statusFilter !== 'all' || pinnedItems.length > 0;
-  const pagedDisplayItems = isClientPaged
-    ? displayItems.slice((pageNo - 1) * numOfRows, pageNo * numOfRows)
-    : displayItems;
-  const clientTotalPages = Math.max(1, Math.ceil(displayItems.length / numOfRows));
-  const effectiveTotalPages = pinnedItems.length > 0 ? clientTotalPages : totalPages;
+  // 클라이언트 페이지네이션
+  const pagedDisplayItems = displayItems.slice((pageNo - 1) * numOfRows, pageNo * numOfRows);
+  const effectiveTotalPages = Math.max(1, Math.ceil(displayItems.length / numOfRows));
 
   if (selectedItem) {
     return <GrantDetailPage item={selectedItem} onBack={closeDetail} authed={authed} onNav={onNav} />;
@@ -10083,10 +10109,10 @@ const GrantsPage = ({ onNav, authed }) => {
         <div className="grants-filter-row grants-extra-row">
           <div className="grants-status-tabs">
             {STATUS_FILTERS.map(f => (
-              <button key={f.id} className={`grants-status-tab${statusFilter === f.id ? ' is-active' : ''}`} onClick={() => setStatusFilter(f.id)}>{f.label}</button>
+              <button key={f.id} className={`grants-status-tab${statusFilter === f.id ? ' is-active' : ''}`} onClick={() => { setStatusFilter(f.id); setPageNo(1); }}>{f.label}</button>
             ))}
           </div>
-          <select className="grants-sort-sel" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <select className="grants-sort-sel" value={sortBy} onChange={e => { setSortBy(e.target.value); setPageNo(1); }}>
             <option value="smart">임박순</option>
             <option value="latest">최신순</option>
           </select>
