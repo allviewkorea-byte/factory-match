@@ -8986,3 +8986,16 @@ a { color: inherit; text-decoration: none; }
   border-radius: 6px;
   border: 1px solid #fde68a;
 }
+
+/* 관리자 체크박스 + 일괄 삭제 */
+.admin-table tr.is-selected { background: #eff6ff; }
+.admin-bulk-delete-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: 8px; border: none;
+  background: #ef4444; color: #fff;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+  font-family: inherit; white-space: nowrap;
+}
+.admin-bulk-delete-btn:hover { background: #dc2626; }
+.admin-bulk-delete-btn:disabled { opacity: 0.6; cursor: not-allowed; }

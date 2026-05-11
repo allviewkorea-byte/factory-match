@@ -8183,6 +8183,32 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
   const [loading, setLoading] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [editDraft, setEditDraft] = useState({});
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleAll = () => {
+    if (selectedIds.size === rows.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(rows.map(r => r.id)));
+  };
+  const handleBulkDelete = async () => {
+    if (!selectedIds.size) return;
+    if (!window.confirm(`선택한 ${selectedIds.size}개 제조사를 삭제할까요? 복구 불가합니다.`)) return;
+    setDeleting(true);
+    try {
+      const sb = window._sb;
+      for (const id of selectedIds) {
+        await sb.from('factories').delete().eq('id', id);
+      }
+      setSelectedIds(new Set());
+      setPage(1);
+    } catch(e) { alert('삭제 중 오류: ' + e.message); }
+    setDeleting(false);
+  };
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -8202,8 +8228,8 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
     if (filterVisible === 'private') sq = sq.eq('hidden', true);
     if (filterWebsite === 'yes') sq = sq.not('website', 'is', null);
     if (filterWebsite === 'no')  sq = sq.is('website', null);
-    if (filterContact === 'yes') sq = sq.not('phone', 'is', null);
-    if (filterContact === 'no')  sq = sq.is('phone', null);
+    if (filterContact === 'yes') sq = sq.not('phone', 'is', null).neq('phone', '');
+    if (filterContact === 'no')  sq = sq.or('phone.is.null,phone.eq.');
     if (filterEmail === 'yes') sq = sq.not('email', 'is', null).neq('email', '');
     if (filterEmail === 'no')  sq = sq.or('email.is.null,email.eq.');
     const from = (page - 1) * PAGE_SIZE;
@@ -8214,7 +8240,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
         setLoading(false);
       }).catch(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, [page, debouncedQ, filterVisible, filterWebsite, filterContact]);
+  }, [page, debouncedQ, filterVisible, filterWebsite, filterContact, filterEmail]);
 
   const openEdit = (row) => {
     setEditTarget(row);
@@ -8293,12 +8319,21 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
           ))}
         </div>
         <span className="admin-toolbar-count">{loading ? '…' : (totalCount ?? 0).toLocaleString()}곳</span>
+        {selectedIds.size > 0 && (
+          <button className="admin-bulk-delete-btn" onClick={handleBulkDelete} disabled={deleting}>
+            {deleting ? '삭제 중...' : `선택 ${selectedIds.size}개 삭제`}
+          </button>
+        )}
       </div>
 
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
             <tr>
+              <th style={{width:36}}>
+                <input type="checkbox" checked={rows.length > 0 && selectedIds.size === rows.length}
+                  onChange={toggleAll} style={{cursor:'pointer'}}/>
+              </th>
               <th>제조사명</th>
               <th>도시</th>
               <th>연락처</th>
@@ -8310,11 +8345,15 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
           </thead>
           <tbody>
             {loading && rows.length === 0 ? (
-              <tr><td colSpan="7" className="admin-table-empty">로딩 중…</td></tr>
+              <tr><td colSpan="8" className="admin-table-empty">로딩 중…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan="7" className="admin-table-empty">검색 결과가 없습니다</td></tr>
+              <tr><td colSpan="8" className="admin-table-empty">검색 결과가 없습니다</td></tr>
             ) : rows.map(f => (
-              <tr key={f.id}>
+              <tr key={f.id} className={selectedIds.has(f.id) ? 'is-selected' : ''}>
+                <td style={{textAlign:'center'}}>
+                  <input type="checkbox" checked={selectedIds.has(f.id)}
+                    onChange={() => toggleSelect(f.id)} style={{cursor:'pointer'}}/>
+                </td>
                 <td>
                   <div className="admin-name">
                     <div className="admin-name-dot"/>
