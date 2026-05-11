@@ -4638,6 +4638,84 @@ function LandingPage({ onNav, authed }) {
 // ═══════════════════════════════════════════════════════════
 // 2) AUTH FORM (회원가입 / 로그인)
 // ═══════════════════════════════════════════════════════════
+function ForgotPasswordPage({ onNav }) {
+  const [email, setEmail] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  const handleSubmit = async () => {
+    if (!email) { setError('이메일을 입력해주세요.'); return; }
+    setLoading(true); setError('');
+    try {
+      const { error: err } = await window._sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/#/reset-password',
+      });
+      if (err) throw err;
+      setSent(true);
+    } catch(e) {
+      setError('이메일 전송에 실패했습니다. 가입된 이메일인지 확인해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-shell-bg"/>
+      <div className="auth-shell-inner">
+        <header className="auth-mini-hdr">
+          <AuthLogo size={32}/>
+          <button className="auth-back-btn" onClick={() => onNav('login')}>
+            <Icon name="close" size={14} stroke={2}/>
+          </button>
+        </header>
+        <div className="auth-card">
+          {sent ? (
+            <div style={{ textAlign:'center', padding:'16px 0' }}>
+              <div style={{ fontSize:40, marginBottom:16 }}>📧</div>
+              <h2 style={{ fontSize:22, fontWeight:700, marginBottom:8 }}>이메일을 확인해주세요</h2>
+              <p style={{ fontSize:14, color:'var(--ink-3)', marginBottom:24 }}>
+                <strong>{email}</strong>로 비밀번호 재설정 링크를 보냈어요.<br/>
+                메일함을 확인해주세요. (스팸함도 확인해보세요)
+              </p>
+              <button className="btn-primary sgn-btn" onClick={() => onNav('login')}>
+                로그인으로 돌아가기
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="auth-card-head">
+                <h1>비밀번호 찾기</h1>
+                <p>가입하신 이메일 주소를 입력하시면<br/>비밀번호 재설정 링크를 보내드려요</p>
+              </div>
+              <div className="sgn-field">
+                <span className="auth-field-label">이메일</span>
+                <div className={`auth-input-wrap ${error ? 'sgn-wrap-err' : ''}`}>
+                  <Icon name="mail" size={15} stroke={1.8}/>
+                  <input className="auth-input" type="email" placeholder="name@company.com"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    autoFocus/>
+                </div>
+                {error && <span className="sgn-err">{error}</span>}
+              </div>
+              <button className={`btn-primary sgn-btn ${loading ? 'sgn-btn-off' : ''}`}
+                onClick={!loading ? handleSubmit : undefined}>
+                {loading ? <><div className="sgn-spin"/>전송 중...</> : '재설정 링크 받기'}
+              </button>
+              <button className="sgn-skip-btn" onClick={() => onNav('login')}>
+                로그인으로 돌아가기
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthFormPage({ mode, onNav, onSubmit }) {
   const isSignup = mode === 'signup';
   const [email, setEmail] = useAuthState('');
@@ -6031,7 +6109,7 @@ function SignupPage({ onNav }) {
 // EXPORT
 // ═══════════════════════════════════════════════════════════
 Object.assign(window, {
-  LandingPage, AuthFormPage, VerifyPage, OnboardingPage, WelcomePage, SignupPage,
+  LandingPage, AuthFormPage, VerifyPage, OnboardingPage, WelcomePage, SignupPage, ForgotPasswordPage,
 });
 
 
