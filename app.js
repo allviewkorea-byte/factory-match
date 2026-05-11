@@ -327,6 +327,7 @@ function App() {
           onGate={showGate}
           factoryContext={aiFactoryContext}
           onClearContext={() => setAiFactoryContext(null)}
+          userProfile={profile}
         />
       </div>
       {route === 'search' && (

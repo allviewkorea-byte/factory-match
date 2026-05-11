@@ -126,7 +126,8 @@ exports.handler = async (event) => {
 
   let messages, factoryContext;
   try {
-    ({ messages, factoryContext } = JSON.parse(event.body || '{}'));
+    ({ messages, factoryContext, userProfile } = JSON.parse(event.body || '{}'));
+    var userProfile = userProfile || null;
   } catch {
     return { statusCode: 400, headers: RESPONSE_HEADERS, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
@@ -143,8 +144,32 @@ exports.handler = async (event) => {
     };
   }
 
-  // 특정 제조사 컨텍스트가 있으면 시스템 프롬프트에 추가
+  // 사용자 프로필 사전 파악 - AI가 상대방을 먼저 인지
   let systemPrompt = SYSTEM;
+  if (userProfile) {
+    const role = userProfile.user_type || 'buyer';
+    const interests = userProfile.interests || {};
+    const name = userProfile.contact_name || '';
+    const company = userProfile.company_name || '';
+    const procs = (interests.needed_processes || interests.owned_processes || []).join(', ');
+    const mats = (interests.needed_materials || interests.main_materials || []).join(', ');
+    const orderScale = interests.order_scale || '';
+    systemPrompt += `\n\n[상담 고객 사전 정보 - 이미 파악된 프로필]
+- 이름: ${name || '미확인'}
+- 회사: ${company || '미확인'}
+- 유형: ${role === 'buyer' ? '바이어 (공장을 찾는 구매자)' : '제조사 (공장 운영자)'}
+${procs ? `- 관심 공정: ${procs}` : ''}
+${mats ? `- 관심 소재: ${mats}` : ''}
+${orderScale ? `- 발주 규모: ${orderScale}` : ''}
+
+이 정보를 바탕으로:
+1. 고객이 이미 말하지 않아도 관심 분야를 파악한 상태로 대화
+2. 관련 공정/소재 언급 시 자연스럽게 연결
+3. "혹시 ${procs ? procs.split(',')[0].trim() : '관심 분야'} 관련 공장을 찾고 계신가요?" 식으로 먼저 맥락 제시 가능
+4. 단, 프로필 정보를 직접 언급하거나 "당신의 프로필에는~" 식으로 말하지 말 것 - 자연스럽게 녹여낼 것`;
+  }
+
+  // 특정 제조사 컨텍스트가 있으면 시스템 프롬프트에 추가
   if (factoryContext) {
     let aiData = null;
     try { aiData = factoryContext.ai_summary ? JSON.parse(factoryContext.ai_summary) : null; } catch(e) {}

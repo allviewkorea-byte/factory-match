@@ -6558,6 +6558,91 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
 
 // MyPage
 // ──────────────────────────────────────────────────────────
+// ── 관심 정보 탭 컴포넌트 ──
+function InterestsTab({ profile, onSaved }) {
+  const { PROCESSES, INDUSTRIES } = window.MFG_DATA;
+  const MATERIALS = ['알루미늄', 'SUS304', 'SS400', 'ABS', 'PC', 'PP', 'PET', '티타늄', '황동', '구리', 'FR-4', '탄소강'];
+  const SCALES = ['소량 (~100개)', '중량 (100–1,000개)', '중대량 (1,000–10,000개)', '대량 (10,000개+)'];
+
+  const role = profile.user_type || 'buyer';
+  const interests = profile.interests || {};
+
+  const [procs, setProcs] = React.useState(
+    interests.needed_processes || interests.owned_processes || []
+  );
+  const [mats, setMats] = React.useState(
+    interests.needed_materials || interests.main_materials || []
+  );
+  const [scale, setScale] = React.useState(interests.order_scale || '');
+  const [saving, setSaving] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+
+  const tog = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await window._sb.auth.getUser();
+      if (!user) return;
+      const updated = role === 'buyer'
+        ? { needed_processes: procs, needed_materials: mats, order_scale: scale }
+        : { owned_processes: procs, main_materials: mats };
+      await window._sb.from('user_profiles').update({ interests: updated }).eq('id', user.id);
+      onSaved?.(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {}
+    setSaving(false);
+  };
+
+  return (
+    <section className="mypage-card mypage-card-full">
+      <div className="mypage-card-head">
+        <h3>{role === 'buyer' ? '바이어 관심 정보' : '제조사 역량 정보'}</h3>
+      </div>
+
+      <div className="myp-interests-section">
+        <div className="myp-interests-label">{role === 'buyer' ? '필요한 가공방식' : '보유 공정'}</div>
+        <div className="sgn-chips">
+          {PROCESSES.map(p => (
+            <button key={p.id} className={'sgn-chip' + (procs.includes(p.id) ? ' is-on' : '')}
+              onClick={() => setProcs(tog(procs, p.id))}>{p.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="myp-interests-section">
+        <div className="myp-interests-label">{role === 'buyer' ? '주요 소재' : '주요 소재'}</div>
+        <div className="sgn-chips">
+          {MATERIALS.map(m => (
+            <button key={m} className={'sgn-chip' + (mats.includes(m) ? ' is-on' : '')}
+              onClick={() => setMats(tog(mats, m))}>{m}</button>
+          ))}
+        </div>
+      </div>
+
+      {role === 'buyer' && (
+        <div className="myp-interests-section">
+          <div className="myp-interests-label">발주 예상 규모</div>
+          <div className="sgn-chips">
+            {SCALES.map(s => (
+              <button key={s} className={'sgn-chip' + (scale === s ? ' is-on' : '')}
+                onClick={() => setScale(scale === s ? '' : s)}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? '저장 중...' : '저장하기'}
+        </button>
+        {saved && <span style={{ fontSize: 13, color: 'var(--emerald)', fontWeight: 600 }}>✓ 저장됐습니다</span>}
+      </div>
+    </section>
+  );
+}
+
 const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) => {
   const [tab, setTab] = useState('overview');
   const [dbProfile, setDbProfile] = useState(null);
@@ -6654,6 +6739,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
     { id: 'rfq', label: '견적 요청 내역', count: rfqs.length || null },
     { id: 'history', label: '최근 조회', count: recentViews.length || null },
     { id: 'favs', label: '관심 제조사', count: favorites.length || null },
+    { id: 'interests', label: '관심 정보' },
     { id: 'grant_scraps', label: '지원사업 스크랩', count: grantScraps.length || null },
     { id: 'profile', label: '계정/회사 정보' },
   ];
@@ -6875,6 +6961,11 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
         ) : (
           <FavoritesTab ids={favorites} onOpenFactory={onOpenFactory} onNav={onNav} />
         )
+      )}
+
+      {/* ── 관심 정보 탭 ── */}
+      {tab === 'interests' && (
+        <InterestsTab profile={profile} onSaved={(updated) => setProfile(p => ({ ...p, interests: updated }))} />
       )}
 
       {/* ── 지원사업 스크랩 탭 ── */}
@@ -9590,7 +9681,7 @@ const PrivacyPage = () => {
 // ──────────────────────────────────────────────────────────
 const AI_INIT_MSG = { role: 'ai', text: '안녕하세요! 어떤 제품을 만들고 싶으신가요? 편하게 말씀해 주세요.' };
 
-const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
+const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext, userProfile }) => {
   const [messages, setMessages] = React.useState(() => {
     const saved = window._aiConsultSession?.messages;
     if (saved && saved.length > 0) return saved;
@@ -9681,7 +9772,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
       const resp = await fetch('/.netlify/functions/ai-consult', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: fullApiMessages, factoryContext: factoryContext || null }),
+        body: JSON.stringify({ messages: fullApiMessages, factoryContext: factoryContext || null, userProfile: userProfile || null }),
       });
       const data = await resp.json();
       if (data.reply) {
