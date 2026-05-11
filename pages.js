@@ -6262,11 +6262,15 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
     ...(interests.needed_materials || interests.main_materials || []),
   ].filter(Boolean);
 
+  const grantScraps = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]'); } catch { return []; }
+  }, []);
+
   const stats = [
     { k: '진행중 견적', v: rfqs.filter(r => r.status !== 'completed' && r.status !== '완료').length },
     { k: '관심 제조사', v: favorites.length },
+    { k: '지원사업 스크랩', v: grantScraps.length },
     { k: '최근 조회', v: recentViews.length },
-    { k: '활성 채팅', v: 0 },
   ];
 
   const saveEdit = async () => {
@@ -6295,6 +6299,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
     { id: 'rfq', label: '견적 요청 내역', count: rfqs.length || null },
     { id: 'history', label: '최근 조회', count: recentViews.length || null },
     { id: 'favs', label: '관심 제조사', count: favorites.length || null },
+    { id: 'grant_scraps', label: '지원사업 스크랩', count: grantScraps.length || null },
     { id: 'profile', label: '계정/회사 정보' },
   ];
 
@@ -6552,6 +6557,35 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
             </ul>
           </section>
         )
+      )}
+
+      {/* ── 지원사업 스크랩 탭 ── */}
+      {tab === 'grant_scraps' && (
+        <section className="mypage-section">
+          <h2 className="mypage-section-title">지원사업 스크랩</h2>
+          {grantScraps.length === 0 ? (
+            <EmptyState icon="star" msg="스크랩한 지원사업이 없습니다." btnLabel="지원사업 보러가기" onBtnClick={() => onNav('grants')} />
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {grantScraps.map((id, i) => (
+                <div key={id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', border:'1px solid var(--line-2)', borderRadius:8, background:'var(--bg)' }}>
+                  <span style={{ fontSize:14, color:'var(--ink-2)' }}>스크랩 #{i + 1} · {id}</span>
+                  <button
+                    onClick={() => {
+                      try {
+                        const list = JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]');
+                        localStorage.setItem('fm-grant-scraps', JSON.stringify(list.filter(x => x !== id)));
+                      } catch {}
+                      window.location.reload();
+                    }}
+                    style={{ fontSize:12, color:'#ef4444', background:'none', border:'none', cursor:'pointer' }}>
+                    삭제
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       )}
 
       {/* ── 계정/회사 정보 탭 ── */}
@@ -9763,7 +9797,26 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
   const method  = _stripHtml(f.method);
   const contact = _stripHtml(f.contact);
   const [toast, setToast] = React.useState('');
-  const [scraped, setScraped] = React.useState(false);
+  const _scrapKey = 'fm-grant-scraps';
+  const _scrapId = f.no || f.title || '';
+  const [scraped, setScraped] = React.useState(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem(_scrapKey) || '[]');
+      return list.includes(_scrapId);
+    } catch { return false; }
+  });
+
+  const toggleScrap = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(_scrapKey) || '[]');
+      const next = scraped
+        ? list.filter(id => id !== _scrapId)
+        : [...list, _scrapId];
+      localStorage.setItem(_scrapKey, JSON.stringify(next));
+    } catch {}
+    setScraped(s => !s);
+    showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다');
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -9833,7 +9886,7 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
         {/* 버튼 영역 - 스크랩/링크/목록/원문/공고문 같은 행 */}
         <div style={{ marginTop:8 }}>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'flex-end', marginBottom: (f.onlineApplyUrl || f.applyUrl) ? 12 : 0 }}>
-            <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={() => { setScraped(s => !s); showToast(scraped ? '스크랩이 취소됐습니다' : '스크랩됐습니다'); }}>
+            <button className={`grants-detail-btn grants-detail-btn-ghost${scraped ? ' is-scraped' : ''}`} onClick={toggleScrap}>
               {scraped ? '★ 스크랩됨' : '☆ 스크랩'}
             </button>
             <button className="grants-detail-btn grants-detail-btn-ghost" onClick={copyLink}>링크 복사</button>
