@@ -4801,6 +4801,7 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line-2);
   border-radius: 14px;
   overflow: hidden;
+  padding: 20px 24px;
 }
 .admin-toolbar {
   display: flex; align-items: center; gap: 12px;
