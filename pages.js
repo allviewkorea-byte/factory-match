@@ -2829,6 +2829,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   useEffect(() => {
     if (!resolvedFactory) return;
     const _f = resolvedFactory;
+    window.logActivity?.('factory_view', _f.id, 'factory', { name: _f.name, city: _f.city });
     const _isSample = /^f(\d+)$/.test(_f.id) && parseInt(_f.id.slice(1)) <= 14;
     const _procLabels = (_f.processes || []).map(p => window.MFG_DATA.PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
     const _prodLabels = (_f.products || []).map(p => window.MFG_DATA.PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
@@ -4082,6 +4083,7 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
   }, [sort]);
 
   async function handleSearch() {
+    if (query?.trim()) window.logActivity?.('search', null, 'query', { q: query.trim() });
     if (!query.trim()) return;
     setLoading(true);
     setAiError(null);
@@ -7228,7 +7230,7 @@ const AdminReportsTab = () => {
         statuses.map(s =>
           window._sb
             .from('factory_reports')
-            .select('id', { count: 'estimated', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('status', s)
         )
       );
@@ -9852,6 +9854,7 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext, userProf
   }, [factories]);
 
   const sendMessage = async () => {
+    window.logActivity?.('ai_consult_send', null, 'ai', { preview: input?.slice(0, 50) });
     const text = input.trim();
     if (!text || loading) return;
     // 비로그인 시 사용자 메시지 3턴 초과하면 게이트 표시

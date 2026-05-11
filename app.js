@@ -1,6 +1,30 @@
 
 const { useState, useEffect, useRef } = React;
 
+// ── 사용자 행동 로그 시스템 ──
+const _sessionId = (() => {
+  try {
+    let sid = sessionStorage.getItem('fm-sid');
+    if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('fm-sid', sid); }
+    return sid;
+  } catch { return 'unknown'; }
+})();
+
+window.logActivity = async (action, targetId, targetType, meta) => {
+  try {
+    if (!window._sb) return;
+    const { data: { user } } = await window._sb.auth.getUser();
+    await window._sb.from('user_activity_logs').insert({
+      user_id: user?.id || null,
+      session_id: _sessionId,
+      action,
+      target_id: targetId ? String(targetId) : null,
+      target_type: targetType || null,
+      meta: meta || null,
+    });
+  } catch {}
+};
+
 // 비밀 관리자 접근 URL: ?k=030209
 (function() {
   try {
@@ -284,6 +308,7 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const addRFQ = (id) => {
+    window.logActivity?.('rfq_add', id, 'factory');
     setRfqIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
   const handleSearch = (q) => {
