@@ -4685,12 +4685,7 @@ function LandingPage({ onNav, authed }) {
               <button key={tag} className="ldg3-tag-light" onClick={() => handleSearch(tag)}>{tag}</button>
             ))}
           </div>
-          <div className="ldg3-stats-light">
-            전국 <strong>217,054개</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
-          </div>
-          <button className="ldg3-signup-cta" onClick={() => { window.logVisitor && window.logVisitor('signup_triggered', { trigger: 'landing_hero' }); onNav('signup'); }}>
-            무료로 시작하기
-          </button>
+
         </div>
       </section>
 
