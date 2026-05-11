@@ -1503,8 +1503,8 @@ function _stripHtml(html) {
 function _normDate(v) {
   if (!v) return '';
   const s = String(v).trim();
-  // YYYY-MM-DD 또는 YYYY/MM/DD
-  const m = s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+  // YYYY-MM-DD 또는 YYYY/MM/DD 또는 YYYY.MM.DD
+  const m = s.match(/^(\d{4})[-\/\.](\d{2})[-\/\.](\d{2})/);
   if (m) return m[1] + m[2] + m[3];
   // YYYYMMDD
   if (/^\d{8}$/.test(s)) return s;
