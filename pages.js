@@ -6223,7 +6223,7 @@ const ChatPage = ({ initialFactoryId, onBack, onOpenFactory }) => {
 
 // ──────────────────────────────────────────────────────────
 // 관심 제조사 탭 - DB에서 직접 조회
-const FavoritesTab = ({ ids, onOpenFactory, onNav }) => {
+const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
   const [factories, setFactories] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -6239,8 +6239,8 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav }) => {
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'var(--ink-3)' }}>불러오는 중…</div>;
 
   return (
-    <section className="mypage-card mypage-card-full">
-      <header className="mypage-card-head"><h3>관심 제조사</h3></header>
+    <section className={compact ? '' : 'mypage-card mypage-card-full'}>
+      {!compact && <header className="mypage-card-head"><h3>관심 제조사</h3></header>}
       <ul className="fav-list">
         {ids.map(id => {
           const f = factories.find(x => x.id === id);
@@ -6485,24 +6485,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
             {favorites.length === 0 ? (
               <EmptyState icon="heart" msg="찜한 제조사가 없습니다." btnLabel="제조사 둘러보기" onBtnClick={() => onNav && onNav('list')}/>
             ) : (
-              <ul className="fav-list">
-                {favorites.slice(0, 4).map(id => {
-                  const f = FACTORIES_AC.find(x => x.id === id);
-                  if (!f) return null;
-                  return (
-                    <li key={id}>
-                      <button className="fav-row" onClick={() => onOpenFactory && onOpenFactory(id)}>
-                        <div className="fav-img" style={{ background: f.image }}><div className="mcard-img-stripes"/></div>
-                        <div className="fav-body">
-                          <h4>{f.name}</h4>
-                          <span>{f.city} · {f.processes.slice(0, 2).map(pid => PROCESSES_AC.find(p => p.id === pid)?.label).filter(Boolean).join(', ')}</span>
-                        </div>
-                        <Icon name="chevron_right" size={14} stroke={2} className="fav-arrow"/>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <FavoritesTab ids={favorites.slice(0, 4)} onOpenFactory={onOpenFactory} onNav={onNav} compact />
             )}
           </div>
 
