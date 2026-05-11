@@ -1,93 +1,77 @@
-# 공장매칭 (FactoryMatch) 프로젝트 인수인계서
+# 공장매칭 (FactoryMatch) 인수인계서
 > 새 채팅에서 이 문서를 보여주면 바로 작업 시작 가능
+> 마지막 업데이트: 2026-05-11
 
 ---
 
 ## 🔑 핵심 정보
 
-### 사이트
-- **URL**: https://steady-mousse-5900f8.netlify.app
-- **GitHub**: https://github.com/allviewkorea-byte/factory-match
-- **GitHub 토큰**: ghp_****[GitHub Token - 별도 보관]
+| 항목 | 내용 |
+|------|------|
+| 사이트 URL | https://steady-mousse-5900f8.netlify.app |
+| GitHub | https://github.com/allviewkorea-byte/factory-match |
+| GitHub 토큰 | Claude 메모리에 저장됨 |
+| 로컬 경로 | C:\Users\micro\factory-match (Windows, `py` 명령) |
 
-### 작업 방식
+### 작업 흐름
 ```
-Claude 웹채팅이 직접 git push 가능
-흐름: git clone → 코드 수정 → 빌드 → git push → Netlify 자동배포
-remote URL: https://[토큰]@github.com/allviewkorea-byte/factory-match.git
+Claude 웹채팅 → git clone → 코드 수정 → node build.js → git push → Netlify 자동배포
 ```
 
 ---
 
-## ⚠️ 코드 수정 시 반드시 지켜야 할 규칙
+## ⚠️ 빌드 규칙 (가장 중요!)
 
-### 빌드 필수 (가장 중요!)
-`pages.js`, `app.js`, `styles.css`, `data.js` 중 하나라도 수정하면
-**반드시 빌드 후 min 파일도 함께 push해야 합니다.**
+pages.js, app.js, styles.css, data.js 수정 시 반드시 빌드 후 함께 push
 
 ```bash
-# 수정 후 반드시 실행
 cd /home/claude/factory-match
 node build.js
 
-# 그 다음 push
 git add pages.js pages.min.js app.js app.min.js styles.css styles.min.css data.js data.min.js
 git commit -m "..."
 git push
 ```
 
-### 왜 필요한가?
-- 현재 사이트는 Babel CDN 없이 **사전 컴파일된 .min.js 파일**을 사용
-- `pages.js`만 수정하고 `pages.min.js`를 업데이트 안 하면 사이트에 반영 안 됨
-- `pages.min.js`는 `node build.js`가 자동 생성함
+왜? 사이트는 Babel CDN 없이 esbuild 사전컴파일된 .min.js를 로드함.
+원본만 push하면 사이트에 반영 안 됨.
 
-### 빌드 원리
-```
-pages.js (JSX 포함) 
-  → IIFE로 감싸기 (스코프 분리)
-  → esbuild로 JSX 변환 + 압축
-  → pages.min.js (브라우저에서 바로 실행 가능)
-```
-
-### IIFE가 필요한 이유
-`pages.js`와 `app.js` 둘 다 `const { useState } = React` 선언.
-Babel CDN은 각 파일을 독립 스코프로 실행했지만,
-이제 같은 스코프에서 실행되므로 IIFE로 감싸서 충돌 방지.
+IIFE 래핑: pages.js/app.js 둘 다 const {useState}=React 선언 → 스코프 충돌 방지.
+build.js가 자동 처리하므로 신경 쓸 필요 없음.
 
 ---
 
-## 🗝️ API 키 모음
+## 🗝️ API 키 (Claude 메모리에 저장됨)
 
-| 서비스 | 키 |
-|--------|-----|
-| Anthropic | sk-ant-api03-****[Anthropic API Key - 별도 보관] |
+| 서비스 | 용도 |
+|--------|------|
 | Supabase URL | https://yezxwlzyiqgewpkkyget.supabase.co |
-| Supabase anon key | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...****[Supabase anon key - 별도 보관] |
-| 네이버 Client ID | tgqWP4gTAET4eh7pp1gh |
-| 네이버 Client Secret | jBMiXrwRT9 |
-| Google Maps | AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY |
-| Google Geocoding | AIzaSyC1WBx03zr2C0tDIdlsN8noB1Ue5dXpe1Y |
-| KICOX+정부지원금 | 2ca93f3d623e0992d77686cd49e603aa5227eb3bd6ad66243300e10cc6b2b1b7 |
-| DART | fc85d5b3e93600d415fa6e005057c5b609e874ca |
+| Supabase anon key | 메모리 참조 |
+| Anthropic | AI 요약 enrich_ai_summary.py |
+| 네이버 ID/Secret | 웹사이트 수집 enrich_website_naver.py |
+| Google Maps | 지도/좌표 |
+| Google Geocoding | 주소→좌표 변환 |
+| KICOX+정부지원금 | 공장 데이터 + 지원사업 API |
+| DART | 재무정보 opendart.fss.or.kr |
 
 ---
 
 ## 🗄️ DB 현황 (Supabase)
 
-- **총 공장 수**: 217,054개
-- **테이블**: factories
-- **주요 컬럼**: id, name, city, region, website, email, phone, summary, industries, processes, ai_summary, completeness_score, bizrno, dart_revenue, dart_assets, lat, lng, hidden, dart_mismatch_name, dart_manual_match
+- 총 공장: 217,054개 (factories 테이블)
+- bizrno: 컬럼은 있으나 실제 값 없음 → collect_kicox_lndpcl.py 재실행 필요
+- 웹사이트 수집: 34,655개
+- ai_summary: 일부 수집됨
 
-### completeness_score 기준
-| 항목 | 점수 |
-|------|------|
-| ai_summary | +40 |
-| website | +20 |
-| DART 재무 | +15 |
-| phone | +10 |
-| summary | +5 |
-| 좌표(lat/lng) | +5 |
-| image | +5 |
+주요 컬럼:
+id, name, city, region, website, email, phone, summary, industries, processes,
+ai_summary, completeness_score, bizrno, dart_revenue, dart_assets,
+lat, lng, hidden, dart_mismatch_name, dart_manual_match
+
+completeness_score: ai_summary(+40), website(+20), DART재무(+15), phone(+10), summary(+5), 좌표(+5), image(+5)
+
+중요 SQL 함수:
+SELECT * FROM get_region_counts();  -- 지역별 공장 수 (한글→영문 코드 변환)
 
 ---
 
@@ -95,132 +79,113 @@ Babel CDN은 각 파일을 독립 스코프로 실행했지만,
 
 ```
 factory-match/
-├── index.html          ← 메인 HTML (min 파일 로드)
-├── pages.js            ← 전체 페이지 컴포넌트 (~10,000줄) ← 수정 대상
-├── pages.min.js        ← 빌드 결과물 (자동생성, 직접 수정 금지)
-├── app.js              ← 앱 라우팅 ← 수정 대상
-├── app.min.js          ← 빌드 결과물 (자동생성, 직접 수정 금지)
-├── styles.css          ← 전체 스타일 ← 수정 대상
-├── styles.min.css      ← 빌드 결과물 (자동생성, 직접 수정 금지)
-├── data.js             ← 정적 데이터
-├── data.min.js         ← 빌드 결과물 (자동생성, 직접 수정 금지)
-├── build.js            ← 빌드 스크립트 (esbuild)
+├── index.html            ← 메인 HTML
+├── pages.js              ← 전체 페이지 컴포넌트 (~11,000줄) ★ 주요 수정 대상
+├── pages.min.js          ← 빌드 결과물 (직접 수정 금지)
+├── app.js                ← 앱 라우팅/인증
+├── app.min.js            ← 빌드 결과물 (직접 수정 금지)
+├── styles.css            ← 전체 스타일
+├── styles.min.css        ← 빌드 결과물 (직접 수정 금지)
+├── data.js               ← 정적 데이터 (공정/업종/지역 매핑)
+├── data.min.js           ← 빌드 결과물 (직접 수정 금지)
+├── build.js              ← esbuild 빌드 스크립트
 ├── netlify/functions/
-│   ├── ai-consult.js   ← AI 상담 API
-│   └── ai-match.js     ← AI 매칭 API
-└── enrich_*.py         ← 데이터 수집 스크립트들
+│   ├── ai-consult.js     ← AI 상담 Netlify Function
+│   └── ai-match.js       ← AI 매칭 Netlify Function
+└── enrich_*.py           ← 데이터 수집 스크립트 (PC에서 실행)
 ```
 
-### 코드 수정 시 주의사항
-- **원본 파일** (pages.js, app.js 등) 수정
-- **node build.js** 실행해서 min 파일 재생성
-- **둘 다 함께 push** (원본 + min 파일)
-- `compiled/` 폴더는 사용 안 함
+pages.js 주요 컴포넌트:
+Header, GateModal, LandingPage, AuthFormPage, ForgotPasswordPage,
+SignupPage, VerifyPage, OnboardingPage, WelcomePage,
+HomePage, ListPage, DetailPage, RfqPage, AiConsultPage,
+GrantsPage, MyPage, AdminPage
 
 ---
 
-## 🐍 매일 실행할 스크립트 (PowerShell)
+## 🔐 인증/가입 흐름
 
-### 위치: C:\Users\micro\factory-match
+로그인: 이메일+비밀번호 → Supabase 인증 → 바로 홈 (verify 없음)
+이메일 가입: SignupPage 4단계 → status=active 즉시 활성화
+소셜 로그인: 카카오/네이버 UI만 있음(미연동), 구글 Supabase 연동됨
 
-```powershell
-# 1. git pull 후 파일 복사
-cd C:\Users\micro\factory-match
-git pull origin main
-copy enrich_website_naver.py C:\Users\micro\Downloads\enrich_website_naver.py
-copy enrich_factoryon.py C:\Users\micro\Downloads\enrich_factoryon.py
-copy enrich_ai_summary.py C:\Users\micro\Downloads\enrich_ai_summary.py
-
-# 2. API 키 설정 후 4개 동시 실행
-$env:ANTHROPIC_API_KEY="sk-ant-api03-****[별도 보관]"
-Start-Process powershell -ArgumentList "-NoExit -Command `$env:ANTHROPIC_API_KEY='$env:ANTHROPIC_API_KEY'; py C:\Users\micro\Downloads\enrich_geocode.py"
-Start-Process powershell -ArgumentList "-NoExit -Command `$env:ANTHROPIC_API_KEY='$env:ANTHROPIC_API_KEY'; py C:\Users\micro\Downloads\enrich_factoryon.py"
-Start-Process powershell -ArgumentList "-NoExit -Command `$env:ANTHROPIC_API_KEY='$env:ANTHROPIC_API_KEY'; py C:\Users\micro\Downloads\enrich_website_naver.py"
-Start-Process powershell -ArgumentList "-NoExit -Command `$env:ANTHROPIC_API_KEY='$env:ANTHROPIC_API_KEY'; py C:\Users\micro\Downloads\enrich_ai_summary.py"
-```
-
-### 이메일 수집 (별도 실행)
-```powershell
-copy enrich_email_only.py C:\Users\micro\Downloads\enrich_email_only.py
-py C:\Users\micro\Downloads\enrich_email_only.py
-```
-
-### KICOX + DART (bizrno 수집 후 실행)
-```powershell
-copy collect_kicox_lndpcl.py C:\Users\micro\Downloads\collect_kicox_lndpcl.py
-py C:\Users\micro\Downloads\collect_kicox_lndpcl.py
-# 완료 후
-copy enrich_dart.py C:\Users\micro\Downloads\enrich_dart.py
-py C:\Users\micro\Downloads\enrich_dart.py
-# ※ DART API IP 등록 필요: opendart.fss.or.kr → 마이페이지 → IP변경신청
-```
-
----
-
-## ⏳ PENDING 작업 목록
-
-### 즉시 필요
-- [ ] DART IP 승인 후 enrich_dart.py 실행 (1~2영업일 대기중)
-- [ ] completeness_score 재계산 SQL (DART 후)
-- [ ] 잘못된 ai_summary 초기화 (회사명 불일치)
-
-### 기능 개발
-- [ ] 바이어 가입 프로필 페이지
-- [ ] 홈 AI 미리보기 섹션 (비로그인)
-- [ ] 디자인 최종 검토 (PC → 모바일)
-- [ ] 법무사 미팅 (오픈 전)
-
-### 장기
-- [ ] Google Places API로 공장 사진 수집
-- [ ] 모바일 UI/UX 작업
-- [ ] 파트너 공장 유료 회원제 설계
-- [ ] 거래 수수료 시스템
+게이트 모달 조건:
+- 공장 상세: 비로그인 2회 허용 → 3번째 게이트
+- 정부지원금 게시물: 클릭 즉시 게이트
+- AI 상담 / 견적 요청: 클릭 즉시 게이트
 
 ---
 
 ## 🏗️ 주요 기능 현황
 
-### 제조사 탐색 (ListPage)
-- 217,053개 공장 카드 표시
-- completeness_score 기준 정렬
-- 지역/업종/공정 필터
-- 지도 연동 (현재 페이지 공장만 핀 표시)
-- 뒤로가기 시 페이지 번호 복원
+제조사 탐색 (ListPage):
+- 지역/업종/공정 필터 (서버사이드), completeness_score 정렬
+- 지도 연동, 인증/리드타임 필터 숨김 (데이터 없음)
 
-### 상세 페이지 (DetailPage)
-- ai_summary 태그 표시
-- DART 재무정보 섹션
-- AI 상담 버튼 → AI 탭으로 이동 + 제조사 컨텍스트 전달
+공장 상세 (DetailPage):
+- 관심 제조사 (localStorage, 빨간 하트 토글)
+- 정보 오류 문의 버튼 (노란 배경)
 
-### AI 상담 (AiConsultPage)
-- web_search 도구 탑재
-- 제조업 전문 컨설턴트 페르소나
-- 상세페이지에서 진입 시 해당 제조사 컨텍스트 자동 설정
+정부지원금 (GrantsPage):
+- 기업마당 API, 진행중/마감임박/마감/전체 필터
+- 공고문 다운로드(초록), 온라인 신청, 스크랩(제목+ID 저장)
+- 뒤로/앞으로가기 히스토리 지원
 
-### 정부지원금 (GrantsPage)
-- 기업마당 Open API 연동
-- 진행중/마감임박 상단 고정
-- 지역/분야 필터, 검색창
-- 공고문 다운로드, 온라인신청 바로가기
+마이페이지 (MyPage):
+- 탭: 개요/견적요청내역/최근조회/관심제조사/지원사업스크랩/계정정보
+- 관심 제조사: Supabase DB 직접 조회
+- 지원사업 스크랩: 제목 표시, 클릭 시 grants 탭 이동
 
-### 관리자 콘솔 (AdminPage)
-- DART 불일치 관리 탭 (상호명 불일치 수동 매칭)
-- 제조사 편집, 방문자 통계
-
-### AI 매칭
-- ai_summary + completeness_score 반영
-- 키워드 기반 공장 검색
+관리자 콘솔 (AdminPage):
+- DART 불일치 탭, 방문자 통계, 제조사 편집
 
 ---
 
-## 💡 브랜딩 메모
-- 현재 이름 "공장매칭" → 브랜딩 아이덴티티 부족으로 변경 검토 중
-- 후보: **세모아** (세상의 모든 공장) - 배민처럼 한글 브랜드로 검토 중
-- 경쟁사: 캐파(capa.ai) 2,200개 공장 / 샤플(make.shapl.com)
+## 🐍 데이터 수집 스크립트
 
-## 💰 수익 모델 (계획)
-1. 3~6개월 무료 운영 후 유료 전환
-2. 유료 회원제 (공장 월 구독)
-3. 노출 광고 (상단 배치)
-4. 거래 수수료 (플랫폼 내 결제 시스템 구축 후)
-5. 데이터 판매 / 금융 연계 (장기)
+매일 실행 (C:\Users\micro\factory-match에서):
+```powershell
+py enrich_geocode.py        # 주소→좌표
+py enrich_factoryon.py      # 공장온 정보
+py enrich_website_naver.py  # 웹사이트 수집
+py enrich_ai_summary.py     # AI 요약
+py enrich_email_only.py     # 이메일 수집
+```
+
+1회성:
+```powershell
+del lndpcl_progress.json && py collect_kicox_lndpcl.py  # bizrno 수집 (일 1,000건)
+py enrich_dart.py                                         # DART 재무 (일 10,000건, IP승인 후)
+```
+
+---
+
+## ⏳ PENDING 작업
+
+즉시 (데이터):
+- DART IP 승인 확인 후 enrich_dart.py 실행
+- lndpcl_progress.json 삭제 후 collect_kicox_lndpcl.py 재실행
+- DART 수집 후 completeness_score SQL 재계산
+
+기능 개발:
+- 카카오/네이버 소셜 로그인 연동 (각 개발자센터 앱 등록 필요)
+- 제조사 소유권 인증 (사업자등록증 업로드 → 관리자 승인 → 편집 권한)
+- 공장 사진 업로드 (여러 장)
+- SMS 알림 실제 연동 (Twilio 등 필요)
+- website 검증 스크립트 (verify_website.py)
+- 홈 AI 미리보기 섹션 (비로그인)
+
+오픈 전:
+- 모바일 UI/UX 검토
+- 법무사 미팅 (이용약관/개인정보처리방침)
+
+---
+
+## 💡 알아두면 좋은 것들
+
+- Supabase 이메일 한도: 시간당 3~4회 (rate limit 에러 시 1시간 대기)
+- KICOX API 일 한도: 1,000건 (증량 신청 중)
+- DART/정부지원금 API 한도: 10,000건/일
+- 전화번호 SMS 인증: UI만 있고 실제 발송 미연동
+- 브랜딩 후보: 세모아 (세상의 모든 공장)
+- 경쟁사: 캐파(capa.ai) 2,200개 / 샤플(make.shapl.com)
