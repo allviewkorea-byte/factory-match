@@ -6329,7 +6329,11 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
   ].filter(Boolean);
 
   const grantScraps = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]'); } catch { return []; }
+    try {
+      const list = JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]');
+      // 구버전(문자열) + 신버전(객체) 모두 처리
+      return list.map(x => typeof x === 'object' ? x : { id: x, title: x });
+    } catch { return []; }
   }, []);
 
   const stats = [
@@ -6596,20 +6600,27 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
             <EmptyState icon="star" msg="스크랩한 지원사업이 없습니다." btnLabel="지원사업 보러가기" onBtnClick={() => onNav('grants')} />
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {grantScraps.map((id, i) => (
-                <div key={id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', border:'1px solid var(--line-2)', borderRadius:8, background:'var(--bg)' }}>
-                  <span style={{ fontSize:14, color:'var(--ink-2)' }}>스크랩 #{i + 1} · {id}</span>
-                  <button
-                    onClick={() => {
-                      try {
-                        const list = JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]');
-                        localStorage.setItem('fm-grant-scraps', JSON.stringify(list.filter(x => x !== id)));
-                      } catch {}
-                      window.location.reload();
-                    }}
-                    style={{ fontSize:12, color:'#ef4444', background:'none', border:'none', cursor:'pointer' }}>
-                    삭제
-                  </button>
+              {grantScraps.map((scrap) => (
+                <div key={scrap.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', border:'1px solid var(--line-2)', borderRadius:8, background:'var(--bg)', cursor:'pointer' }}
+                  onClick={() => onNav('grants')}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:0, fontSize:14, fontWeight:500, color:'var(--ink-1)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{scrap.title || scrap.id}</p>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, marginLeft:12 }}>
+                    <Icon name="chevron_right" size={14} stroke={2} />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        try {
+                          const list = JSON.parse(localStorage.getItem('fm-grant-scraps') || '[]');
+                          localStorage.setItem('fm-grant-scraps', JSON.stringify(list.filter(x => (typeof x === 'object' ? x.id : x) !== scrap.id)));
+                        } catch {}
+                        window.location.reload();
+                      }}
+                      style={{ fontSize:12, color:'#ef4444', background:'none', border:'none', cursor:'pointer', padding:'2px 6px' }}>
+                      삭제
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -9829,10 +9840,11 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
   const [toast, setToast] = React.useState('');
   const _scrapKey = 'fm-grant-scraps';
   const _scrapId = f.no || f.title || '';
+  const _scrapTitle = f.title || '';
   const [scraped, setScraped] = React.useState(() => {
     try {
       const list = JSON.parse(localStorage.getItem(_scrapKey) || '[]');
-      return list.includes(_scrapId);
+      return list.some(x => (typeof x === 'object' ? x.id : x) === _scrapId);
     } catch { return false; }
   });
 
@@ -9840,8 +9852,8 @@ const GrantDetailPage = ({ item, onBack, authed, onNav }) => {
     try {
       const list = JSON.parse(localStorage.getItem(_scrapKey) || '[]');
       const next = scraped
-        ? list.filter(id => id !== _scrapId)
-        : [...list, _scrapId];
+        ? list.filter(x => (typeof x === 'object' ? x.id : x) !== _scrapId)
+        : [...list, { id: _scrapId, title: _scrapTitle }];
       localStorage.setItem(_scrapKey, JSON.stringify(next));
     } catch {}
     setScraped(s => !s);
