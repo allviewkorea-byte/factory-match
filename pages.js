@@ -6673,6 +6673,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
                   className="myp-input"
                   value={editForm.contact_name}
                   onChange={e => setEditForm(f => ({ ...f, contact_name: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(); }}
                   placeholder="담당자 이름"
                 />
               </label>
@@ -6682,6 +6683,7 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
                   className="myp-input"
                   value={editForm.contact_phone}
                   onChange={e => setEditForm(f => ({ ...f, contact_phone: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(); }}
                   placeholder="010-0000-0000"
                 />
               </label>
