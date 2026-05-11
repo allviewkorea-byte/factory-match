@@ -98,10 +98,10 @@ function App() {
     const urlMatchesState = currentRoute === route && (route !== 'detail' || currentFactoryId === factoryId);
 
     if (initialMount.current) {
-      history.replaceState({ route, factoryId }, '', url);
+      history.replaceState({ route, factoryId, detailFrom }, '', url);
       initialMount.current = false;
     } else if (!urlMatchesState) {
-      history.pushState({ route, factoryId }, '', url);
+      history.pushState({ route, factoryId, detailFrom }, '', url);
     }
   }, [route, factoryId]);
 
@@ -133,6 +133,8 @@ function App() {
         else setRoute('home');
         if (e.state?.factoryId) setFactoryId(e.state.factoryId);
       }
+      // 뒤로가기 시 detailFrom 복원
+      if (e.state?.detailFrom) setDetailFrom(e.state.detailFrom);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

@@ -1516,13 +1516,13 @@ function _biz(item) {
   let combinedStt = '', combinedEnd = '';
   if (item.reqstBeginEndDe) {
     const raw = String(item.reqstBeginEndDe);
-    // "2026-04-30 ~ 2026-09-30" 또는 "20260101~20260531" 형태 모두 처리
-    const parts = raw.split(/\s*[~\-]\s*/).filter(p => p.trim().length >= 8);
+    // "2026-04-30 ~ 2026-09-30" 또는 "20260101~20260531" 형태 - ~로만 split
+    const parts = raw.split('~').map(p => p.trim()).filter(p => p.length >= 6);
     if (parts.length >= 2) {
-      combinedStt = _normDate(parts[0].trim());
-      combinedEnd = _normDate(parts[parts.length - 1].trim());
+      combinedStt = _normDate(parts[0]);
+      combinedEnd = _normDate(parts[parts.length - 1]);
     } else if (parts.length === 1) {
-      combinedEnd = _normDate(parts[0].trim());
+      combinedEnd = _normDate(parts[0]);
     }
   }
 
