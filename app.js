@@ -318,6 +318,8 @@ function App() {
           rfqIds={rfqIds}
           onChat={openChat}
           onReport={openReport}
+          authed={authed}
+          onGate={showGate}
         />
       )}
       {route === 'rfq' && (

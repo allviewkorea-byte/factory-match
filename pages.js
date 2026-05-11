@@ -141,6 +141,8 @@ const GATE_MESSAGES = {
   rfq:          { title: '견적 요청은 회원만 이용 가능합니다', sub: '가입하면 여러 공장에 동시에 견적을 요청할 수 있어요.' },
   ai_consult:   { title: 'AI 상담을 계속하려면 가입하세요', sub: '가입하면 AI 상담을 무제한으로 이용하고 공장 추천을 받을 수 있어요.' },
   grants:       { title: '지원사업 상세는 회원만 볼 수 있어요', sub: '무료로 가입하면 정부지원금 상세 내용과 신청 링크를 바로 확인할 수 있어요.' },
+  favorite:     { title: '관심 제조사는 회원만 저장할 수 있어요', sub: '무료로 가입하면 마음에 드는 공장을 저장하고 언제든지 다시 볼 수 있어요.' },
+  report:       { title: '정보 오류 문의는 회원만 이용 가능합니다', sub: '가입 후 공장 정보 오류를 신고하거나 수정을 요청할 수 있어요.' },
 };
 const GateModal = ({ reason, onSignup, onLogin, onClose }) => {
   const msg = GATE_MESSAGES[reason] || GATE_MESSAGES.search;
@@ -2766,7 +2768,7 @@ const FactoryHeroImg = ({ f }) => {
   );
 };
 
-const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel }) => {
+const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel, authed, onGate }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
 
   const _fromCacheOrFixture = (id) =>
@@ -2952,6 +2954,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
         </button>
         <div className="detail-bar-actions">
           <button className={`icon-btn${isFav ? ' is-active' : ''}`} onClick={() => {
+            if (!authed) { onGate?.('favorite'); return; }
             if (!f || !f.id) return;
             try {
               const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
@@ -2969,7 +2972,10 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               내 공장 정보 수정
             </button>
           )}
-          <button className="detail-report-btn" onClick={() => onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name })}
+          <button className="detail-report-btn" onClick={() => {
+            if (!authed) { onGate?.('report'); return; }
+            onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name });
+          }}
             style={{ background:'#fbbf24', color:'#78350f', border:'none', borderRadius:6, padding:'6px 12px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             ✎ 정보 오류 문의
           </button>
