@@ -2797,8 +2797,23 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     return () => { cancelled = true; };
   }, [factoryId]);
 
-  const f = resolvedFactory || FACTORIES[0] || null;
+  // ── 모든 Hook은 early return 전에 선언 (React Hook 규칙) ──
   const [tab, setTab] = useStateP('overview');
+  const [isOwner, setIsOwner] = useStateP(false);
+  const [showEditModal, setShowEditModal] = useStateP(false);
+  const [editForm, setEditForm] = useStateP({});
+  const [matInput, setMatInput] = useStateP('');
+  const [certInput, setCertInput] = useStateP('');
+  const [editSaving, setEditSaving] = useStateP(false);
+  const [editToast, setEditToast] = useStateP('');
+  const [isFav, setIsFav] = useStateP(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
+      return resolvedFactory ? list.includes(resolvedFactory.id) : false;
+    } catch { return false; }
+  });
+
+  const f = resolvedFactory || FACTORIES[0] || null;
 
   if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
 
@@ -2808,24 +2823,6 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   const prodLabels = f.products.map(p => PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
   const indLabels = f.industries.map(p => INDUSTRIES.find(x => x.id === p)?.label).filter(Boolean);
   const inRfq = rfqIds.includes(f.id);
-
-  // ── 소유자 편집 상태 ──
-  const [isOwner, setIsOwner] = useStateP(false);
-  const [showEditModal, setShowEditModal] = useStateP(false);
-  const [editForm, setEditForm] = useStateP({});
-  const [matInput, setMatInput] = useStateP('');
-  const [certInput, setCertInput] = useStateP('');
-  const [editSaving, setEditSaving] = useStateP(false);
-  const [editToast, setEditToast] = useStateP('');
-
-  // 관심 제조사 상태
-  const [isFav, setIsFav] = useStateP(() => {
-    try {
-      if (!f || !f.id) return false;
-      const list = JSON.parse(localStorage.getItem('fm-favorites') || '[]');
-      return list.includes(f.id);
-    } catch { return false; }
-  });
 
   // 소유자 확인
   useEffectP(() => {
