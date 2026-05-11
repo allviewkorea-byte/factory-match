@@ -259,7 +259,7 @@ function App() {
           onGate={showGate}
         />
       )}
-      <div style={{ display: (route === 'ai') ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ display: (route === 'ai') ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', height: '100vh' }}>
         <AiConsultPage
           onOpenFactory={(id) => openFactory(id, 'ai')}
           authed={authed}

@@ -9241,14 +9241,10 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext }) => {
   const msgsEndRef = React.useRef(null);
   const msgsContainerRef = React.useRef(null);
 
-  // 마운트 시 window 스크롤 잠금 (AI 페이지는 내부 컨테이너만 스크롤)
+  // 마운트 시 window 스크롤 위치만 초기화 (overflow 제어는 app.js 래퍼 div가 담당)
   React.useEffect(() => {
     window.scrollTo(0, 0);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.overflowY = '';
-    };
+    return () => {};
   }, []);
 
   // 메시지 변경 시 채팅 컨테이너 안에서만 스크롤 (window 전체 스크롤 방지)
@@ -9809,9 +9805,7 @@ const GrantsPage = ({ onNav, authed }) => {
   React.useEffect(() => {
     document.body.style.overflow = '';
     document.body.style.overflowY = '';
-  }, []);
-
-  const cat = BIZINFO_CATS[catIdx];
+  }, []);  const cat = BIZINFO_CATS[catIdx];
   const rgn = BIZINFO_RGNS[rgnIdx];
 
   // 진행중/마감임박 전체 수집 (최대 5페이지 = 100건)
