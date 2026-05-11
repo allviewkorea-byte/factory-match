@@ -77,6 +77,11 @@ def load_corp_codes():
     )
     resp.raise_for_status()
 
+    # 응답이 ZIP인지 확인
+    if not resp.content[:4] == b'PK\x03\x04':
+        print(f"[DART] 오류 응답: {resp.text[:500]}")
+        raise RuntimeError("DART API가 ZIP 파일을 반환하지 않았습니다. API 키를 확인하거나 잠시 후 재시도하세요.")
+
     # ZIP 압축 해제
     with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
         with z.open("CORPCODE.xml") as f:
