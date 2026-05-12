@@ -9404,7 +9404,7 @@ const AdminPage = ({ onOpenFactory }) => {
 };
 // ─── AdminAutomationTab ────────────────────────────────────────────────
 const AdminAutomationTab = () => {
-  const GITHUB_TOKEN = window._env?.GITHUB_TOKEN || '';
+  const GITHUB_TOKEN = window._env?.GH_TOKEN || '';
   const REPO = 'allviewkorea-byte/factory-match';
   const [statuses, setStatuses] = React.useState({});
   const [limits, setLimits] = React.useState({
