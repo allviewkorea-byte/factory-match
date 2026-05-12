@@ -4654,33 +4654,37 @@ function LandingPage({ onNav, authed }) {
     <div className="ldg3">
       <ParticleCanvas />
 
-      {/* ── HERO: 기존 홈과 동일한 흰 배경 스타일 ── */}
+      {/* ── HERO: 2단 구조 (텍스트 + 일러스트) ── */}
       <section className="ldg3-hero ldg3-hero-light">
-        <div className="ldg3-hero-inner">
-          <h1 className="ldg3-h1-light">
-            AI가 찾아주는 우리 회사에 딱 맞는 <span className="ldg3-h1-accent-blue">제조공장</span>
-          </h1>
-          <p className="ldg3-hero-desc-light">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
-          <div className="ldg3-search-wrap-light">
-            <input
-              type="text"
-              className="ldg3-search-input-light"
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-              placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
-              autoComplete="off"
-            />
-            <button className="ldg3-search-btn-light" onClick={() => handleSearch()}>
-              <Icon name="search" size={20} stroke={2.2}/>
-            </button>
+        <div className="ldg3-hero-two-col">
+          <div className="ldg3-hero-left">
+            <h1 className="ldg3-h1-light">
+              AI가 찾아주는<br/>우리 회사에 딱 맞는<br/><span className="ldg3-h1-accent-blue">제조공장</span>
+            </h1>
+            <p className="ldg3-hero-desc-light">공정과 소재만 입력하세요. 매칭부터 견적까지.</p>
+            <div className="ldg3-search-wrap-light">
+              <input
+                type="text"
+                className="ldg3-search-input-light"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+                placeholder="예: CNC 알루미늄 가공, 사출 성형, 봉제"
+                autoComplete="off"
+              />
+              <button className="ldg3-search-btn-light" onClick={() => handleSearch()}>
+                <Icon name="search" size={20} stroke={2.2}/>
+              </button>
+            </div>
+            <div className="ldg3-tag-row-light">
+              {TAGS.map(tag => (
+                <button key={tag} className="ldg3-tag-light" onClick={() => handleSearch(tag)}>{tag}</button>
+              ))}
+            </div>
           </div>
-          <div className="ldg3-tag-row-light">
-            {TAGS.map(tag => (
-              <button key={tag} className="ldg3-tag-light" onClick={() => handleSearch(tag)}>{tag}</button>
-            ))}
+          <div className="ldg3-hero-right">
+            <img src="/hero-factory.svg" alt="공장 일러스트" className="ldg3-hero-illust"/>
           </div>
-
         </div>
       </section>
 
