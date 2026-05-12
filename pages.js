@@ -3685,26 +3685,44 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
       {/* 지도 탭 */}
       {tab === 'map' && (
         <section className="detail-section">
-          {f.lat && f.lng ? (
-            <div className="detail-map-tab">
-              <iframe
-                title="streetview"
-                width="100%"
-                height="400"
-                style={{border:0, borderRadius:10, display:'block'}}
-                src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
-                allowFullScreen
-              />
-              <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
-                <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
-              </a>
+          <div className="detail-grid">
+            <div>
+              {f.lat && f.lng ? (
+                <div className="detail-map-tab">
+                  <iframe
+                    title="streetview"
+                    width="100%"
+                    height="400"
+                    style={{border:0, borderRadius:10, display:'block'}}
+                    src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
+                    allowFullScreen
+                  />
+                  <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
+                    <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
+                  </a>
+                </div>
+              ) : (
+                <div className="detail-empty">
+                  <Icon name="pin" size={32} stroke={1.4}/>
+                  <p>위치 정보가 없습니다</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="detail-empty">
-              <Icon name="pin" size={32} stroke={1.4}/>
-              <p>위치 정보가 없습니다</p>
+            <div className="detail-side">
+              <h4>기본 정보</h4>
+              <dl className="detail-dl">
+                {(f.roadAddress || f.address || f.city) && (
+                  <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                )}
+                {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
+                {f.website && (
+                  <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
+                )}
+                {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
+                {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
+              </dl>
             </div>
-          )}
+          </div>
         </section>
       )}
 
