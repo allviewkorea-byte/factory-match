@@ -181,7 +181,9 @@ def main():
 
             # 2단계: 주소 일치 검증
             region = f.get("region", "")
-            if not verify_address(region, city, address, google_address):
+            is_match = verify_address(region, city, address, google_address)
+            print(f"  [검증] DB:{city}/{region} | 구글:{google_address[:40]} | 일치:{is_match}")
+            if not is_match:
                 print(f"⛔ 주소 불일치: {name} | DB:{city} | 구글:{google_address[:30]}")
                 no_result += 1
                 done_ids.add(fid)
