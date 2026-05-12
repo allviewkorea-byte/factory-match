@@ -3686,7 +3686,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
       {tab === 'map' && (
         <section className="detail-section">
           <div className="detail-grid">
-            <div>
+            <div style={{minHeight: 400}}>
               {f.lat && f.lng ? (
                 <div className="detail-map-tab">
                   <iframe
