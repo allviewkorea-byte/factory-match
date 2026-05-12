@@ -389,5 +389,11 @@ window._dbRowToFactory = (row) => {
     if (Array.isArray(h)) return h;
     try { return JSON.parse(h); } catch(e) { return []; }
   })(),
+  google_review_texts: (() => {
+    const r = row.google_review_texts;
+    if (!r) return [];
+    if (Array.isArray(r)) return r;
+    try { return JSON.parse(r); } catch(e) { return []; }
+  })(),
 }); };
 

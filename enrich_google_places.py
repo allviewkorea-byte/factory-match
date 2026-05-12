@@ -101,7 +101,7 @@ def get_place_details(place_id):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
         "place_id": place_id,
-        "fields": "name,rating,user_ratings_total,photos,formatted_phone_number,opening_hours,website,geometry,formatted_address",
+        "fields": "name,rating,user_ratings_total,photos,formatted_phone_number,opening_hours,website,geometry,formatted_address,reviews",
         "key": GOOGLE_API_KEY,
         "language": "ko",
     }
@@ -217,6 +217,16 @@ def main():
             lat = geo.get("lat")
             lng = geo.get("lng")
 
+            # 리뷰 텍스트 수집 (최대 5개)
+            review_texts = []
+            for rv in details.get("reviews", [])[:5]:
+                review_texts.append({
+                    "author": rv.get("author_name", ""),
+                    "rating": rv.get("rating", 0),
+                    "text": rv.get("text", ""),
+                    "time": rv.get("relative_time_description", ""),
+                })
+
             # DB 업데이트 데이터
             update_data = {
                 "google_place_id": place_id,
@@ -224,6 +234,7 @@ def main():
                 "google_reviews": details.get("user_ratings_total"),
                 "google_photos": json.dumps(photos) if photos else None,
                 "google_hours": json.dumps(hours) if hours else None,
+                "google_review_texts": json.dumps(review_texts) if review_texts else None,
             }
 
             # 전화번호 없는 경우 구글 것으로 보완

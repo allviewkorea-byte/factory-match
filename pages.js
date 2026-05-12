@@ -3564,10 +3564,25 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                       <div className="reviews-google-count">Google 리뷰 {(f.google_reviews || 0).toLocaleString()}개</div>
                     </div>
                   </div>
-                  <a href={`https://www.google.com/maps/search/${encodeURIComponent(f.name + ' ' + (f.city || ''))}`}
-                    target="_blank" rel="noopener noreferrer" className="reviews-google-link">
-                    Google Maps에서 리뷰 보기 →
-                  </a>
+                  {f.google_review_texts && f.google_review_texts.length > 0 ? (
+                    <div className="reviews-google-list">
+                      {f.google_review_texts.map((rv, i) => (
+                        <div key={i} className="reviews-google-item">
+                          <div className="reviews-google-item-head">
+                            <span className="reviews-google-item-author">{rv.author}</span>
+                            <span className="reviews-google-item-stars">{'★'.repeat(rv.rating)}{'☆'.repeat(5 - rv.rating)}</span>
+                            <span className="reviews-google-item-time">{rv.time}</span>
+                          </div>
+                          {rv.text && <p className="reviews-google-item-text">{rv.text}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <a href={`https://www.google.com/maps/search/${encodeURIComponent(f.name + ' ' + (f.city || ''))}`}
+                      target="_blank" rel="noopener noreferrer" className="reviews-google-link">
+                      Google Maps에서 리뷰 보기 →
+                    </a>
+                  )}
                 </div>
               ) : (
                 <div className="detail-empty">
