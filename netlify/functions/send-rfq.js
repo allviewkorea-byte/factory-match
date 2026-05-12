@@ -141,16 +141,20 @@ exports.handler = async (event) => {
 
   const factoryNames = factories.map(f => f.name);
 
-  // 각 공장에 이메일 발송
-  const emailPromises = factories
-    .filter(f => f.email)
-    .map(f =>
-      sendEmail(resendKey, {
-        to: f.email,
-        subject: `[공장매칭] ${buyerEmail}님의 견적 요청 - ${productName}`,
-        html: factoryEmailHtml({ factoryName: f.name, buyerEmail, productName, quantity, deadline, message }),
-      })
-    );
+  const ADMIN_EMAIL = 'allviewkorea@naver.com';
+
+  // 각 공장에 이메일 발송 (이메일 있는 경우) + 없으면 운영자에게 전달
+  const emailPromises = factories.map(f => {
+    const target = f.email || ADMIN_EMAIL;
+    const subject = f.email
+      ? `[공장매칭] ${buyerEmail}님의 견적 요청 - ${productName}`
+      : `[공장매칭] 전달요청 - ${f.name} / ${buyerEmail}님 견적 요청`;
+    return sendEmail(resendKey, {
+      to: target,
+      subject,
+      html: factoryEmailHtml({ factoryName: f.name, buyerEmail, productName, quantity, deadline, message }),
+    });
+  });
 
   // 바이어 확인 이메일
   emailPromises.push(

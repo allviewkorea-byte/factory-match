@@ -3058,11 +3058,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
           <div className="detail-cta">
             <button
-              className={`btn btn-lg ${inRfq ? 'btn-primary is-added' : f.email ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => f.email ? onAddRFQ(f.id) : null}
-              disabled={!f.email && !inRfq}
-              title={!f.email ? '이메일 정보가 없어 견적 요청이 불가합니다' : ''}
-              style={!f.email ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
+              className={`btn btn-lg ${inRfq ? 'btn-primary is-added' : 'btn-primary'}`}
+              onClick={() => onAddRFQ(f.id)}
             >
               {inRfq ? <><Icon name="check" size={15} stroke={2.4}/> 견적함에 추가됨</> : <><Icon name="plus" size={15} stroke={2.4}/> 견적 요청하기</>}
             </button>
@@ -3165,13 +3162,11 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
-                {f.email && (
-                  <><dt>이메일</dt><dd>
-                    <span className="detail-email-notice">
-                      해당 메일로 견적 요청이 가능합니다
-                    </span>
-                  </dd></>
-                )}
+                <><dt>견적 요청</dt><dd>
+                  <span className="detail-email-notice">
+                    {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
+                  </span>
+                </dd></>
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
                 {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
                 {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
