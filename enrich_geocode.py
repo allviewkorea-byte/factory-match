@@ -80,7 +80,7 @@ def main():
     while processed_today < DAILY_LIMIT:
         factories = supabase_get({
             "select": "id,name,address,city,region",
-            "lat": "is.null",
+            "coord_x": "is.null",
             "address": "not.is.null",
             "offset": offset,
             "limit": BATCH_SIZE,
@@ -106,7 +106,7 @@ def main():
             time.sleep(DELAY)
 
             if lat and lng:
-                supabase_patch(fid, {"lat": lat, "lng": lng})
+                supabase_patch(fid, {"coord_x": lat, "coord_y": lng})
                 success += 1
                 print(f"✅ {f['name']} | {lat:.4f}, {lng:.4f}")
             else:
