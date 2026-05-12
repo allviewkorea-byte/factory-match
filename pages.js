@@ -4681,7 +4681,11 @@ function LandingPage({ onNav, authed }) {
             ))}
           </div>
         </div>
-        <img src="/hero-factory.svg" alt="공장 일러스트" className="ldg3-hero-illust-abs"/>
+        <video
+          className="ldg3-hero-illust-abs ldg3-hero-video"
+          src="/hero-video.mp4"
+          autoPlay loop muted playsInline
+        />
       </section>
 
       {/* ── 숫자 통계 ── */}
