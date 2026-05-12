@@ -222,8 +222,8 @@ def main():
                 "google_place_id": place_id,
                 "google_rating": details.get("rating"),
                 "google_reviews": details.get("user_ratings_total"),
-                "google_photos": photos if photos else None,
-                "google_hours": hours if hours else None,
+                "google_photos": json.dumps(photos) if photos else None,
+                "google_hours": json.dumps(hours) if hours else None,
             }
 
             # 전화번호 없는 경우 구글 것으로 보완
@@ -245,6 +245,10 @@ def main():
             done_ids.add(fid)
             processed_today += 1
             total_processed += 1
+
+            if status not in [200, 204]:
+                print(f"  ⚠️ DB 저장 실패 (status={status}): {name}")
+                continue
 
             if photos:
                 success += 1
