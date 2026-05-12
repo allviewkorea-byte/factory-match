@@ -6,3 +6,5 @@ enrich_*.py
 !enrich_ai_summary.py
 !enrich_dart.py
 !enrich_email_only.py
+node_modules/
+package-lock.json
