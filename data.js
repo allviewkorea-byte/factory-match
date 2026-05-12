@@ -301,10 +301,9 @@ window._dbRowToFactory = (row) => {
   let coord = null;
   let geoLat = null;
   let geoLng = null;
-  if (row.coord_x != null && row.coord_y != null) {
-    // enrich_geocode.py 기준: coord_x=경도(lng), coord_y=위도(lat)
-    const lat = Number(row.coord_y);
-    const lng = Number(row.coord_x);
+  if (row.lat != null && row.lng != null) {
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
     const inKorea = lat >= 33.0 && lat <= 38.9 && lng >= 124.5 && lng <= 132.0;
     if (inKorea) {
       geoLat = lat;
@@ -375,5 +374,10 @@ window._dbRowToFactory = (row) => {
   dart_assets: row.dart_assets ?? null,
   dart_equity: row.dart_equity ?? null,
   dart_year: row.dart_year || '',
+  google_place_id: row.google_place_id || null,
+  google_rating: row.google_rating ?? null,
+  google_reviews: row.google_reviews ?? null,
+  google_photos: Array.isArray(row.google_photos) ? row.google_photos : [],
+  google_hours: Array.isArray(row.google_hours) ? row.google_hours : [],
 }); };
 

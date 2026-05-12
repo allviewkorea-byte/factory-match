@@ -2691,19 +2691,25 @@ function FactoryMap({ addr, name, lat, lng }) {
   );
 }
 
-// ── 공장 히어로 이미지: Street View → Static Map → 색상 박스 ─────────────────
+// ── 공장 히어로 이미지: 구글사진 → Street View → Static Map → 색상 박스 ─────────────────
 const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
 const FactoryHeroImg = ({ f }) => {
   const addr = (f.address || '').trim();
-  const [src,  setSrc]  = React.useState(null);   // null=로딩중
-  const [type, setType] = React.useState(null);   // 'sv'|'map'|'color'
+  const googlePhotos = f.google_photos || [];
+  const [src,  setSrc]  = React.useState(null);
+  const [type, setType] = React.useState(null);
 
   React.useEffect(() => {
+    // 구글 사진이 있으면 첫 번째 사진 사용
+    if (googlePhotos.length > 0) {
+      setSrc(googlePhotos[0]);
+      setType('google');
+      return;
+    }
     if (!addr) { setType('color'); return; }
     let cancelled = false;
 
-    // Street View 메타데이터로 영상 존재 여부 확인 (무료 API)
     fetch(
       `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${GMAPS_KEY}`
     )
@@ -2721,11 +2727,12 @@ const FactoryHeroImg = ({ f }) => {
       .catch(() => { if (!cancelled) setType('color'); });
 
     return () => { cancelled = true; };
-  }, [addr]);
+  }, [addr, googlePhotos.length]);
 
-  // Street View 로드 실패 시 지도로 폴백
   const onImgError = () => {
-    if (type === 'sv') {
+    if (type === 'google') {
+      setType('color');
+    } else if (type === 'sv') {
       setSrc(`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=800x400&maptype=roadmap&markers=color:0x3b82f6|${encodeURIComponent(addr)}&scale=2&key=${GMAPS_KEY}`);
       setType('map');
     } else {
@@ -2733,7 +2740,7 @@ const FactoryHeroImg = ({ f }) => {
     }
   };
 
-  if (type === 'color' || (!addr && type !== 'sv' && type !== 'map')) {
+  if (type === 'color' || (!addr && type !== 'sv' && type !== 'map' && type !== 'google')) {
     return (
       <div className="detail-hero-img" style={{ background: getCardBg(f) }}>
         <div className="mcard-icon detail-hero-icon">{getCardIcon(f)}</div>
@@ -2742,7 +2749,6 @@ const FactoryHeroImg = ({ f }) => {
     );
   }
 
-  // 로딩 중 (메타데이터 확인 전) — 색상 박스 임시 표시
   if (!src) {
     return (
       <div className="detail-hero-img" style={{ background: getCardBg(f) }}>
@@ -2760,9 +2766,11 @@ const FactoryHeroImg = ({ f }) => {
         onError={onImgError}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       />
-      <div className="detail-hero-img-label">
-        {type === 'sv' ? 'STREET VIEW' : '지도'}
-      </div>
+      {type !== 'google' && (
+        <div className="detail-hero-img-label">
+          {type === 'sv' ? 'STREET VIEW' : '지도'}
+        </div>
+      )}
     </div>
   );
 };
@@ -3007,6 +3015,19 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             </div>
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
+          {/* 구글 별점/리뷰 */}
+          {f.google_rating && (
+            <div className="detail-google-rating">
+              <span className="detail-google-stars">
+                {'★'.repeat(Math.round(f.google_rating))}{'☆'.repeat(5 - Math.round(f.google_rating))}
+              </span>
+              <span className="detail-google-score">{f.google_rating}</span>
+              {f.google_reviews > 0 && (
+                <span className="detail-google-reviews">리뷰 {f.google_reviews.toLocaleString()}개</span>
+              )}
+              <span className="detail-google-badge">Google</span>
+            </div>
+          )}
           <div className="detail-hero-meta">
             <span><Icon name="pin" size={13} stroke={2}/> {_addrCity(f.roadAddress) || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
