@@ -1,3 +1,4 @@
+import os
 """
 enrich_dart.py
 DART OpenAPI → 재무제표 수집 → factories 테이블 업데이트
