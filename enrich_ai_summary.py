@@ -111,7 +111,7 @@ def _extract_mailto(raw_html):
     가장 신뢰도 높은 공식 연락처 이메일.
     """
     # mailto: 링크에서 추출
-    mailto_pattern = r'href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']'
+    mailto_pattern = r"""href=["'"]mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["'"]"""
     matches = re.findall(mailto_pattern, raw_html, re.IGNORECASE)
 
     valid = []
