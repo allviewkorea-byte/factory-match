@@ -1435,12 +1435,26 @@ a { color: inherit; text-decoration: none; }
 .detail-side h4 { font-size: 12px; font-weight: 650; color: var(--ink-1); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
 .detail-dl {
   display: grid; grid-template-columns: 80px 1fr;
-  gap: 8px 12px;
   font-size: 13px;
   margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
 }
-.detail-dl dt { color: var(--ink-3); font-weight: 500; }
-.detail-dl dd { color: var(--ink-1); margin: 0; font-weight: 500; display: flex; flex-wrap: wrap; gap: 4px; }
+.detail-dl dt {
+  color: var(--ink-3); font-weight: 500;
+  padding: 9px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--line);
+}
+.detail-dl dd {
+  color: var(--ink-1); margin: 0; font-weight: 500;
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.detail-dl dt:last-of-type,
+.detail-dl dd:last-of-type { border-bottom: none; }
 
 /* ── AI 요약 정보 ──────────────────────────────────────── */
 .ai-summary-wrap {
