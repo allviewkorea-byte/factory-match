@@ -2786,6 +2786,45 @@ const FactoryHeroImg = ({ f, selectedPhoto, onPhotoClick }) => {
   );
 };
 
+// ── 기본 정보 사이드 (모든 탭 공통) ─────────────────────────────────────────
+const DetailSideInfo = ({ f, indLabels }) => {
+  const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
+  return (
+    <div className="detail-side">
+      <h4>기본 정보</h4>
+      <dl className="detail-dl">
+        {(f.roadAddress || f.address || f.city) && (
+          <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+        )}
+        {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
+        {f.website && (
+          <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
+        )}
+        <><dt>견적 요청</dt><dd>
+          <span className="detail-email-notice">
+            {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
+          </span>
+        </dd></>
+        {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
+        {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
+        {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
+        {f.employees > 0 && <><dt>직원수</dt><dd>{f.employees}명</dd></>}
+        {f.founded > 0 && <><dt>설립연도</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>}
+        {(indLabels || []).length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
+        {(f.oem || f.odm || f.export) && (
+          <><dt>거래 형태</dt>
+          <dd>
+            {f.oem && <span className="flag">OEM</span>}
+            {f.odm && <span className="flag">ODM</span>}
+            {f.export && <span className="flag flag-export">수출</span>}
+          </dd></>
+        )}
+      </dl>
+      <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
+    </div>
+  );
+};
+
 const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, backLabel, authed, onGate }) => {
   const { FACTORIES, PROCESSES, PRODUCTS, INDUSTRIES } = window.MFG_DATA;
 
@@ -2859,7 +2898,6 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     const _isSample = /^f(\d+)$/.test(_f.id) && parseInt(_f.id.slice(1)) <= 14;
     const _procLabels = (_f.processes || []).map(p => window.MFG_DATA.PROCESSES.find(x => x.id === p)?.label).filter(Boolean);
     const _prodLabels = (_f.products || []).map(p => window.MFG_DATA.PRODUCTS.find(x => x.id === p)?.label).filter(Boolean);
-    if (tab === 'reviews' && !_isSample) setTab('overview');
     if (tab === 'certs' && (_f.certs || []).length === 0 && !_isSample) setTab('overview');
     if (tab === 'capability' && _procLabels.length === 0 && (_f.materials || []).length === 0 && _prodLabels.length === 0) setTab('overview');
   }, [factoryId]);
@@ -3117,7 +3155,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           ...(procLabels.length > 0 || (f.materials || []).length > 0 || prodLabels.length > 0
             ? [{ id: 'capability', label: '제조 역량' }] : []),
           ...(f.certs.length > 0 || isSample ? [{ id: 'certs', label: '인증·신뢰도' }] : []),
-          { id: 'reviews', label: f.google_reviews > 0 ? `리뷰 ${f.google_reviews}` : '리뷰' },
+          { id: 'reviews', label: '리뷰' },
           ...((f.dart_revenue || f.dart_assets) ? [{ id: 'finance', label: '재무정보' }] : []),
           { id: 'map', label: '지도' },
         ].map(t => (
@@ -3193,104 +3231,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               </div>
             )}
             {!intro && !hasAiExtra && null}
-            <div className="detail-side">
-              <h4>기본 정보</h4>
-              <dl className="detail-dl">
-                {(f.roadAddress || f.address || f.city) && (
-                  <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
-                )}
-                {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
-                {f.website && (
-                  <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
-                )}
-                <><dt>견적 요청</dt><dd>
-                  <span className="detail-email-notice">
-                    {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
-                  </span>
-                </dd></>
-                {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
-                {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
-                {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
-                {f.employees > 0 && <><dt>직원수</dt><dd>{f.employees}명</dd></>}
-                {f.founded > 0 && <><dt>설립연도</dt><dd>{f.founded}년 ({2026 - f.founded}년차)</dd></>}
-                {indLabels.length > 0 && <><dt>산업군</dt><dd>{indLabels.join(', ')}</dd></>}
-                {(f.oem || f.odm || f.export) && (
-                  <><dt>거래 형태</dt>
-                  <dd>
-                    {f.oem && <span className="flag">OEM</span>}
-                    {f.odm && <span className="flag">ODM</span>}
-                    {f.export && <span className="flag flag-export">수출</span>}
-                  </dd></>
-                )}
-              </dl>
-
-              {/* ── DART 재무정보 (데이터 있을 때만 표시) ── */}
-              {(f.dart_revenue || f.dart_op_income || f.dart_net_income || f.dart_assets || f.dart_equity) && (
-                <div className="dart-finance-wrap">
-                  <div className="dart-finance-header">
-                    <span className="dart-finance-title">📊 재무정보</span>
-                    {f.dart_year && <span className="dart-finance-year">{f.dart_year}년 기준</span>}
-                  </div>
-                  <dl className="dart-finance-dl">
-                    {f.dart_revenue != null && (
-                      <div className="dart-finance-item">
-                        <dt>매출액</dt>
-                        <dd className="dart-finance-val dart-val-blue">
-                          {f.dart_revenue >= 1e8
-                            ? `${(f.dart_revenue / 1e8).toFixed(1)}억원`
-                            : `${(f.dart_revenue / 1e4).toFixed(0)}만원`}
-                        </dd>
-                      </div>
-                    )}
-                    {f.dart_op_income != null && (
-                      <div className="dart-finance-item">
-                        <dt>영업이익</dt>
-                        <dd className={`dart-finance-val ${f.dart_op_income >= 0 ? 'dart-val-green' : 'dart-val-red'}`}>
-                          {f.dart_op_income >= 0 ? '' : '▼ '}
-                          {Math.abs(f.dart_op_income) >= 1e8
-                            ? `${(Math.abs(f.dart_op_income) / 1e8).toFixed(1)}억원`
-                            : `${(Math.abs(f.dart_op_income) / 1e4).toFixed(0)}만원`}
-                        </dd>
-                      </div>
-                    )}
-                    {f.dart_net_income != null && (
-                      <div className="dart-finance-item">
-                        <dt>당기순이익</dt>
-                        <dd className={`dart-finance-val ${f.dart_net_income >= 0 ? 'dart-val-green' : 'dart-val-red'}`}>
-                          {f.dart_net_income >= 0 ? '' : '▼ '}
-                          {Math.abs(f.dart_net_income) >= 1e8
-                            ? `${(Math.abs(f.dart_net_income) / 1e8).toFixed(1)}억원`
-                            : `${(Math.abs(f.dart_net_income) / 1e4).toFixed(0)}만원`}
-                        </dd>
-                      </div>
-                    )}
-                    {f.dart_assets != null && (
-                      <div className="dart-finance-item">
-                        <dt>자산총계</dt>
-                        <dd className="dart-finance-val">
-                          {f.dart_assets >= 1e8
-                            ? `${(f.dart_assets / 1e8).toFixed(1)}억원`
-                            : `${(f.dart_assets / 1e4).toFixed(0)}만원`}
-                        </dd>
-                      </div>
-                    )}
-                    {f.dart_equity != null && (
-                      <div className="dart-finance-item">
-                        <dt>자본총계</dt>
-                        <dd className="dart-finance-val">
-                          {f.dart_equity >= 1e8
-                            ? `${(f.dart_equity / 1e8).toFixed(1)}억원`
-                            : `${(f.dart_equity / 1e4).toFixed(0)}만원`}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                  <p className="dart-finance-source">출처: 금융감독원 DART 공시정보</p>
-                </div>
-              )}
-
-              <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
-            </div>
+            <DetailSideInfo f={f} indLabels={indLabels}/>
 
           </div>
             );
@@ -3300,6 +3241,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
       {tab === 'capability' && (
         <section className="detail-section">
+          <div className="detail-grid">
           <div className="cap-grid">
             {procLabels.length > 0 && (
               <div className="cap-block">
@@ -3339,11 +3281,14 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               </div>
             )}
           </div>
+          <DetailSideInfo f={f} indLabels={indLabels}/>
+          </div>
         </section>
       )}
 
       {tab === 'certs' && (
         <section className="detail-section">
+          <div className="detail-grid">
           <div className="trust-grid">
             {f.certs.length > 0 && (
               <div className="trust-card">
@@ -3387,6 +3332,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 </div>
               </div>
             )}
+          </div>
+          <DetailSideInfo f={f} indLabels={indLabels}/>
           </div>
         </section>
       )}
@@ -3604,42 +3551,41 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
       {tab === 'reviews' && (
         <section className="detail-section">
-          {isSample ? (
-            <div className="reviews">
-              {[
-                { name: '김○○ (전자부품 바이어)', date: '2026.03.18', rating: 5, body: '리드타임 정확하게 지켜주시고, 도면 수정 요청에도 빠르게 대응해주셨습니다. 단가도 합리적이고 다음 발주 예정.', deal: '5,000pcs · ₩12,400,000' },
-                { name: '박○○ (가전 OEM)', date: '2026.02.04', rating: 5, body: '소량 시제품도 거절 없이 받아주셔서 좋았습니다. 마감 품질이 특히 만족스럽습니다.', deal: '120pcs · ₩980,000' },
-                { name: '이○○ (자동차 부품)', date: '2026.01.22', rating: 4, body: '기본 품질은 좋으나 초기 커뮤니케이션이 다소 느렸습니다. 본 양산은 안정적이었음.', deal: '2,400pcs · ₩4,800,000' },
-              ].map((r, i) => (
-                <div key={i} className="review">
-                  <div className="review-head">
+          <div className="detail-grid">
+            <div>
+              {f.google_rating ? (
+                <div className="reviews-google">
+                  <div className="reviews-google-summary">
+                    <div className="reviews-google-score">{f.google_rating}</div>
                     <div>
-                      <div className="review-name">{r.name}</div>
-                      <div className="review-date">{r.date}</div>
-                    </div>
-                    <div className="review-rating">
-                      {Array.from({ length: 5 }).map((_, k) => (
-                        <Icon key={k} name="star" size={12} stroke={2} className={k < r.rating ? 'star-on' : 'star-off'}/>
-                      ))}
+                      <div className="reviews-google-stars">
+                        {'★'.repeat(Math.round(f.google_rating))}{'☆'.repeat(5 - Math.round(f.google_rating))}
+                      </div>
+                      <div className="reviews-google-count">Google 리뷰 {(f.google_reviews || 0).toLocaleString()}개</div>
                     </div>
                   </div>
-                  <p className="review-body">{r.body}</p>
-                  <div className="review-deal">{r.deal}</div>
+                  <a href={`https://www.google.com/maps/search/${encodeURIComponent(f.name + ' ' + (f.city || ''))}`}
+                    target="_blank" rel="noopener noreferrer" className="reviews-google-link">
+                    Google Maps에서 리뷰 보기 →
+                  </a>
                 </div>
-              ))}
+              ) : (
+                <div className="detail-empty">
+                  <Icon name="star" size={32} stroke={1.4}/>
+                  <p>리뷰 정보가 없습니다</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="detail-empty">
-              <Icon name="star" size={32} stroke={1.4}/>
-              <p>아직 리뷰가 없습니다</p>
-            </div>
-          )}
+            <DetailSideInfo f={f} indLabels={indLabels}/>
+          </div>
         </section>
       )}
 
       {/* 재무정보 탭 */}
       {tab === 'finance' && (
         <section className="detail-section">
+          <div className="detail-grid">
+          <div>
           {(f.dart_revenue || f.dart_assets) ? (
             <div className="detail-finance">
               <div className="detail-finance-title">DART 재무정보 {f.dart_year && <span className="detail-finance-year">({f.dart_year}년)</span>}</div>
@@ -3682,6 +3628,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               <p>재무정보가 없습니다</p>
             </div>
           )}
+          </div>
+          <DetailSideInfo f={f} indLabels={indLabels}/>
+          </div>
         </section>
       )}
 

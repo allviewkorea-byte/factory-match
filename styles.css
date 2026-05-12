@@ -9284,3 +9284,30 @@ a { color: inherit; text-decoration: none; }
 }
 .mcard-rating-star { color: #fbbf24; font-size: 11px; }
 .mcard-rating-score { font-family: var(--font-num); }
+
+/* 리뷰 탭 구글 스타일 */
+.reviews-google {
+  padding: 16px 0;
+}
+.reviews-google-summary {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 16px;
+}
+.reviews-google-score {
+  font-size: 48px; font-weight: 800;
+  color: var(--ink-1); font-family: var(--font-num);
+  line-height: 1;
+}
+.reviews-google-stars {
+  color: #f59e0b; font-size: 20px; letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.reviews-google-count {
+  font-size: 13px; color: var(--ink-3);
+}
+.reviews-google-link {
+  display: inline-flex; align-items: center;
+  font-size: 13px; color: var(--brand);
+  text-decoration: none; font-weight: 500;
+}
+.reviews-google-link:hover { text-decoration: underline; }
