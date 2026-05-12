@@ -3718,13 +3718,18 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                 {f.website && (
                   <><dt>홈페이지</dt><dd><a href={f.website} target="_blank" rel="noreferrer" className="detail-link">{f.website.replace(/^https?:\/\//, '')}</a></dd></>
                 )}
+                <><dt>견적 요청</dt><dd>
+                  <span className="detail-email-notice">
+                    {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
+                  </span>
+                </dd></>
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
                 {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
               </dl>
               {f.lat && f.lng && (
                 <div style={{marginTop:12}}>
                   <img
-                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=15&size=400x200&maptype=roadmap&markers=color:0x3b82f6|${f.lat},${f.lng}&scale=2&key=${GMAPS_KEY}`}
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=15&size=400x200&maptype=roadmap&markers=color:red|${f.lat},${f.lng}&scale=2&key=AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY`}
                     alt="지도"
                     style={{width:'100%', borderRadius:8, display:'block'}}
                   />
