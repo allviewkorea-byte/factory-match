@@ -1,0 +1,31 @@
+name: 주소 좌표 변환
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '수집 한도 (기본 1000)'
+        required: false
+        default: '1000'
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install requests
+
+      - name: 좌표 변환 실행
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_GEOCODING_KEY: ${{ secrets.GOOGLE_GEOCODING_KEY }}
+          DAILY_LIMIT: ${{ github.event.inputs.limit }}
+        run: python enrich_geocode.py

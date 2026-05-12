@@ -9102,6 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동' },
           { id: 'grants',    label: '지원사업 관리' },
           { id: 'dart',      label: 'DART 불일치' },
+          { id: 'automation', label: '🤖 자동 수집' },
         ].map(t => (
           <button
             key={t.id}
@@ -9176,6 +9177,7 @@ const AdminPage = ({ onOpenFactory }) => {
       {tab === 'grants' && <AdminGrantsTab />}
 
       {tab === 'dart' && <AdminDartMismatchTab />}
+      {tab === 'automation' && <AdminAutomationTab />}
 
       {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
@@ -9400,6 +9402,138 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
+// ─── AdminAutomationTab ────────────────────────────────────────────────
+const AdminAutomationTab = () => {
+  const GITHUB_TOKEN = window._env?.GITHUB_TOKEN || '';
+  const REPO = 'allviewkorea-byte/factory-match';
+  const [statuses, setStatuses] = React.useState({});
+  const [limits, setLimits] = React.useState({
+    google: '500',
+    dart: '100',
+    geocode: '1000',
+  });
+
+  const triggerWorkflow = async (workflow, limitKey, workflowName) => {
+    setStatuses(s => ({ ...s, [workflow]: 'running' }));
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${REPO}/actions/workflows/${workflow}/dispatches`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { limit: limits[limitKey] }
+          })
+        }
+      );
+      if (res.status === 204) {
+        setStatuses(s => ({ ...s, [workflow]: 'success' }));
+        setTimeout(() => setStatuses(s => ({ ...s, [workflow]: null })), 5000);
+      } else {
+        setStatuses(s => ({ ...s, [workflow]: 'error' }));
+      }
+    } catch(e) {
+      setStatuses(s => ({ ...s, [workflow]: 'error' }));
+    }
+  };
+
+  const JOBS = [
+    {
+      key: 'google',
+      workflow: 'enrich-google-places.yml',
+      title: '📸 Google Places 수집',
+      desc: '사진 · 별점 · 리뷰 · 전화번호 수집 (website + ai_summary 있는 공장)',
+      limitLabel: '수집 한도',
+      defaultLimit: '500',
+      color: '#4285f4',
+    },
+    {
+      key: 'dart',
+      workflow: 'enrich-dart.yml',
+      title: '📊 DART 재무정보 수집',
+      desc: 'bizrno 있는 검증된 공장의 매출 · 영업이익 · 자산 수집',
+      limitLabel: '수집 한도',
+      defaultLimit: '100',
+      color: '#16a34a',
+    },
+    {
+      key: 'geocode',
+      workflow: 'enrich-geocode.yml',
+      title: '📍 주소 좌표 변환',
+      desc: '주소 → 위도/경도 변환 (지도 핀 표시용)',
+      limitLabel: '수집 한도',
+      defaultLimit: '1000',
+      color: '#dc2626',
+    },
+  ];
+
+  return (
+    <div style={{padding: '24px'}}>
+      <h2 style={{fontSize:18, fontWeight:700, marginBottom:6}}>🤖 자동 수집 제어판</h2>
+      <p style={{fontSize:13, color:'var(--ink-3)', marginBottom:24}}>버튼을 누르면 GitHub Actions에서 자동으로 실행돼요. 실행 상태는 <a href="https://github.com/allviewkorea-byte/factory-match/actions" target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>GitHub Actions</a>에서 확인 가능해요.</p>
+      <div style={{display:'flex', flexDirection:'column', gap:16}}>
+        {JOBS.map(job => (
+          <div key={job.key} style={{
+            border: '1.5px solid var(--line)',
+            borderRadius: 12,
+            padding: '20px 24px',
+            background: '#fff',
+          }}>
+            <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16, fontWeight:700, color:'var(--ink-1)', marginBottom:4}}>{job.title}</div>
+                <div style={{fontSize:13, color:'var(--ink-3)', marginBottom:12}}>{job.desc}</div>
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <label style={{fontSize:12, color:'var(--ink-3)', whiteSpace:'nowrap'}}>{job.limitLabel}:</label>
+                  <input
+                    type="number"
+                    value={limits[job.key]}
+                    onChange={e => setLimits(l => ({...l, [job.key]: e.target.value}))}
+                    style={{width:80, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:13}}
+                  />
+                  <span style={{fontSize:12, color:'var(--ink-4)'}}>개</span>
+                </div>
+              </div>
+              <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8}}>
+                <button
+                  onClick={() => triggerWorkflow(job.workflow, job.key, job.title)}
+                  disabled={statuses[job.workflow] === 'running'}
+                  style={{
+                    padding: '10px 20px',
+                    background: statuses[job.workflow] === 'success' ? '#16a34a' : statuses[job.workflow] === 'error' ? '#dc2626' : job.color,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: statuses[job.workflow] === 'running' ? 'not-allowed' : 'pointer',
+                    opacity: statuses[job.workflow] === 'running' ? 0.7 : 1,
+                    whiteSpace: 'nowrap',
+                    minWidth: 100,
+                  }}
+                >
+                  {statuses[job.workflow] === 'running' ? '⏳ 실행 중...' :
+                   statuses[job.workflow] === 'success' ? '✅ 시작됨!' :
+                   statuses[job.workflow] === 'error' ? '❌ 실패' :
+                   '▶ 실행'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:24, padding:'16px', background:'#f8fafc', borderRadius:8, fontSize:12, color:'var(--ink-3)'}}>
+        💡 실행 후 GitHub Actions 탭에서 진행 상황을 확인하세요. 완료까지 수분~수십분 소요될 수 있어요.
+      </div>
+    </div>
+  );
+};
+
 // ─── AdminDartMismatchTab ────────────────────────────────────────────────
 const AdminDartMismatchTab = () => {
   const SUPABASE_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
