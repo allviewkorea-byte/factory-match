@@ -1269,14 +1269,14 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
       <ParticleCanvas />
       <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
         {!hasResults && (
-          <div style={{textAlign:'center', marginBottom:'32px'}}>
+          <div style={{textAlign:'center', marginBottom:'32px', background:'transparent'}}>
             <video
               src="/factory-intro.mp4"
               autoPlay
               muted
               loop
               playsInline
-              style={{width:'320px', height:'180px', borderRadius:'16px', objectFit:'cover'}}
+              style={{width:'480px', height:'270px', objectFit:'cover', borderRadius:'0', display:'block', margin:'0 auto', mixBlendMode:'multiply'}}
             />
           </div>
         )}
