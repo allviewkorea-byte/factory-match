@@ -4567,13 +4567,7 @@ const { useState: useAuthState, useEffect: useAuthEffect, useRef: useAuthRef } =
 // ─── Mini logo ───
 const AuthLogo = ({ size = 36 }) => (
   <a className="auth-logo" href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('auth-nav', { detail: 'landing' })); }}>
-    <span className="logo-mark" style={{ width: size, height: size }}>
-      <span className="logo-mark-inner"/>
-    </span>
-    <span className="logo-text">
-      <span className="logo-ko">공장매칭</span>
-      <span className="logo-en">FactoryMatch</span>
-    </span>
+    <img src="/logo.svg" alt="공장매칭 FactoryMatch" style={{ height: size * 1.8, width: 'auto', objectFit: 'contain', display: 'block' }}/>
   </a>
 );
 
