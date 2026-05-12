@@ -9404,7 +9404,6 @@ const AdminPage = ({ onOpenFactory }) => {
 };
 // ─── AdminAutomationTab ────────────────────────────────────────────────
 const AdminAutomationTab = () => {
-  const GITHUB_TOKEN = window._env?.GH_TOKEN || '';
   const REPO = 'allviewkorea-byte/factory-match';
   const [statuses, setStatuses] = React.useState({});
   const [limits, setLimits] = React.useState({
@@ -9416,22 +9415,13 @@ const AdminAutomationTab = () => {
   const triggerWorkflow = async (workflow, limitKey, workflowName) => {
     setStatuses(s => ({ ...s, [workflow]: 'running' }));
     try {
-      const res = await fetch(
-        `https://api.github.com/repos/${REPO}/actions/workflows/${workflow}/dispatches`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GITHUB_TOKEN}`,
-            'Accept': 'application/vnd.github+json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ref: 'main',
-            inputs: { limit: limits[limitKey] }
-          })
-        }
-      );
-      if (res.status === 204) {
+      const res = await fetch('/.netlify/functions/trigger-workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow, limit: limits[limitKey] })
+      });
+      const data = await res.json();
+      if (data.success) {
         setStatuses(s => ({ ...s, [workflow]: 'success' }));
         setTimeout(() => setStatuses(s => ({ ...s, [workflow]: null })), 5000);
       } else {
