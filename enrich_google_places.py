@@ -86,16 +86,22 @@ def get_photo_url(photo_reference, max_width=800):
 
 def fetch_factories(offset, limit):
     """website + ai_summary 있는 공장만 조회"""
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+    }
+    url = f"{SUPABASE_URL}/rest/v1/factories"
     params = {
-        "select": "id,name,city,region,address",
+        "select": "id,name,city,region,address,phone,website,lat",
         "website": "not.is.null",
         "ai_summary": "not.is.null",
-        "google_place_id": "is.null",  # 아직 수집 안 된 것만
+        "google_place_id": "is.null",
         "offset": offset,
         "limit": limit,
         "order": "completeness_score.desc",
     }
-    return supabase_get("factories", params)
+    res = requests.get(url, headers=headers, params=params, timeout=30)
+    return res.json()
 
 def main():
     print("=" * 60)
