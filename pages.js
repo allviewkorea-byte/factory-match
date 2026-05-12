@@ -4681,11 +4681,6 @@ function LandingPage({ onNav, authed }) {
             ))}
           </div>
         </div>
-        <video
-          className="ldg3-hero-illust-abs ldg3-hero-video"
-          src="/hero-video.mp4"
-          autoPlay loop muted playsInline
-        />
       </section>
 
       {/* ── 숫자 통계 ── */}
