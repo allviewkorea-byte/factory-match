@@ -5376,17 +5376,24 @@ function OnboardingPage({ onComplete, onNav }) {
   const stepValid = [
     !!data.role,
     data.company.length >= 2 && data.position.length >= 1 && !!data.employees,
-    data.interests.length >= 1,
+    data.interests.length >= 1, // 가공방식 (잘모르겠어요 포함)
+    true, // 발주분야 선택 (선택사항)
     true, // notify always valid
   ];
 
+  const TOTAL = 5;
   const next = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < TOTAL - 1) setStep(step + 1);
     else onComplete(data);
   };
   const prev = () => step > 0 ? setStep(step - 1) : onNav('login');
+  const skip = () => {
+    if (step < TOTAL - 1) setStep(step + 1);
+    else onComplete(data);
+  };
 
-  const stepTitles = ['역할 선택', '회사 정보', '관심 분야', '알림 설정'];
+  const stepTitles = ['역할 선택', '회사 정보', '가공 방식', '발주 분야', '알림 설정'];
+  const skippable = [false, false, true, true, false];
 
   return (
     <div className="onb-shell">
@@ -5410,7 +5417,7 @@ function OnboardingPage({ onComplete, onNav }) {
 
         {/* Sub-progress */}
         <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:24 }}>
-          {[0,1,2,3].map(i => (
+          {[0,1,2,3,4].map(i => (
             <div key={i} style={{
               width: i === step ? 24 : 8, height: 8,
               borderRadius: 4,
@@ -5423,21 +5430,27 @@ function OnboardingPage({ onComplete, onNav }) {
         <div className="onb-card">
           {step === 0 && <OnbStepRole data={data} update={update}/>}
           {step === 1 && <OnbStepCompany data={data} update={update}/>}
-          {step === 2 && <OnbStepInterests data={data} update={update}/>}
-          {step === 3 && <OnbStepNotify data={data} update={update}/>}
+          {step === 2 && <OnbStepProcesses data={data} update={update}/>}
+          {step === 3 && <OnbStepInterests data={data} update={update}/>}
+          {step === 4 && <OnbStepNotify data={data} update={update}/>}
 
           <div className="onb-foot">
             <button className="btn-ghost onb-back" onClick={prev}>
               <Icon name="arrow_left" size={14} stroke={2.4}/>
               이전
             </button>
-            <div className="onb-foot-meta">{step + 1} / 4</div>
+            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:6}}>
+              <div className="onb-foot-meta">{step + 1} / {TOTAL}</div>
+              {skippable[step] && (
+                <button className="onb-skip-step-btn" onClick={skip}>이 단계 건너뛰기</button>
+              )}
+            </div>
             <button
               className="btn-primary onb-next"
               onClick={next}
               disabled={!stepValid[step]}
             >
-              {step < 3 ? '다음' : '완료하고 시작하기'}
+              {step < TOTAL - 1 ? '다음' : '완료하고 시작하기'}
               <Icon name="arrow_right" size={14} stroke={2.4}/>
             </button>
           </div>
@@ -5590,85 +5603,163 @@ function OnbStepCompany({ data, update }) {
 }
 
 // ─── Onb Step 2: Interests ───
-function OnbStepInterests({ data, update }) {
-  const cats = [
-    { id: 'cnc', label: 'CNC 가공', icon: '⚙' },
-    { id: 'injection', label: '사출', icon: '◐' },
-    { id: 'press', label: '프레스', icon: '▭' },
-    { id: 'mold', label: '금형', icon: '◆' },
-    { id: 'welding', label: '용접', icon: '╳' },
-    { id: 'painting', label: '도장', icon: '◉' },
-    { id: 'assembly', label: '조립', icon: '⬡' },
-    { id: 'pcb', label: 'PCB·전자', icon: '⊞' },
-    { id: 'sheet', label: '판금·절곡', icon: '▱' },
-    { id: 'plastic', label: '플라스틱', icon: '○' },
-    { id: 'metal', label: '금속소재', icon: '■' },
-    { id: 'package', label: '포장', icon: '◫' },
+// ─── Onb Step 2a: 가공방식 ───
+function OnbStepProcesses({ data, update }) {
+  const isMaker = data.role === 'maker';
+  const GROUPS = [
+    {
+      label: '절삭·성형',
+      items: [
+        { id: 'cnc', label: 'CNC 가공', icon: '⚙' },
+        { id: 'injection', label: '사출', icon: '◐' },
+        { id: 'press', label: '프레스', icon: '▭' },
+        { id: 'mold', label: '금형', icon: '◆' },
+      ],
+    },
+    {
+      label: '접합·표면',
+      items: [
+        { id: 'welding', label: '용접', icon: '╳' },
+        { id: 'painting', label: '도장', icon: '◉' },
+      ],
+    },
+    {
+      label: '조립·전자',
+      items: [
+        { id: 'assembly', label: '조립', icon: '⬡' },
+        { id: 'pcb', label: 'PCB·전자', icon: '⊞' },
+      ],
+    },
+    {
+      label: '소재·기타',
+      items: [
+        { id: 'sheet', label: '판금·절곡', icon: '▱' },
+        { id: 'plastic', label: '플라스틱', icon: '○' },
+        { id: 'metal', label: '금속소재', icon: '■' },
+        { id: 'package', label: '포장', icon: '◫' },
+      ],
+    },
   ];
-  const products = [
-    '자동차 부품', '가전·생활', '의료기기', '산업기계', '식음료 자판기',
-    '전자제품 케이스', '건축·인테리어', '농업·축산', '에너지·태양광',
-  ];
-  const moqs = [
-    { id: 'small', label: '소량 (1~100)', desc: '시제품·소량 생산' },
-    { id: 'medium', label: '중량 (100~10,000)', desc: '일반 양산' },
-    { id: 'large', label: '대량 (10,000+)', desc: '대규모 양산' },
-  ];
+
   const toggleCat = (id) => {
+    if (id === '__unknown__') {
+      update({ interests: ['__unknown__'] });
+      return;
+    }
     const next = data.interests.includes(id)
       ? data.interests.filter(x => x !== id)
-      : [...data.interests, id];
+      : [...data.interests.filter(x => x !== '__unknown__'), id];
     update({ interests: next });
   };
+
+  const toggleGroup = (items) => {
+    const ids = items.map(x => x.id);
+    const allSelected = ids.every(id => data.interests.includes(id));
+    const next = allSelected
+      ? data.interests.filter(id => !ids.includes(id))
+      : [...new Set([...data.interests.filter(x => x !== '__unknown__'), ...ids])];
+    update({ interests: next });
+  };
+
+  const isUnknown = data.interests.includes('__unknown__');
+
+  return (
+    <div className="onb-step">
+      <div className="onb-step-head">
+        <h2>{isMaker ? '제공 가능한 가공 방식을 선택해주세요' : '관심 있는 가공 방식을 선택해주세요'}</h2>
+        <p>여러 개 선택 가능 · 추천 정확도가 올라갑니다 ({isUnknown ? 0 : data.interests.length}개 선택됨)</p>
+      </div>
+      <div className="onb-fields">
+        {GROUPS.map(g => (
+          <div key={g.label} className="onb-proc-group">
+            <div className="onb-proc-group-hdr">
+              <span className="onb-proc-group-label">{g.label}</span>
+              <button className="onb-proc-group-all" onClick={() => toggleGroup(g.items)}>
+                {g.items.every(x => data.interests.includes(x.id)) ? '전체 해제' : '전체 선택'}
+              </button>
+            </div>
+            <div className="onb-cat-grid">
+              {g.items.map(c => (
+                <button
+                  key={c.id}
+                  className={`onb-cat ${data.interests.includes(c.id) && !isUnknown ? 'is-selected' : ''}`}
+                  onClick={() => toggleCat(c.id)}
+                >
+                  <span className="onb-cat-icon">{c.icon}</span>
+                  <span className="onb-cat-label">{c.label}</span>
+                  {data.interests.includes(c.id) && !isUnknown && (
+                    <span className="onb-cat-check"><Icon name="check" size={9} stroke={3.4}/></span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        {/* 잘 모르겠어요 */}
+        <button
+          className={`onb-unknown-btn ${isUnknown ? 'is-selected' : ''}`}
+          onClick={() => toggleCat('__unknown__')}
+        >
+          {isUnknown ? <Icon name="check" size={13} stroke={2.8}/> : '🤔'}
+          &nbsp; 잘 모르겠어요 — AI가 알아서 추천해 줘요
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Onb Step 2b: 발주분야 + 규모 ───
+function OnbStepInterests({ data, update }) {
+  const isMaker = data.role === 'maker';
+  const products = [
+    { id: '자동차 부품', icon: '🚗' },
+    { id: '가전·생활', icon: '🏠' },
+    { id: '의료기기', icon: '🏥' },
+    { id: '산업기계', icon: '⚙️' },
+    { id: '식음료 자판기', icon: '🥤' },
+    { id: '전자제품 케이스', icon: '📱' },
+    { id: '건축·인테리어', icon: '🏗️' },
+    { id: '농업·축산', icon: '🌾' },
+    { id: '에너지·태양광', icon: '☀️' },
+  ];
+  const moqs = [
+    { id: 'small', label: '소량', sub: '1~100개', desc: '시제품·소량 생산' },
+    { id: 'medium', label: '중량', sub: '100~10,000개', desc: '일반 양산' },
+    { id: 'large', label: '대량', sub: '10,000개+', desc: '대규모 양산' },
+  ];
   const toggleProd = (p) => {
     const next = data.products.includes(p)
       ? data.products.filter(x => x !== p)
       : [...data.products, p];
     update({ products: next });
   };
-  const isMaker = data.role === 'maker';
   return (
     <div className="onb-step">
       <div className="onb-step-head">
-        <h2>{isMaker ? '제공 가능한 가공 방식을 선택해주세요' : '관심 있는 가공 방식을 선택해주세요'}</h2>
-        <p>여러 개 선택 가능 · 추천 정확도가 올라갑니다 ({data.interests.length}개 선택됨)</p>
+        <h2>{isMaker ? '주요 생산 분야를 선택해주세요' : '주요 발주 분야를 선택해주세요'}</h2>
+        <p>선택 안 해도 괜찮아요 · 나중에 언제든 변경 가능해요</p>
       </div>
       <div className="onb-fields">
         <div className="auth-field">
-          <span className="auth-field-label">가공 방식 <em className="auth-req">(1개 이상 필수)</em></span>
-          <div className="onb-cat-grid">
-            {cats.map(c => (
+          <span className="auth-field-label">{isMaker ? '주요 생산 분야' : '주요 발주 분야'} <em className="auth-opt">(선택)</em></span>
+          <div className="onb-prod-grid">
+            {products.map(p => (
               <button
-                key={c.id}
-                className={`onb-cat ${data.interests.includes(c.id) ? 'is-selected' : ''}`}
-                onClick={() => toggleCat(c.id)}
+                key={p.id}
+                className={`onb-prod-card ${data.products.includes(p.id) ? 'is-selected' : ''}`}
+                onClick={() => toggleProd(p.id)}
               >
-                <span className="onb-cat-icon">{c.icon}</span>
-                <span className="onb-cat-label">{c.label}</span>
-                {data.interests.includes(c.id) && (
-                  <span className="onb-cat-check"><Icon name="check" size={9} stroke={3.4}/></span>
+                <span className="onb-prod-card-icon">{p.icon}</span>
+                <span className="onb-prod-card-label">{p.id}</span>
+                {data.products.includes(p.id) && (
+                  <span className="onb-prod-card-check"><Icon name="check" size={9} stroke={3.4}/></span>
                 )}
               </button>
             ))}
           </div>
         </div>
         <div className="auth-field">
-          <span className="auth-field-label">{isMaker ? '주요 생산 분야' : '주요 발주 분야'} <em className="auth-opt">(선택)</em></span>
-          <div className="onb-prod-row">
-            {products.map(p => (
-              <button
-                key={p}
-                className={`onb-prod-chip ${data.products.includes(p) ? 'is-selected' : ''}`}
-                onClick={() => toggleProd(p)}
-              >
-                {data.products.includes(p) && <Icon name="check" size={10} stroke={3}/>}
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="auth-field">
-          <span className="auth-field-label">{isMaker ? '주요 생산 규모' : '주요 발주 규모'}</span>
+          <span className="auth-field-label">{isMaker ? '주요 생산 규모' : '주요 발주 규모'} <em className="auth-opt">(선택)</em></span>
           <div className="onb-moq-row">
             {moqs.map(m => (
               <button
@@ -5677,6 +5768,7 @@ function OnbStepInterests({ data, update }) {
                 onClick={() => update({ moq: m.id })}
               >
                 <strong>{m.label}</strong>
+                <span className="onb-moq-sub">{m.sub}</span>
                 <span>{m.desc}</span>
               </button>
             ))}
