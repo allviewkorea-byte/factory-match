@@ -9271,3 +9271,16 @@ a { color: inherit; text-decoration: none; }
 }
 .detail-map-link:hover { text-decoration: underline; }
 .detail-photo-thumb.is-active { border-color: var(--brand); }
+
+/* 카드 썸네일 별점 뱃지 */
+.mcard-rating-badge {
+  position: absolute; bottom: 6px; left: 6px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border-radius: 6px;
+  padding: 3px 7px;
+  display: flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 700;
+}
+.mcard-rating-star { color: #fbbf24; font-size: 11px; }
+.mcard-rating-score { font-family: var(--font-num); }

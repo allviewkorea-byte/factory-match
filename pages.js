@@ -394,6 +394,12 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
             <div className="mcard-icon">{getCardIcon(f)}</div>
           </>
         )}
+        {f.google_rating && (
+          <div className="mcard-rating-badge">
+            <span className="mcard-rating-star">★</span>
+            <span className="mcard-rating-score">{f.google_rating}</span>
+          </div>
+        )}
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
@@ -3022,19 +3028,6 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             </div>
           )}
           {f.en && <div className="detail-name-en">{f.en}</div>}
-          {/* 구글 별점/리뷰 */}
-          {f.google_rating && (
-            <div className="detail-google-rating">
-              <span className="detail-google-stars">
-                {'★'.repeat(Math.round(f.google_rating))}{'☆'.repeat(5 - Math.round(f.google_rating))}
-              </span>
-              <span className="detail-google-score">{f.google_rating}</span>
-              {f.google_reviews > 0 && (
-                <span className="detail-google-reviews">리뷰 {f.google_reviews.toLocaleString()}개</span>
-              )}
-              <span className="detail-google-badge">Google</span>
-            </div>
-          )}
           <div className="detail-hero-meta">
             <span><Icon name="pin" size={13} stroke={2}/> {_addrCity(f.roadAddress) || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ') || f.city || '—'}</span>
             {isSample && f.founded > 0 && (
@@ -3124,7 +3117,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
           ...(procLabels.length > 0 || (f.materials || []).length > 0 || prodLabels.length > 0
             ? [{ id: 'capability', label: '제조 역량' }] : []),
           ...(f.certs.length > 0 || isSample ? [{ id: 'certs', label: '인증·신뢰도' }] : []),
-          ...(isSample ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
+          { id: 'reviews', label: f.google_reviews > 0 ? `리뷰 ${f.google_reviews}` : '리뷰' },
           ...((f.dart_revenue || f.dart_assets) ? [{ id: 'finance', label: '재무정보' }] : []),
           { id: 'map', label: '지도' },
         ].map(t => (
