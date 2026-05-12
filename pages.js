@@ -3723,6 +3723,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   </span>
                 </dd></>
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
+                {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
                 {f.building_area != null && <><dt>건축면적</dt><dd>{f.building_area.toLocaleString()} ㎡</dd></>}
               </dl>
               {f.lat && f.lng && (
