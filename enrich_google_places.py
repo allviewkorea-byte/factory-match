@@ -55,15 +55,46 @@ def find_place(name, address, city):
     params = {
         "input": query,
         "inputtype": "textquery",
-        "fields": "place_id,name",
+        "fields": "place_id,name,formatted_address",
         "key": GOOGLE_API_KEY,
         "language": "ko",
     }
     res = requests.get(url, params=params, timeout=10)
     data = res.json()
     if data.get("status") == "OK" and data.get("candidates"):
-        return data["candidates"][0].get("place_id")
-    return None
+        candidate = data["candidates"][0]
+        return candidate.get("place_id"), candidate.get("formatted_address", "")
+    return None, ""
+
+def verify_address(db_region, db_city, db_address, google_address):
+    """구글 주소와 DB 주소 일치 여부 검증 (시/군/구 레벨)"""
+    if not google_address:
+        return False
+
+    # DB에서 비교할 키워드 추출
+    keywords = []
+    if db_city:
+        # 시/군/구 앞 2~3글자 추출 (예: "남양주시" → "남양주")
+        keywords.append(db_city[:3])
+    if db_region:
+        # 도/광역시 앞 2글자 (예: "경기도" → "경기")
+        keywords.append(db_region[:2])
+    if db_address:
+        # 주소에서 동/읍/면 추출
+        parts = db_address.split()
+        for p in parts:
+            if any(p.endswith(x) for x in ['동', '읍', '면', '구', '시', '군']):
+                keywords.append(p[:3])
+
+    if not keywords:
+        return False
+
+    # 구글 주소에 키워드 중 하나라도 포함되면 일치로 판단
+    google_lower = google_address
+    match_count = sum(1 for kw in keywords if kw in google_lower)
+
+    # 키워드 2개 이상 일치해야 통과
+    return match_count >= 2
 
 def get_place_details(place_id):
     """Place ID로 상세 정보 수집"""
@@ -138,15 +169,24 @@ def main():
             city = f.get("city", "")
 
             # 1단계: place_id 검색
-            place_id = find_place(name, address, city)
+            place_id, google_address = find_place(name, address, city)
             time.sleep(DELAY)
 
             if not place_id:
                 no_result += 1
                 done_ids.add(fid)
                 processed_today += 1
-                # 못찾은 것도 표시 (재시도 방지)
                 supabase_patch(fid, {"google_place_id": "NOT_FOUND"})
+                continue
+
+            # 2단계: 주소 일치 검증
+            region = f.get("region", "")
+            if not verify_address(region, city, address, google_address):
+                print(f"⛔ 주소 불일치: {name} | DB:{city} | 구글:{google_address[:30]}")
+                no_result += 1
+                done_ids.add(fid)
+                processed_today += 1
+                supabase_patch(fid, {"google_place_id": "ADDR_MISMATCH"})
                 continue
 
             # 2단계: 상세 정보 수집
