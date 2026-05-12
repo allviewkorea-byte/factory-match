@@ -380,10 +380,20 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
 
   return (
     <article className={`mcard ${isCompact ? 'is-compact' : ''}`}>
-      <div className="mcard-img" style={{ background: getCardBg(f) }}>
-        <div className="mcard-img-stripes"/>
-        <div className="mcard-icon">{getCardIcon(f)}</div>
-        {/* 썸네일 텍스트 제거 */}
+      <div className="mcard-img" style={{ background: getCardBg(f), padding: 0, overflow: 'hidden' }}>
+        {f.google_photos && f.google_photos.length > 0 ? (
+          <img
+            src={f.google_photos[0]}
+            alt={f.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        ) : (
+          <>
+            <div className="mcard-img-stripes"/>
+            <div className="mcard-icon">{getCardIcon(f)}</div>
+          </>
+        )}
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
