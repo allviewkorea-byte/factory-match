@@ -2806,6 +2806,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
   // ── 모든 Hook은 early return 전에 선언 (React Hook 규칙) ──
   const [tab, setTab] = useStateP('overview');
+  const [photoIdx, setPhotoIdx] = useStateP(null);
   const [isOwner, setIsOwner] = useStateP(false);
   const [showEditModal, setShowEditModal] = useStateP(false);
   const [editForm, setEditForm] = useStateP({});
@@ -3097,6 +3098,17 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
         </div>
       </section>
 
+      {/* 구글 사진 갤러리 슬라이더 */}
+      {f.google_photos && f.google_photos.length > 1 && (
+        <div className="detail-photo-gallery">
+          {f.google_photos.map((url, i) => (
+            <div key={i} className="detail-photo-thumb" onClick={() => setPhotoIdx(i)}>
+              <img src={url} alt={`${f.name} 사진 ${i+1}`} onError={e => e.target.style.display='none'}/>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="detail-tabs">
         {[
@@ -3105,6 +3117,8 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             ? [{ id: 'capability', label: '제조 역량' }] : []),
           ...(f.certs.length > 0 || isSample ? [{ id: 'certs', label: '인증·신뢰도' }] : []),
           ...(isSample ? [{ id: 'reviews', label: `리뷰 ${f.reviews}` }] : []),
+          ...((f.dart_revenue || f.dart_assets) ? [{ id: 'finance', label: '재무정보' }] : []),
+          { id: 'map', label: '지도' },
         ].map(t => (
           <button
             key={t.id}
@@ -3620,6 +3634,88 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             </div>
           )}
         </section>
+      )}
+
+      {/* 재무정보 탭 */}
+      {tab === 'finance' && (
+        <section className="detail-section">
+          {(f.dart_revenue || f.dart_assets) ? (
+            <div className="detail-finance">
+              <div className="detail-finance-title">DART 재무정보 {f.dart_year && <span className="detail-finance-year">({f.dart_year}년)</span>}</div>
+              <div className="detail-finance-grid">
+                {f.dart_revenue && (
+                  <div className="detail-finance-item">
+                    <div className="detail-finance-label">매출액</div>
+                    <div className="detail-finance-value">{(f.dart_revenue / 100000000).toFixed(1)}억원</div>
+                  </div>
+                )}
+                {f.dart_op_income && (
+                  <div className="detail-finance-item">
+                    <div className="detail-finance-label">영업이익</div>
+                    <div className="detail-finance-value" style={{color: f.dart_op_income > 0 ? '#16a34a' : '#dc2626'}}>{(f.dart_op_income / 100000000).toFixed(1)}억원</div>
+                  </div>
+                )}
+                {f.dart_net_income && (
+                  <div className="detail-finance-item">
+                    <div className="detail-finance-label">당기순이익</div>
+                    <div className="detail-finance-value" style={{color: f.dart_net_income > 0 ? '#16a34a' : '#dc2626'}}>{(f.dart_net_income / 100000000).toFixed(1)}억원</div>
+                  </div>
+                )}
+                {f.dart_assets && (
+                  <div className="detail-finance-item">
+                    <div className="detail-finance-label">총자산</div>
+                    <div className="detail-finance-value">{(f.dart_assets / 100000000).toFixed(1)}억원</div>
+                  </div>
+                )}
+                {f.dart_equity && (
+                  <div className="detail-finance-item">
+                    <div className="detail-finance-label">자본총계</div>
+                    <div className="detail-finance-value">{(f.dart_equity / 100000000).toFixed(1)}억원</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="detail-empty">
+              <Icon name="chart" size={32} stroke={1.4}/>
+              <p>재무정보가 없습니다</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 지도 탭 */}
+      {tab === 'map' && (
+        <section className="detail-section">
+          {f.lat && f.lng ? (
+            <div className="detail-map-tab">
+              <img
+                src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=16&size=1200x500&maptype=roadmap&markers=color:0x3b82f6|${f.lat},${f.lng}&scale=2&key=${GMAPS_KEY}`}
+                alt="지도"
+                style={{width:'100%', borderRadius:10, display:'block'}}
+              />
+              <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
+                <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
+              </a>
+            </div>
+          ) : (
+            <div className="detail-empty">
+              <Icon name="pin" size={32} stroke={1.4}/>
+              <p>위치 정보가 없습니다</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 사진 라이트박스 */}
+      {photoIdx !== null && f.google_photos && (
+        <div className="detail-lightbox" onClick={() => setPhotoIdx(null)}>
+          <button className="detail-lightbox-close" onClick={() => setPhotoIdx(null)}>✕</button>
+          <button className="detail-lightbox-prev" onClick={e => { e.stopPropagation(); setPhotoIdx((photoIdx - 1 + f.google_photos.length) % f.google_photos.length); }}>‹</button>
+          <img src={f.google_photos[photoIdx]} alt="" onClick={e => e.stopPropagation()}/>
+          <button className="detail-lightbox-next" onClick={e => { e.stopPropagation(); setPhotoIdx((photoIdx + 1) % f.google_photos.length); }}>›</button>
+          <div className="detail-lightbox-count">{photoIdx + 1} / {f.google_photos.length}</div>
+        </div>
       )}
     </div>
   );
