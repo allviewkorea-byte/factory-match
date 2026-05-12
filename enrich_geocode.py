@@ -78,13 +78,23 @@ def main():
     offset = 0
 
     while processed_today < DAILY_LIMIT:
-        factories = supabase_get({
-            "select": "id,name,address,city,region",
-            "lat": "is.null",
-            "address": "not.is.null",
-            "offset": offset,
-            "limit": BATCH_SIZE,
-        })
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        }
+        res = requests.get(
+            f"{SUPABASE_URL}/rest/v1/factories",
+            headers=headers,
+            params={
+                "select": "id,name,address,city,region",
+                "lat": "is.null",
+                "address": "not.is.null",
+                "offset": offset,
+                "limit": BATCH_SIZE,
+            },
+            timeout=30
+        )
+        factories = res.json()
 
         if not factories or isinstance(factories, dict):
             print("처리할 공장이 없습니다.")
