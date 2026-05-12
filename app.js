@@ -206,6 +206,16 @@ function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  // 제조사 탐색 페이지에서 body 스크롤 고정
+  React.useEffect(() => {
+    if (route === 'list') {
+      document.body.classList.add('no-body-scroll');
+    } else {
+      document.body.classList.remove('no-body-scroll');
+    }
+    return () => document.body.classList.remove('no-body-scroll');
+  }, [route]);
+
   const nav = (r) => {
     if (r === 'ai') setAiFactoryContext(null); // 상단 탭 클릭 시 컨텍스트 초기화
     setRoute(r);
