@@ -6010,14 +6010,14 @@ function SignupPage({ onNav }) {
             </div>
 
             <div className="sgn-type-grid">
-              <button className="sgn-type-card" onClick={() => { setUserType('buyer'); setStep(2); }}>
+              <button className="sgn-type-card buyer-card" onClick={() => { setUserType('buyer'); setStep(2); }}>
                 <div className="sgn-type-icon sgn-type-buyer">
                   <Icon name="search" size={26} stroke={1.8}/>
                 </div>
                 <div className="sgn-type-name">바이어</div>
                 <div className="sgn-type-desc">제조사를 찾고<br/>견적을 받고 싶어요</div>
               </button>
-              <button className="sgn-type-card" onClick={() => { setUserType('manufacturer'); setStep(2); }}>
+              <button className="sgn-type-card mfr-card" onClick={() => { setUserType('manufacturer'); setStep(2); }}>
                 <div className="sgn-type-icon sgn-type-mfr">
                   <Icon name="factory" size={26} stroke={1.8}/>
                 </div>

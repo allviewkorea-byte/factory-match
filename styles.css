@@ -5216,9 +5216,22 @@ a { color: inherit; text-decoration: none; }
   gap: 10px; padding: 24px 16px;
   border: 1.5px solid var(--line); border-radius: 14px;
   background: #fff; cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
-.sgn-type-card:hover { border-color: var(--brand); background: var(--brand-soft); }
+.sgn-type-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+.sgn-type-card:hover .sgn-type-name { color: var(--brand); }
+.sgn-type-card.buyer-card:hover {
+  border-color: var(--brand);
+  background: oklch(0.97 0.04 250);
+}
+.sgn-type-card.mfr-card:hover {
+  border-color: var(--emerald);
+  background: oklch(0.97 0.04 150);
+}
+.sgn-type-card.mfr-card:hover .sgn-type-name { color: var(--emerald); }
 .sgn-type-icon {
   width: 56px; height: 56px; border-radius: 16px;
   display: grid; place-items: center;
