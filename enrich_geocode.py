@@ -89,7 +89,6 @@ def main():
                 "select": "id,name,address,city,region",
                 "lat": "is.null",
                 "address": "not.is.null",
-                "offset": offset,
                 "limit": BATCH_SIZE,
             },
             timeout=30
