@@ -1316,6 +1316,22 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
         )}
       </div>
 
+      {!hasResults && !loading && (
+        <div style={{textAlign:'center', margin:'40px auto 0', maxWidth:'800px', padding:'0 20px'}}>
+          <p style={{fontSize:'13px', color:'#9ca3af', marginBottom:'12px', letterSpacing:'0.02em'}}>
+            공장과 바이어를 잇는 스마트 매칭 플랫폼
+          </p>
+          <video
+            src="/factory-intro.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{width:'100%', borderRadius:'12px', display:'block'}}
+          />
+        </div>
+      )}
+
       {hasResults && (
         <div className="home-results">
 
