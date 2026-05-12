@@ -54,7 +54,11 @@ def geocode(address):
 def load_progress():
     if os.path.exists(PROGRESS_FILE):
         with open(PROGRESS_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            return {
+                "done_ids": data.get("done_ids", []),
+                "total_processed": data.get("total_processed", 0)
+            }
     return {"done_ids": [], "total_processed": 0}
 
 def save_progress(progress):
