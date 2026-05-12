@@ -3729,7 +3729,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               {f.lat && f.lng && (
                 <div style={{marginTop:12}}>
                   <img
-                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=15&size=400x200&maptype=roadmap&markers=color:red|${f.lat},${f.lng}&scale=2&key=AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY`}
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=15&size=400x200&maptype=roadmap&markers=color:red|${f.lat},${f.lng}&scale=2&key=${GMAPS_KEY}`}
                     alt="지도"
                     style={{width:'100%', borderRadius:8, display:'block'}}
                   />
