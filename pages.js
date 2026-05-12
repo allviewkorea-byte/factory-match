@@ -3686,14 +3686,13 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
       {tab === 'map' && (
         <section className="detail-section">
           <div className="detail-grid">
-            <div style={{minHeight: 400}}>
+            <div style={{minHeight: 400, display:'flex', flexDirection:'column'}}>
               {f.lat && f.lng ? (
-                <div className="detail-map-tab">
+                <div className="detail-map-tab" style={{flex:1, display:'flex', flexDirection:'column'}}>
                   <iframe
                     title="streetview"
                     width="100%"
-                    height="400"
-                    style={{border:0, borderRadius:10, display:'block'}}
+                    style={{border:0, borderRadius:10, display:'block', flex:1, minHeight:400}}
                     src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
                     allowFullScreen
                   />
@@ -3728,11 +3727,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               </dl>
               {f.lat && f.lng && (
                 <div style={{marginTop:12}}>
-                  <img
-                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=15&size=400x200&maptype=roadmap&markers=color:red|${f.lat},${f.lng}&scale=2&key=${GMAPS_KEY}`}
-                    alt="지도"
-                    style={{width:'100%', borderRadius:8, display:'block'}}
-                  />
+                  <FactoryMap addr={f.roadAddress || f.address} name={f.name} lat={f.lat} lng={f.lng} />
                 </div>
               )}
             </div>
