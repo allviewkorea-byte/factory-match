@@ -9256,3 +9256,4 @@ a { color: inherit; text-decoration: none; }
   text-decoration: none;
 }
 .detail-map-link:hover { text-decoration: underline; }
+.detail-photo-thumb.is-active { border-color: var(--brand); }

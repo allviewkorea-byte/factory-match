@@ -2694,14 +2694,14 @@ function FactoryMap({ addr, name, lat, lng }) {
 // ── 공장 히어로 이미지: 구글사진 → Street View → Static Map → 색상 박스 ─────────────────
 const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
-const FactoryHeroImg = ({ f }) => {
+const FactoryHeroImg = ({ f, selectedPhoto, onPhotoClick }) => {
   const addr = (f.address || '').trim();
   const googlePhotos = f.google_photos || [];
   const [src,  setSrc]  = React.useState(null);
   const [type, setType] = React.useState(null);
 
   React.useEffect(() => {
-    // 구글 사진이 있으면 첫 번째 사진 사용
+    if (selectedPhoto) { setSrc(selectedPhoto); setType('google'); return; }
     if (googlePhotos.length > 0) {
       setSrc(googlePhotos[0]);
       setType('google');
@@ -2727,7 +2727,7 @@ const FactoryHeroImg = ({ f }) => {
       .catch(() => { if (!cancelled) setType('color'); });
 
     return () => { cancelled = true; };
-  }, [addr, googlePhotos.length]);
+  }, [addr, googlePhotos.length, selectedPhoto]);
 
   const onImgError = () => {
     if (type === 'google') {
@@ -2759,17 +2759,12 @@ const FactoryHeroImg = ({ f }) => {
   }
 
   return (
-    <div className="detail-hero-img" style={{ background: '#e8edf2', padding: 0 }}>
-      <img
-        src={src}
-        alt={f.name}
-        onError={onImgError}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-      />
+    <div className="detail-hero-img" style={{ background: '#e8edf2', padding: 0, cursor: type === 'google' ? 'zoom-in' : 'default' }}
+      onClick={() => type === 'google' && onPhotoClick && onPhotoClick(src)}>
+      <img src={src} alt={f.name} onError={onImgError}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}/>
       {type !== 'google' && (
-        <div className="detail-hero-img-label">
-          {type === 'sv' ? 'STREET VIEW' : '지도'}
-        </div>
+        <div className="detail-hero-img-label">{type === 'sv' ? 'STREET VIEW' : '지도'}</div>
       )}
     </div>
   );
@@ -2807,6 +2802,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
   // ── 모든 Hook은 early return 전에 선언 (React Hook 규칙) ──
   const [tab, setTab] = useStateP('overview');
   const [photoIdx, setPhotoIdx] = useStateP(null);
+  const [selectedPhoto, setSelectedPhoto] = useStateP(null);
   const [isOwner, setIsOwner] = useStateP(false);
   const [showEditModal, setShowEditModal] = useStateP(false);
   const [editForm, setEditForm] = useStateP({});
@@ -2995,7 +2991,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 
       {/* Hero */}
       <section className="detail-hero">
-        <FactoryHeroImg f={f}/>
+        <FactoryHeroImg f={f} selectedPhoto={selectedPhoto} onPhotoClick={(src) => setPhotoIdx(f.google_photos.indexOf(src))}/>
         <div className="detail-hero-info">
           <div className="detail-hero-head">
             {f.certs.includes('IATF 16949') && (
@@ -3102,7 +3098,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
       {f.google_photos && f.google_photos.length > 1 && (
         <div className="detail-photo-gallery">
           {f.google_photos.map((url, i) => (
-            <div key={i} className="detail-photo-thumb" onClick={() => setPhotoIdx(i)}>
+            <div key={i}
+              className={`detail-photo-thumb ${selectedPhoto === url || (!selectedPhoto && i === 0) ? 'is-active' : ''}`}
+              onClick={() => setSelectedPhoto(url)}>
               <img src={url} alt={`${f.name} 사진 ${i+1}`} onError={e => e.target.style.display='none'}/>
             </div>
           ))}
@@ -3689,10 +3687,13 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
         <section className="detail-section">
           {f.lat && f.lng ? (
             <div className="detail-map-tab">
-              <img
-                src={`https://maps.googleapis.com/maps/api/staticmap?center=${f.lat},${f.lng}&zoom=16&size=1200x500&maptype=roadmap&markers=color:0x3b82f6|${f.lat},${f.lng}&scale=2&key=${GMAPS_KEY}`}
-                alt="지도"
-                style={{width:'100%', borderRadius:10, display:'block'}}
+              <iframe
+                title="streetview"
+                width="100%"
+                height="400"
+                style={{border:0, borderRadius:10, display:'block'}}
+                src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
+                allowFullScreen
               />
               <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
                 <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
