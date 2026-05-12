@@ -238,8 +238,8 @@ def main():
 
             # 좌표 없는 경우 구글 것으로 보완
             if lat and lng:
-                update_data["coord_x"] = lat
-                update_data["coord_y"] = lng
+                update_data["lat"] = lat
+                update_data["lng"] = lng
 
             status = supabase_patch(fid, update_data)
             done_ids.add(fid)
