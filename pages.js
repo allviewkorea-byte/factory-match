@@ -2038,7 +2038,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   }, []);
 
   // 지도 핀 로드 — activeRegion 변경 시 재쿼리
-  // 지역 선택: region + coord_x IS NOT NULL 조건으로 전체 페이지네이션 (제한 없음)
+  // 지역 선택: region + lat IS NOT NULL 조건으로 전체 페이지네이션 (제한 없음)
   // 전체 보기: 1,000개 제한 (전체 DB 규모 대비 합리적 샘플)
   useEffectP(() => {
     if (!window._sb) return;
@@ -2047,7 +2047,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
 
     if (activeRegion === 'all') {
       window._sb.from('factories').select('*')
-        .not('coord_x', 'is', null).not('coord_y', 'is', null)
+        .not('lat', 'is', null).not('lng', 'is', null)
         .limit(1000)
         .then(({ data }) => {
           if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
@@ -2056,7 +2056,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
       const GEO_PAGE = 1000;
       const loadGeoPage = async (from, acc) => {
         let q = window._sb.from('factories').select('*')
-          .not('coord_x', 'is', null).not('coord_y', 'is', null)
+          .not('lat', 'is', null).not('lng', 'is', null)
           .order('completeness_score', { ascending: false })
           .order('id', { ascending: true })
           .range(from, from + GEO_PAGE - 1);
@@ -8790,7 +8790,7 @@ const AdminPage = ({ onOpenFactory }) => {
   const closeUpload = () => { setShowUpload(false); resetUpload(); };
 
   const downloadTemplate = () => {
-    const hdr = 'id,name,en,city,region,coord_x,coord_y,industries,processes,products,materials,moq,moq_unit,lead_days,price_range,employees,founded,certs,oem,odm,export,rating,reviews,response_hr,deals,summary,image';
+    const hdr = 'id,name,en,city,region,lat,lng,industries,processes,products,materials,moq,moq_unit,lead_days,price_range,employees,founded,certs,oem,odm,export,rating,reviews,response_hr,deals,summary,image';
     const ex  = 'f_ex1,예시정밀,Example Precision,경기 안산시,gyeonggi,38,32,machine,cnc;cutting,auto;machine_parts,알루미늄;SUS304,100,피스,14,₩2500~₩18000,42,2008,ISO 9001;IATF 16949,true,true,false,4.5,80,3,200,자동차 정밀부품 전문입니다.,#a8b4c8';
     const blob = new Blob([hdr + '\n' + ex], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -8835,8 +8835,8 @@ const AdminPage = ({ onOpenFactory }) => {
         en:          '',
         city,
         region:      extractRegion(city),
-        coord_x:     50,
-        coord_y:     50,
+        lat:     50,
+        lng:     50,
         industries:  get(vals, colMap.industries).split(/[,;／、]/).map(s => s.trim()).filter(Boolean),
         processes:   [],
         products:    get(vals, colMap.products).split(/[,;／、]/).map(s => s.trim()).filter(Boolean),
