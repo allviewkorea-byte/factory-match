@@ -9,7 +9,7 @@ import os
 
 GOOGLE_API_KEY = "AIzaSyAzqW_ONJjW-ccC2A_n2fKUzyzfTbE5YWo"
 SUPABASE_URL = "https://yezxwlzyiqgewpkkyget.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzOTU1NjEsImV4cCI6MjA1ODk3MTU2MX0.HbcDuDGJ6B1M3G2TbcqULEFMgjuBwGilNe8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs"
 PROGRESS_FILE = "google_places_progress.json"
 BATCH_SIZE = 100
 DAILY_LIMIT = 10  # 테스트
