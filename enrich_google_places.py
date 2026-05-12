@@ -120,6 +120,7 @@ def main():
 
     while processed_today < DAILY_LIMIT:
         factories = fetch_factories(offset, BATCH_SIZE)
+        print(f"[DEBUG] 응답 타입: {type(factories)}, 내용: {str(factories)[:200]}")
         if not factories:
             print("수집 완료! 더 이상 처리할 공장이 없어요.")
             break
