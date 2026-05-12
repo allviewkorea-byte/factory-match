@@ -92,7 +92,7 @@ def fetch_factories(offset, limit):
     }
     url = f"{SUPABASE_URL}/rest/v1/factories"
     params = {
-        "select": "id,name,city,region,address,phone,website,lat",
+        "select": "id,name,city,region,address,phone,website",
         "website": "not.is.null",
         "ai_summary": "not.is.null",
         "google_place_id": "is.null",
@@ -197,9 +197,9 @@ def main():
                 update_data["website"] = website
 
             # 좌표 없는 경우 구글 것으로 보완
-            if lat and lng and not f.get("lat"):
-                update_data["lat"] = lat
-                update_data["lng"] = lng
+            if lat and lng:
+                update_data["latitude"] = lat
+                update_data["longitude"] = lng
 
             status = supabase_patch(fid, update_data)
             done_ids.add(fid)
