@@ -377,7 +377,17 @@ window._dbRowToFactory = (row) => {
   google_place_id: row.google_place_id || null,
   google_rating: row.google_rating ?? null,
   google_reviews: row.google_reviews ?? null,
-  google_photos: Array.isArray(row.google_photos) ? row.google_photos : [],
-  google_hours: Array.isArray(row.google_hours) ? row.google_hours : [],
+  google_photos: (() => {
+    const p = row.google_photos;
+    if (!p) return [];
+    if (Array.isArray(p)) return p;
+    try { return JSON.parse(p); } catch(e) { return []; }
+  })(),
+  google_hours: (() => {
+    const h = row.google_hours;
+    if (!h) return [];
+    if (Array.isArray(h)) return h;
+    try { return JSON.parse(h); } catch(e) { return []; }
+  })(),
 }); };
 
