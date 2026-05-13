@@ -9560,9 +9560,9 @@ const AdminGoogleMismatchTab = () => {
   const [saving, setSaving] = React.useState({});
   const [toast, setToast] = React.useState('');
 
-  const filteredItems = search.trim()
-    ? items.filter(f => f.name.includes(search.trim()))
-    : items;
+  const filteredItems = React.useMemo(() =>
+    search.trim() ? items.filter(f => f.name.includes(search.trim())) : items
+  , [items, search]);
 
   const load = async () => {
     setLoading(true);
