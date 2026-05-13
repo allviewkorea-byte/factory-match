@@ -113,7 +113,36 @@ function scoreFactory(factory, st) {
   return score;
 }
 
-async function fetchFactoriesByKeywords(keywords) {
+// 회사명으로 직접 DB 검색
+async function searchByCompanyName(name) {
+  const enc = encodeURIComponent('%' + name + '%');
+  const url = SUPABASE_URL + '/rest/v1/factories?hidden=eq.false&select=id,name,city,region,address,phone,website,summary,ai_summary,industries,processes,completeness_score&name=ilike.' + enc + '&order=completeness_score.desc&limit=10';
+  const resp = await fetch(url, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+  });
+  if (!resp.ok) return [];
+  return resp.json();
+}
+
+// 회사명 검색 의도 판단
+function detectCompanySearch(query) {
+  // "회사명:", "상호:", "업체명:" 패턴
+  const patterns = [
+    /회사명\s*[:：]\s*(.+)/,
+    /상호\s*[:：]\s*(.+)/,
+    /업체명\s*[:：]\s*(.+)/,
+    /업체\s*[:：]\s*(.+)/,
+  ];
+  for (const p of patterns) {
+    const m = query.match(p);
+    if (m) return m[1].trim();
+  }
+  // 짧은 쿼리(10자 이하)이고 제조/생산/가공 단어 없으면 회사명으로 판단
+  const isShort = query.trim().length <= 15;
+  const hasProductKeyword = /제조|생산|가공|납품|공급|만들|찾|추천|견적/.test(query);
+  if (isShort && !hasProductKeyword) return query.trim();
+  return null;
+}
   if (!keywords || keywords.length === 0) return [];
   const orParts = keywords.flatMap(kw => {
     const enc = encodeURIComponent('%' + kw + '%');
@@ -262,6 +291,60 @@ exports.handler = async (event) => {
       }),
     };
   }
+
+  // ── 회사명 직접 검색 처리 ──────────────────────────────
+  const companyName = detectCompanySearch(query);
+  if (companyName) {
+    const companies = await searchByCompanyName(companyName).catch(() => []);
+    if (companies.length > 0) {
+      // 회사 정보를 Claude에게 전달해서 자연스러운 답변 생성
+      const companyInfo = companies.slice(0, 5).map(c => {
+        let aiData = null;
+        try { aiData = c.ai_summary ? (typeof c.ai_summary === 'string' ? JSON.parse(c.ai_summary) : c.ai_summary) : null; } catch(e) {}
+        return `- ${c.name} (${c.city || c.region || ''}) : ${aiData?.intro || c.summary || '정보 없음'}`;
+      }).join('\n');
+
+      const companyResult = {
+        queryType: 'company',
+        intent: `"${companyName}" 회사 검색`,
+        companySearch: true,
+        companyName,
+        foundCompanies: companies.slice(0, 5).map(c => ({
+          id: c.id,
+          name: c.name,
+          city: c.city || c.region || '',
+          summary: (() => {
+            try {
+              const ai = c.ai_summary ? (typeof c.ai_summary === 'string' ? JSON.parse(c.ai_summary) : c.ai_summary) : null;
+              return ai?.intro || c.summary || '';
+            } catch(e) { return c.summary || ''; }
+          })(),
+          website: c.website || '',
+          phone: c.phone || '',
+        })),
+        matchedFactories: companies.slice(0, 6).map((c, i) => ({
+          id: c.id,
+          matchPct: Math.max(70, 99 - i * 5),
+        })),
+        supplyChain: [],
+        topCategories: [],
+        consulting: {
+          unitCost: '직접 문의',
+          moqGuide: '직접 문의',
+          certRequired: [],
+          leadTime: '직접 문의',
+          caution: '해당 업체에 직접 견적 요청하세요.',
+          budgetRange: '협의 필요',
+        },
+      };
+      return {
+        statusCode: 200,
+        headers: RESPONSE_HEADERS,
+        body: JSON.stringify(companyResult),
+      };
+    }
+  }
+  // ──────────────────────────────────────────────────────
 
   let result;
   try {

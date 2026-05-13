@@ -4238,6 +4238,25 @@ function SearchUXPage({ onOpenFactory, onSearch, onNav, initialQuery }) {
       setAiResult(data);
       if (data.consulting) { console.log('[consulting]', data.consulting); setConsulting(data.consulting); }
 
+      // ── 회사명 직접 검색 결과 처리 ──
+      if (data.companySearch && data.foundCompanies && data.foundCompanies.length > 0) {
+        const ids = data.foundCompanies.map(c => c.id);
+        let rows = [];
+        if (window._sb && ids.length) {
+          try {
+            const { data: dbRows } = await window._sb.from('factories').select('*').in('id', ids);
+            if (dbRows) rows = dbRows;
+          } catch (_) {}
+        }
+        const byId = {};
+        (rows.length ? rows.map(window._dbRowToFactory) : []).forEach(f => { byId[f.id] = f; });
+        const scored = data.foundCompanies
+          .map((c, i) => byId[c.id] ? { ...byId[c.id], _matchPct: Math.max(70, 99 - i * 5) } : null)
+          .filter(Boolean);
+        setMatchedFactories(scored);
+        return;
+      }
+
       // Use server-matched factories from Netlify function if available
       if (data.matchedFactories && data.matchedFactories.length > 0) {
         // Fetch only the specific matched IDs — never pull the full table
