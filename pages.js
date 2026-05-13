@@ -9787,9 +9787,14 @@ const AdminGoogleMismatchTab = () => {
                           : <span style={{color:'var(--ink-4)'}}>없음</span>}
                       </td>
                       <td>
-                        <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
-                          onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
-                          style={{width:180, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}/>
+                        {editing[f.id] ? (
+                          <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
+                            onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
+                            style={{width:200, padding:'5px 8px', border:'2px solid var(--brand)', borderRadius:6, fontSize:12, outline:'none'}}
+                            autoFocus/>
+                        ) : (
+                          <span style={{fontSize:11, color:'var(--ink-4)'}}>—</span>
+                        )}
                       </td>
                       <td>
                         <div style={{display:'flex', gap:4}}>
@@ -9797,13 +9802,13 @@ const AdminGoogleMismatchTab = () => {
                             style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                             {saving[f.id] === 'normal' ? '...' : '✅ 정상'}
                           </button>
-                          {inputs[f.id] ? (
+                          {editing[f.id] ? (
                             <button onClick={() => saveEdit(f)} disabled={saving[f.id]}
                               style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'var(--brand)', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                               {saving[f.id] === 'save' ? '...' : '💾 저장'}
                             </button>
                           ) : (
-                            <button onClick={() => setInputs(s => ({...s, [f.id]: f.website || f.naver_website || ''}))}
+                            <button onClick={() => { setEditing(e => ({...e, [f.id]: true})); setInputs(s => ({...s, [f.id]: f.website || f.naver_website || ''})); }}
                               style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                               ✏️ 수정
                             </button>
