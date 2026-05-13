@@ -9522,7 +9522,7 @@ const AdminHiddenTab = () => {
                       placeholder="https://..."
                       value={websiteInputs[f.id] || ''}
                       onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
-                      style={{width:200, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
+                      style={{width:'100%', minWidth:160, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
                     />
                   </td>
                   <td style={{display:'flex', gap:4}}>
@@ -9749,8 +9749,7 @@ const AdminGoogleMismatchTab = () => {
               <tr>
                 <th>회사명</th>
                 {filter === 'ADDR_MISMATCH' || filter === 'HIDDEN' ? <><th>DB 주소</th></> : <><th>네이버 website</th><th>구글 website</th></>}
-                {filter !== 'ADDR_MISMATCH' && <th>올바른 website 입력</th>}
-                {filter === 'ADDR_MISMATCH' && <th>올바른 website 입력</th>}
+                <th style={{minWidth:200}}>올바른 website 입력</th>
                 <th>조치</th>
               </tr>
             </thead>
@@ -9780,7 +9779,7 @@ const AdminGoogleMismatchTab = () => {
                       placeholder="https://..."
                       value={websiteInputs[f.id] || ''}
                       onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
-                      style={{width:180, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
+                      style={{width:'100%', minWidth:160, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
                     />
                   </td>
                   <td style={{display:'flex', gap:4}}>
