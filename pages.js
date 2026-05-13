@@ -3722,8 +3722,21 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div className="detail-side">
               <h4>기본 정보</h4>
               <dl className="detail-dl">
-                {(f.roadAddress || f.address || f.city) && (
-                  <><dt>주소</dt><dd>{f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}</dd></>
+                {(f.roadAddress || f.address || f.city || f.google_address) && (
+                  <>
+                    <dt>주소</dt>
+                    <dd>
+                      {f.roadAddress || f.address || [f.regionRaw, f.city].filter(s => s && s.trim()).join(' ')}
+                      {f.google_address && (f.roadAddress || f.address) && (f.google_address !== (f.roadAddress || f.address)) && (
+                        <div style={{fontSize:11, color:'var(--ink-3)', marginTop:2}}>
+                          <span style={{color:'#16a34a', fontWeight:600}}>구글 </span>{f.google_address}
+                        </div>
+                      )}
+                      {!f.roadAddress && !f.address && f.google_address && (
+                        <span>{f.google_address}</span>
+                      )}
+                    </dd>
+                  </>
                 )}
                 {f.phone && <><dt>전화번호</dt><dd>{f.phone}</dd></>}
                 {f.website && (

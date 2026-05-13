@@ -262,6 +262,7 @@ def main():
                 "google_photos": json.dumps(photos) if photos else None,
                 "google_hours": json.dumps(hours) if hours else None,
                 "google_review_texts": json.dumps(review_texts) if review_texts else None,
+                "google_address": details.get("formatted_address") or google_address or None,
             }
 
             # 구글 website 저장 (크로스체크용)

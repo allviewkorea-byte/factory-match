@@ -395,5 +395,6 @@ window._dbRowToFactory = (row) => {
     if (Array.isArray(r)) return r;
     try { return JSON.parse(r); } catch(e) { return []; }
   })(),
+  google_address: row.google_address || null,
 }); };
 
