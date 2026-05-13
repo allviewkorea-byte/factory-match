@@ -9848,7 +9848,10 @@ const AdminGoogleMismatchTab = () => {
                   {filteredItems.map(f => (
                     <tr key={f.id}>
                       <td style={{whiteSpace:'nowrap', minWidth:120}}>
-                        <strong style={{fontSize:13}}>{f.name || '-'}</strong>
+                        <a href={`/factory/${f.id}`} target="_blank" rel="noopener noreferrer"
+                          style={{fontSize:13, fontWeight:700, color:'var(--brand)', textDecoration:'none'}}>
+                          {f.name || '-'}
+                        </a>
                       </td>
                       <td style={{minWidth:180}}>
                         {editing[f.id] ? (
