@@ -9102,7 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-          { id: 'google_mismatch', label: '구글 불일치', desc: '구글 Places 수집 시 주소가 불일치하거나 찾지 못한 업체. 올바른 홈페이지 URL을 입력하면 다음 수집 시 자동 재수집. 찾지 못할 경우 초기화 버튼으로 NULL 처리.' },
+          { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9126,7 +9126,7 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-        { id: 'google_mismatch', desc: '구글 Places 수집 시 주소 불일치 또는 못 찾은 업체. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집. 찾지 못할 경우 초기화 버튼으로 재시도하거나 그냥 두면 됨.' },
+        { id: 'google_mismatch', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9439,10 +9439,12 @@ const AdminGoogleMismatchTab = () => {
 
     if (filter === 'ADDR_MISMATCH') {
       query = query.eq('google_place_id', 'ADDR_MISMATCH');
+    } else if (filter === 'CROSS_MISMATCH') {
+      query = query.eq('website_verified', false);
     } else if (filter === 'NOT_FOUND') {
       query = query.eq('google_place_id', 'NOT_FOUND');
     } else {
-      query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND');
+      query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND,website_verified.eq.false');
     }
 
     const { data } = await query.limit(100);
@@ -9487,9 +9489,9 @@ const AdminGoogleMismatchTab = () => {
   return (
     <div style={{padding:24}}>
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
-        <h2 style={{fontSize:18, fontWeight:700}}>구글 불일치 관리</h2>
+        <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
         <div style={{display:'flex', gap:8}}>
-          {['전체', 'ADDR_MISMATCH', 'NOT_FOUND'].map(f => (
+          {['전체', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND'].map(f => (
             <button key={f}
               onClick={() => setFilter(f)}
               style={{
@@ -9499,7 +9501,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '전체'}
+              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '전체'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
@@ -9538,10 +9540,10 @@ const AdminGoogleMismatchTab = () => {
                   <td>
                     <span style={{
                       fontSize:11, fontWeight:600, padding:'2px 6px', borderRadius:4,
-                      background: f.google_place_id === 'ADDR_MISMATCH' ? '#fee2e2' : '#f3f4f6',
-                      color: f.google_place_id === 'ADDR_MISMATCH' ? '#dc2626' : '#6b7280',
+                      background: f.google_place_id === 'ADDR_MISMATCH' ? '#fee2e2' : f.website_verified === false ? '#fef9c3' : '#f3f4f6',
+                      color: f.google_place_id === 'ADDR_MISMATCH' ? '#dc2626' : f.website_verified === false ? '#854d0e' : '#6b7280',
                     }}>
-                      {f.google_place_id === 'ADDR_MISMATCH' ? '주소불일치' : '못찾음'}
+                      {f.google_place_id === 'ADDR_MISMATCH' ? '주소불일치' : f.website_verified === false ? '도메인불일치' : '못찾음'}
                     </span>
                   </td>
                   <td>
