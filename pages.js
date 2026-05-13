@@ -8449,15 +8449,19 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
   const openEdit = (row) => {
     setEditTarget(row);
     setEditDraft({
-      name:      row.name || '',
-      summary:   row.summary || '',
-      region:    row.region || '',
-      city:      row.city || '',
-      phone:     row.phone || '',
-      website:   row.website || '',
-      employees: row.employees ?? '',
-      founded:   row.founded ?? '',
-      hidden:    !!row.hidden,
+      name:               row.name || '',
+      summary:            row.summary || '',
+      region:             row.region || '',
+      city:               row.city || '',
+      address:            row.address || '',
+      phone:              row.phone || '',
+      website:            row.website || '',
+      representative:     row.representative || '',
+      industrial_complex: row.industrial_complex || '',
+      building_area:      row.building_area ?? '',
+      employees:          row.employees ?? '',
+      founded:            row.founded ?? '',
+      hidden:             !!row.hidden,
     });
   };
 
@@ -8465,14 +8469,18 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
     if (!editTarget || saving) return;
     setSaving(true);
     const updates = {
-      name:      editDraft.name.trim(),
-      summary:   editDraft.summary.trim(),
-      region:    editDraft.region.trim(),
-      city:      editDraft.city.trim(),
-      phone:     editDraft.phone.trim() || null,
-      website:   editDraft.website.trim() || null,
-      employees: editDraft.employees === '' ? null : Number(editDraft.employees),
-      founded:   editDraft.founded === '' ? null : Number(editDraft.founded),
+      name:               editDraft.name.trim(),
+      summary:            editDraft.summary.trim(),
+      region:             editDraft.region.trim(),
+      city:               editDraft.city.trim(),
+      address:            editDraft.address.trim() || null,
+      phone:              editDraft.phone.trim() || null,
+      website:            editDraft.website.trim() || null,
+      representative:     editDraft.representative.trim() || null,
+      industrial_complex: editDraft.industrial_complex.trim() || null,
+      building_area:      editDraft.building_area === '' ? null : Number(editDraft.building_area),
+      employees:          editDraft.employees === '' ? null : Number(editDraft.employees),
+      founded:            editDraft.founded === '' ? null : Number(editDraft.founded),
       hidden:    editDraft.hidden,
     };
     const { error } = await window._sb.from('factories').update(updates).eq('id', editTarget.id);
@@ -8485,13 +8493,17 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
   const pageCount = totalCount != null ? Math.ceil(totalCount / PAGE_SIZE) : 0;
 
   const EDIT_FIELDS = [
-    { key: 'name',      label: '회사명',     type: 'text'   },
-    { key: 'city',      label: '도시/주소',   type: 'text'   },
-    { key: 'region',    label: '지역 (DB값)', type: 'text'   },
-    { key: 'phone',     label: '연락처',      type: 'text'   },
-    { key: 'website',   label: '웹사이트',    type: 'text'   },
-    { key: 'employees', label: '임직원 수',   type: 'number' },
-    { key: 'founded',   label: '설립연도',    type: 'number' },
+    { key: 'name',              label: '회사명',        type: 'text'   },
+    { key: 'city',              label: '도시/주소',      type: 'text'   },
+    { key: 'region',            label: '지역 (DB값)',    type: 'text'   },
+    { key: 'address',           label: '현장주소',       type: 'text'   },
+    { key: 'phone',             label: '연락처',         type: 'text'   },
+    { key: 'website',           label: '웹사이트',       type: 'text'   },
+    { key: 'representative',    label: '대표자',         type: 'text'   },
+    { key: 'industrial_complex',label: '산업단지',       type: 'text'   },
+    { key: 'building_area',     label: '건축면적 (㎡)',  type: 'number' },
+    { key: 'employees',         label: '임직원 수',      type: 'number' },
+    { key: 'founded',           label: '설립연도',       type: 'number' },
   ];
 
   return (
@@ -8639,6 +8651,23 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
                   onChange={e => setEditDraft(d => ({ ...d, summary: e.target.value }))}
                 />
               </div>
+              {/* 읽기 전용: 구글 데이터 */}
+              {(editTarget.google_rating || editTarget.google_reviews) && (
+                <div className="admin-form-row">
+                  <label className="admin-form-label">구글 별점</label>
+                  <input className="admin-form-input" type="text"
+                    value={`★ ${editTarget.google_rating || '-'} (리뷰 ${editTarget.google_reviews || 0}개)`}
+                    readOnly style={{background:'#f8fafc', color:'var(--ink-3)', cursor:'not-allowed'}}/>
+                </div>
+              )}
+              {editTarget.ai_summary && (
+                <div className="admin-form-row">
+                  <label className="admin-form-label">AI 요약</label>
+                  <textarea className="admin-form-input" rows={3}
+                    value={(() => { try { const d = typeof editTarget.ai_summary === 'string' ? JSON.parse(editTarget.ai_summary) : editTarget.ai_summary; return d.intro || ''; } catch(e) { return ''; } })()}
+                    readOnly style={{background:'#f8fafc', color:'var(--ink-3)', cursor:'not-allowed', fontSize:12}}/>
+                </div>
+              )}
               <div className="admin-form-row">
                 <label className="admin-form-label">공개 여부</label>
                 <label className="admin-form-check">
