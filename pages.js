@@ -9627,8 +9627,56 @@ const AdminGoogleMismatchTab = () => {
     load();
   };
 
+  // 사용법 가이드
+  const GUIDE = {
+    ADDR_MISMATCH: {
+      title: '🔴 구글 주소 불일치',
+      color: '#fee2e2',
+      border: '#fca5a5',
+      textColor: '#991b1b',
+      desc: '구글에서 같은 회사명을 찾았지만 구글이 찾은 업체 주소가 DB 주소와 달라서 거부된 업체예요.',
+      steps: ['구글에서 올바른 홈페이지 검색', '올바른 website URL 입력 후 저장', '다음 수집 실행 시 자동 재수집', '찾기 어려우면 초기화 버튼 클릭'],
+    },
+    CROSS_MISMATCH: {
+      title: '🟡 도메인 불일치',
+      color: '#fef9c3',
+      border: '#fde047',
+      textColor: '#854d0e',
+      desc: '네이버에서 찾은 website 도메인과 구글에서 찾은 website 도메인이 서로 달라서 신뢰도가 낮은 업체예요.',
+      steps: ['네이버/구글 website 두 개를 비교', '어느 게 올바른지 판단', '올바른 URL 입력 후 저장', '크로스체크 실행 후 데이터 쌓임'],
+    },
+    NOT_FOUND: {
+      title: '⚫ 못찾음',
+      color: '#f3f4f6',
+      border: '#d1d5db',
+      textColor: '#374151',
+      desc: '구글 Places에서 해당 업체를 아예 찾지 못한 경우예요. 구글 맵에 등록되지 않은 소규모 공장일 가능성이 높아요.',
+      steps: ['올바른 website를 알면 입력 후 저장', '모르면 그냥 두어도 됨 (사진/별점 없이 유지)', '초기화 버튼으로 재시도 가능'],
+    },
+    HIDDEN: {
+      title: '🔒 히든',
+      color: '#f0fdf4',
+      border: '#86efac',
+      textColor: '#166534',
+      desc: '구글 주소 불일치로 자동 숨김 처리된 공장들이에요. 사이트에서 보이지 않는 상태예요.',
+      steps: ['올바른 website 입력 후 ✅ 복원 클릭 → 다음 수집 시 재수집', '찾기 어려우면 ❌ 영구제외로 정리'],
+    },
+    전체: {
+      title: '📋 전체 보기',
+      color: '#eff6ff',
+      border: '#93c5fd',
+      textColor: '#1e40af',
+      desc: '매장주소 불일치 / 도메인 불일치 / 못찾음 업체를 모두 함께 보여줘요.',
+      steps: ['각 필터 탭을 눌러 유형별로 관리하세요', '올바른 website 입력 후 저장하면 자동 재수집', '수집 실행은 아래 PowerShell 명령어 복사 후 실행'],
+    },
+  };
+  const guide = GUIDE[filter] || GUIDE['전체'];
+
   return (
     <div style={{padding:24}}>
+      <div style={{display:'flex', gap:20}}>
+      {/* 왼쪽 메인 영역 */}
+      <div style={{flex:1, minWidth:0}}>
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
         <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
         <div style={{display:'flex', gap:8}}>
@@ -9787,6 +9835,51 @@ const AdminGoogleMismatchTab = () => {
         </div>
       )}
       {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
+      </div>{/* 왼쪽 끝 */}
+
+      {/* 오른쪽 가이드 패널 */}
+      <div style={{width:240, flexShrink:0}}>
+        <div style={{
+          background: guide.color,
+          border: `1.5px solid ${guide.border}`,
+          borderRadius:12, padding:'16px',
+          position:'sticky', top:20,
+        }}>
+          <div style={{fontSize:14, fontWeight:700, color: guide.textColor, marginBottom:8}}>{guide.title}</div>
+          <p style={{fontSize:12, color: guide.textColor, lineHeight:1.6, marginBottom:12, opacity:0.85}}>{guide.desc}</p>
+          <div style={{fontSize:11, fontWeight:700, color: guide.textColor, marginBottom:6, opacity:0.7}}>처리 방법</div>
+          <ol style={{margin:0, padding:'0 0 0 16px', display:'flex', flexDirection:'column', gap:6}}>
+            {guide.steps.map((s, i) => (
+              <li key={i} style={{fontSize:11, color: guide.textColor, lineHeight:1.5, opacity:0.85}}>{s}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div style={{marginTop:12, background:'#f8fafc', border:'1px solid var(--line)', borderRadius:10, padding:'12px 14px'}}>
+          <div style={{fontSize:11, fontWeight:700, color:'var(--ink-2)', marginBottom:8}}>🔍 빠른 필터</div>
+          <div style={{display:'flex', flexDirection:'column', gap:6}}>
+            {[
+              {label:'🔴 구글 주소 불일치', key:'ADDR_MISMATCH'},
+              {label:'🟡 도메인 불일치', key:'CROSS_MISMATCH'},
+              {label:'⚫ 못찾음', key:'NOT_FOUND'},
+              {label:'🔒 히든', key:'HIDDEN'},
+            ].map(item => (
+              <button key={item.key}
+                onClick={() => setFilter(item.key)}
+                style={{
+                  display:'flex', justifyContent:'space-between',
+                  padding:'6px 10px', borderRadius:6, border:'1px solid var(--line)',
+                  background: filter === item.key ? 'var(--brand)' : '#fff',
+                  color: filter === item.key ? '#fff' : 'var(--ink-2)',
+                  fontSize:11, cursor:'pointer', fontWeight:500, textAlign:'left',
+                }}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      </div>{/* flex 끝 */}
     </div>
   );
 };
