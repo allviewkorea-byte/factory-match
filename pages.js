@@ -1310,7 +1310,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
 
         {loading && (
           <div className="home-search-loading">
-            <span className="home-loading-spinner"/>
+            <GearSpinner size={36} style={{marginRight:8}}/>
             <span>AI가 분석 중…</span>
           </div>
         )}
@@ -2707,7 +2707,24 @@ function FactoryMap({ addr, name, lat, lng }) {
   );
 }
 
-// ── 공장 히어로 이미지: 구글사진 → Street View → Static Map → 색상 박스 ─────────────────
+// ── Lottie 기어 스피너 ─────────────────────────────────────────────────────
+const GearSpinner = ({ size = 80, style = {} }) => (
+  React.createElement('dotlottie-player', {
+    src: '/Gear.lottie',
+    autoplay: true,
+    loop: true,
+    style: { width: size, height: size, ...style },
+  })
+);
+
+const GearSpinnerCenter = ({ size = 80, message = '' }) => (
+  React.createElement('div', {
+    style: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding: 40 }
+  },
+    React.createElement(GearSpinner, { size }),
+    message && React.createElement('p', { style: { fontSize: 13, color: 'var(--ink-3)', marginTop: 8 } }, message)
+  )
+);
 const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
 const FactoryHeroImg = ({ f, selectedPhoto, onPhotoClick }) => {
@@ -2902,7 +2919,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     if (tab === 'capability' && _procLabels.length === 0 && (_f.materials || []).length === 0 && _prodLabels.length === 0) setTab('overview');
   }, [factoryId]);
 
-  if (!f) return <div className="detail-loading-spinner" style={{ margin:'20vh auto' }}/>;
+  if (!f) return <GearSpinnerCenter size={100} message="제조사 정보를 불러오는 중..." style={{ margin:'20vh auto' }}/>;
 
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
@@ -2999,7 +3016,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     return (
       <div className="page page-detail">
         <div className="detail-loading">
-          <div className="detail-loading-spinner"/>
+          <GearSpinnerCenter size={80} message="불러오는 중..."/>
           <span className="detail-loading-text">공장 정보를 불러오는 중...</span>
         </div>
       </div>
@@ -7533,7 +7550,7 @@ const AdminReportsTab = () => {
       </div>
 
       <div className="admin-reports-list">
-        {loading && <div className="admin-reports-loading">로딩 중...</div>}
+        {loading && <GearSpinnerCenter size={60} message="로딩 중..."/>}
         {error && <div className="admin-reports-error">{error}</div>}
         {!loading && !error && reports.length === 0 && (
           <div className="admin-reports-empty">{STATUS_LABELS[activeStatus]} 상태의 신고가 없습니다.</div>
@@ -7859,7 +7876,7 @@ const AdminSignupTab = () => {
         ))}
       </div>
 
-      {loading && <div className="asgn-state-msg">로딩 중…</div>}
+      {loading && <GearSpinnerCenter size={60} message="로딩 중…"/>}
       {error && <div className="asgn-state-msg asgn-error">{error}</div>}
       {!loading && !error && signups.length === 0 && (
         <div className="asgn-state-msg">해당 상태의 신청이 없습니다.</div>
@@ -8598,7 +8615,7 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
           </thead>
           <tbody>
             {loading && rows.length === 0 ? (
-              <tr><td colSpan="8" className="admin-table-empty">로딩 중…</td></tr>
+              <tr><td colSpan="8" className="admin-table-empty"><GearSpinnerCenter size={50} message="로딩 중…"/></td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan="8" className="admin-table-empty">검색 결과가 없습니다</td></tr>
             ) : rows.map(f => (
@@ -9576,7 +9593,7 @@ const AdminHiddenTab = () => {
       </div>
 
       {loading ? (
-        <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
+        <GearSpinnerCenter size={80} message='데이터를 불러오는 중...'/>
       ) : items.length === 0 ? (
         <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>숨김 처리된 공장이 없어요!</div>
       ) : (
@@ -9847,7 +9864,7 @@ const AdminGoogleMismatchTab = () => {
 
           {/* 테이블 */}
           {loading ? (
-            <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
+            <GearSpinnerCenter size={80} message='데이터를 불러오는 중...'/>
           ) : filteredItems.length === 0 ? (
             <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>목록이 비어있어요! 🎉</div>
           ) : (
