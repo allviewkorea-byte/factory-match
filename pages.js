@@ -9507,7 +9507,7 @@ const AdminHiddenTab = () => {
               </tr>
             </thead>
             <tbody>
-              {items.map(f => (
+              {filteredItems.map(f => (
                 <tr key={f.id}>
                   <td><strong>{f.name}</strong></td>
                   <td style={{fontSize:12, color:'var(--ink-3)'}}>{f.city}</td>
@@ -9555,9 +9555,14 @@ const AdminGoogleMismatchTab = () => {
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState('ADDR_MISMATCH');
+  const [search, setSearch] = React.useState('');
   const [websiteInputs, setWebsiteInputs] = React.useState({});
   const [saving, setSaving] = React.useState({});
   const [toast, setToast] = React.useState('');
+
+  const filteredItems = search.trim()
+    ? items.filter(f => f.name.includes(search.trim()))
+    : items;
 
   const load = async () => {
     setLoading(true);
@@ -9642,6 +9647,22 @@ const AdminGoogleMismatchTab = () => {
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
         </div>
+      </div>
+
+      <div style={{display:'flex', gap:8, marginBottom:12}}>
+        <input
+          type="text"
+          placeholder="회사명 검색..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{flex:1, padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13}}
+        />
+        {search && (
+          <button onClick={() => setSearch('')}
+            style={{padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13, background:'#fff', cursor:'pointer', color:'var(--ink-3)'}}>
+            ✕ 초기화
+          </button>
+        )}
       </div>
 
       <p style={{fontSize:12, color:'var(--ink-3)', marginBottom:12}}>
