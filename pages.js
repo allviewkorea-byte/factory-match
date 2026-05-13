@@ -75,6 +75,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
             else onNav('home');
           }}>
             <img src="/logo.svg" alt="공장매칭 FactoryMatch" className="hdr-logo-img" />
+            <img src="/logo-text.png" alt="공장매칭" className="hdr-logo-text" />
           </button>
           <nav className="hdr-nav">
             {navItems.map(n => (
