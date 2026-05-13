@@ -70,6 +70,9 @@ SUBPAGES = [
     "/about", "/about-us", "/company",
     "/inquiry", "/support",
     "/문의", "/연락처", "/회사소개", "/contact.html",
+    "/introduce", "/info", "/greeting",
+    "/sub/contact", "/sub/about", "/page/contact",
+    "/회사안내", "/오시는길", "/고객문의",
 ]
 
 
