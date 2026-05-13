@@ -9605,6 +9605,9 @@ const AdminGoogleMismatchTab = () => {
       google_reviews: null,
       google_photos: null,
       google_review_texts: null,
+      google_website: null,
+      naver_website: null,
+      website_verified: null,
       ai_summary: null,
     };
     // 히든 필터에서 저장 시 hidden=false로 복원
