@@ -9102,7 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-          { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+          { id: 'google_mismatch', label: '검증 필요', desc: '구글 매장주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9126,7 +9126,7 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-        { id: 'google_mismatch', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+        { id: 'google_mismatch', desc: '구글 매장주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9487,7 +9487,7 @@ const AdminHiddenTab = () => {
       </div>
 
       <div style={{background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:12, color:'#9a3412'}}>
-        ⚠️ 주소불일치로 자동 숨김 처리된 공장들이에요. 올바른 website 입력 후 <strong>복원</strong>하면 다음 수집 시 정상 재수집됩니다. 찾기 어려우면 <strong>영구 제외</strong>로 정리하세요.
+        ⚠️ 매장주소 불일치로 자동 숨김 처리된 공장들이에요. 올바른 website 입력 후 <strong>복원</strong>하면 다음 수집 시 정상 재수집됩니다. 찾기 어려우면 <strong>영구 제외</strong>로 정리하세요.
       </div>
 
       {loading ? (
@@ -9642,7 +9642,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
+              {f === 'ADDR_MISMATCH' ? '🔴 매장주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
@@ -9723,7 +9723,7 @@ const AdminGoogleMismatchTab = () => {
                       background: f.google_place_id === 'ADDR_MISMATCH' ? '#fee2e2' : f.website_verified === false ? '#fef9c3' : '#f3f4f6',
                       color: f.google_place_id === 'ADDR_MISMATCH' ? '#dc2626' : f.website_verified === false ? '#854d0e' : '#6b7280',
                     }}>
-                      {f.google_place_id === 'ADDR_MISMATCH' ? '주소불일치' : f.website_verified === false ? '도메인불일치' : '못찾음'}
+                      {f.google_place_id === 'ADDR_MISMATCH' ? '매장주소 불일치' : f.website_verified === false ? '도메인불일치' : '못찾음'}
                     </span>
                   </td>
                   <td>
