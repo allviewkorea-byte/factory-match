@@ -9092,18 +9092,18 @@ const AdminPage = ({ onOpenFactory }) => {
 
       <nav className="admin-tabs">
         {[
-          { id: 'factories', label: '제조사 관리' },
-          { id: 'users',     label: '사용자' },
-          { id: 'rfq',       label: 'RFQ 모니터링' },
-          { id: 'logs',      label: '업로드 이력' },
-          { id: 'reports',   label: '신고 관리' },
-          { id: 'signups',   label: '가입 신청' },
-          { id: 'analytics', label: '통계' },
-          { id: 'visitors',  label: '비회원 활동' },
-          { id: 'grants',    label: '지원사업 관리' },
-          { id: 'dart',      label: 'DART 불일치' },
-          { id: 'google_mismatch', label: '구글 불일치' },
-          { id: 'automation', label: '🤖 자동 수집' },
+          { id: 'factories', label: '제조사 관리', desc: '전체 공장 목록 조회 및 편집. 회사명/주소/웹사이트/전화번호 수정 가능.' },
+          { id: 'users',     label: '사용자', desc: '가입된 사용자 목록. 바이어/제조사 역할 및 계정 상태 확인.' },
+          { id: 'rfq',       label: 'RFQ 모니터링', desc: '견적 요청 현황. 바이어가 제조사에 보낸 견적 요청 내역.' },
+          { id: 'logs',      label: '업로드 이력', desc: '데이터 업로드 기록.' },
+          { id: 'reports',   label: '신고 관리', desc: '사용자가 신고한 정보 오류 문의 목록.' },
+          { id: 'signups',   label: '가입 신청', desc: '제조사 소유권 인증 신청 목록. 사업자등록증 검토 후 승인.' },
+          { id: 'analytics', label: '통계', desc: '사이트 방문자 및 사용 통계.' },
+          { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
+          { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
+          { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
+          { id: 'google_mismatch', label: '구글 불일치', desc: '구글 Places 수집 시 주소가 불일치하거나 찾지 못한 업체. 올바른 홈페이지 URL을 입력하면 다음 수집 시 자동 재수집. 찾지 못할 경우 초기화 버튼으로 NULL 처리.' },
+          { id: 'automation', label: '🤖 자동 수집', desc: 'GitHub Actions를 통한 자동 데이터 수집. 버튼 클릭 시 서버에서 Python 스크립트 실행. 실행 로그는 GitHub Actions에서 확인.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9114,6 +9114,26 @@ const AdminPage = ({ onOpenFactory }) => {
           </button>
         ))}
       </nav>
+
+      {/* 탭 설명란 */}
+      {[
+        { id: 'factories', desc: '전체 공장 목록 조회 및 편집. 회사명/주소/웹사이트/전화번호 수정 가능.' },
+        { id: 'users',     desc: '가입된 사용자 목록. 바이어/제조사 역할 및 계정 상태 확인.' },
+        { id: 'rfq',       desc: '견적 요청 현황. 바이어가 제조사에 보낸 견적 요청 내역.' },
+        { id: 'logs',      desc: '데이터 업로드 기록.' },
+        { id: 'reports',   desc: '사용자가 신고한 정보 오류 문의 목록.' },
+        { id: 'signups',   desc: '제조사 소유권 인증 신청 목록. 사업자등록증 검토 후 승인.' },
+        { id: 'analytics', desc: '사이트 방문자 및 사용 통계.' },
+        { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
+        { id: 'grants',    desc: '정부지원금 공고 관리.' },
+        { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
+        { id: 'google_mismatch', desc: '구글 Places 수집 시 주소 불일치 또는 못 찾은 업체. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집. 찾지 못할 경우 초기화 버튼으로 재시도하거나 그냥 두면 됨.' },
+        { id: 'automation', desc: 'GitHub Actions를 통한 자동 데이터 수집. 버튼 클릭 시 서버에서 Python 스크립트 실행. 실행 로그는 GitHub Actions에서 확인 가능.' },
+      ].filter(t => t.id === tab).map(t => (
+        <div key={t.id} className="admin-tab-desc">
+          ℹ️ {t.desc}
+        </div>
+      ))}
 
       {tab === 'factories' && <AdminFactoriesTab onOpenFactory={onOpenFactory}/>}
 
