@@ -101,6 +101,9 @@ _SKIP_DOMAINS = {
     "ksnara.or.kr", "smes.go.kr", "sajo.co.kr", "thevc.kr",
     "book.mcst.go.kr", "kukak21.com", "dept.yeonsung.ac.kr",
     "bigmycn.com", "thinkzon.com",
+    # 호스팅 기본 페이지
+    "freehome.gabia.com", "gabia.com", "cafe24.com", "hosting.kr",
+    "iwinv.kr", "whoishosting.com", "dothome.co.kr", "imweb.me",
 }
 
 

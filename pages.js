@@ -9816,6 +9816,30 @@ const AdminGoogleMismatchTab = () => {
                           ❌ 영구제외
                         </button>
                       </>
+                    ) : filter === 'PENDING' ? (
+                      <>
+                        <button
+                          onClick={() => saveWebsite(f.id)}
+                          disabled={!websiteInputs[f.id] || saving[f.id]}
+                          style={{
+                            padding:'4px 10px', fontSize:11, fontWeight:600,
+                            background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
+                            color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
+                            border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
+                          }}>
+                          {saving[f.id] ? '저장중' : '수정'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await SB.from('factories').update({ website: null }).eq('id', f.id);
+                            setToast('잘못된 website 제거됐어요. 다음 수집 시 재수집됩니다.');
+                            setTimeout(() => setToast(''), 3000);
+                            load();
+                          }}
+                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
+                          ❌ 잘못됨
+                        </button>
+                      </>
                     ) : (
                       <>
                         <button
