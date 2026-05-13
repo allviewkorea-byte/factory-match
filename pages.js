@@ -9508,9 +9508,32 @@ const AdminGoogleMismatchTab = () => {
         </div>
       </div>
 
-      <p style={{fontSize:12, color:'var(--ink-3)', marginBottom:16}}>
+      <p style={{fontSize:12, color:'var(--ink-3)', marginBottom:12}}>
         올바른 홈페이지 URL을 입력하고 저장하면 구글 데이터가 초기화되고 다음 수집 시 자동으로 재수집돼요.
       </p>
+
+      {/* PowerShell 명령어 */}
+      <div style={{background:'#1e1e2e', borderRadius:10, padding:'14px 16px', marginBottom:16}}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+          <span style={{fontSize:12, color:'#a6accd', fontWeight:600}}>💻 수집 실행 명령어 (PowerShell)</span>
+          <button
+            onClick={() => {
+              const cmd = `cd C:\\Users\\micro\\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`;
+              navigator.clipboard.writeText(cmd);
+              alert('복사됐어요! PowerShell에 붙여넣기 하세요.');
+            }}
+            style={{padding:'4px 10px', fontSize:11, background:'#6c63ff', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', fontWeight:600}}
+          >
+            📋 복사
+          </button>
+        </div>
+        <code style={{fontSize:11, color:'#cdd6f4', lineHeight:1.8, display:'block', whiteSpace:'pre-wrap', wordBreak:'break-all'}}>
+{`cd C:\\Users\\micro\\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`}
+        </code>
+        <div style={{marginTop:8, fontSize:11, color:'#6c7086'}}>
+          ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일
+        </div>
+      </div>
 
       {loading ? (
         <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
