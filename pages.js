@@ -395,12 +395,7 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
             <div className="mcard-icon">{getCardIcon(f)}</div>
           </>
         )}
-        {f.google_rating && (
-          <div className="mcard-rating-badge">
-            <span className="mcard-rating-star">★</span>
-            <span className="mcard-rating-score">{f.google_rating}</span>
-          </div>
-        )}
+
       </div>
       <button className="mcard-body" onClick={() => onOpen?.(f.id)}>
         <div className="mcard-head">
@@ -424,6 +419,12 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
               <Icon name="star" size={12} stroke={2}/>
               <strong>{f.rating}</strong>
               {f.reviews > 0 && <span>({f.reviews})</span>}
+            </div>
+          )}
+          {f.google_rating && (
+            <div className="mcard-rating" style={{background:'#fff7ed', color:'#b45309'}}>
+              <span style={{color:'#f59e0b', fontSize:12}}>★</span>
+              <strong>{f.google_rating}</strong>
             </div>
           )}
         </div>
@@ -2067,7 +2068,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         .not('lat', 'is', null).not('lng', 'is', null)
         .limit(1000)
         .then(({ data }) => {
-          if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.coord != null));
+          if (mounted && data) setGeoFactories(data.map(window._dbRowToFactory).filter(f => f.lat != null && f.lng != null));
         }).catch(() => {});
     } else {
       const GEO_PAGE = 1000;
@@ -2081,12 +2082,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         const { data, error } = await q;
         if (!mounted) return;
         if (error || !data || data.length === 0) {
-          setGeoFactories(acc.map(window._dbRowToFactory).filter(f => f.coord != null));
+          setGeoFactories(acc.map(window._dbRowToFactory).filter(f => f.lat != null && f.lng != null));
           return;
         }
         const next = [...acc, ...data];
         if (data.length < GEO_PAGE) {
-          setGeoFactories(next.map(window._dbRowToFactory).filter(f => f.coord != null));
+          setGeoFactories(next.map(window._dbRowToFactory).filter(f => f.lat != null && f.lng != null));
         } else {
           loadGeoPage(from + GEO_PAGE, next);
         }
