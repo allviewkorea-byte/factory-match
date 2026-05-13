@@ -3763,7 +3763,19 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
 // ══════════════════════════════════════════════════════════
 const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
   const { FACTORIES, PROCESSES } = window.MFG_DATA;
-  const selected = FACTORIES.filter(f => rfqIds.includes(f.id));
+  const [dbFactories, setDbFactories] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!rfqIds || rfqIds.length === 0) return;
+    // DB에서 실제 공장 데이터 로드
+    window._sb.from('factories').select('*').in('id', rfqIds).then(({ data }) => {
+      if (data) setDbFactories(data.map(window._dbRowToFactory));
+    });
+  }, [rfqIds.join(',')]);
+
+  // 샘플 + DB 공장 합쳐서 선택된 것 찾기
+  const allFactories = [...FACTORIES, ...dbFactories];
+  const selected = allFactories.filter(f => rfqIds.includes(f.id));
   const [step, setStep] = useStateP(1);
   const [form, setForm] = useStateP({
     title: '',
