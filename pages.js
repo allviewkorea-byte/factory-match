@@ -9102,7 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-          { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+          { id: 'google_mismatch', label: '검증 필요', desc: '수집 대기(website 없음/하나만 있음/구글 주소 불일치)와 도메인 불일치 공장 관리. 정상/수정/제외로 처리하세요.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9126,7 +9126,7 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-        { id: 'google_mismatch', desc: '구글 주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+        { id: 'google_mismatch', desc: '수집 대기(website 없음/하나만 있음/구글 주소 불일치)와 도메인 불일치 공장 관리. 정상/수정/제외로 처리하세요.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9552,53 +9552,64 @@ const AdminHiddenTab = () => {
 // ─── AdminGoogleMismatchTab ────────────────────────────────────────────────
 const AdminGoogleMismatchTab = () => {
   const SB = window._sb;
+  const [tab, setTab] = React.useState('pending'); // pending | domain
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [filter, setFilter] = React.useState('PENDING');
   const [search, setSearch] = React.useState('');
-  const [websiteInputs, setWebsiteInputs] = React.useState({});
+  const [editing, setEditing] = React.useState({}); // 수정 모드
+  const [inputs, setInputs] = React.useState({});   // 입력값
   const [saving, setSaving] = React.useState({});
   const [toast, setToast] = React.useState('');
 
   const filteredItems = React.useMemo(() =>
-    search.trim() ? items.filter(f => f.name.includes(search.trim())) : items
+    search.trim() ? items.filter(f => (f.name || '').includes(search.trim())) : items
   , [items, search]);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const load = async () => {
     setLoading(true);
     let query = SB.from('factories')
-      .select('id,name,city,region,address,website,naver_website,google_website,google_place_id,google_rating,google_reviews,website_verified')
-      .order('name');
+      .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
+      .order('name')
+      .limit(200);
 
-    if (filter === 'HIDDEN') {
-      query = query.eq('hidden', true);
-    } else if (filter === 'PENDING') {
-      query = query.eq('hidden', false).is('google_place_id', null).not('website', 'is', null);
+    if (tab === 'pending') {
+      // 수집 대기: website없음 OR 네이버만OR구글만 + 구글주소불일치 히든
+      query = query.or(
+        'website.is.null,naver_website.is.null,google_website.is.null,google_place_id.eq.ADDR_MISMATCH'
+      ).neq('website', 'EXCLUDED');
     } else {
-      query = query.eq('hidden', false);
-      if (filter === 'ADDR_MISMATCH') {
-        query = query.eq('google_place_id', 'ADDR_MISMATCH');
-      } else if (filter === 'CROSS_MISMATCH') {
-        query = query.eq('website_verified', false);
-      } else if (filter === 'NOT_FOUND') {
-        query = query.eq('google_place_id', 'NOT_FOUND');
-      } else {
-        query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND,website_verified.eq.false');
-      }
+      // 도메인 불일치: 크로스체크 후 불일치
+      query = query.eq('website_verified', false).eq('hidden', false);
     }
 
-    const { data } = await query.limit(100);
+    const { data } = await query;
     setItems(data || []);
     setLoading(false);
   };
 
-  React.useEffect(() => { load(); }, [filter]);
+  React.useEffect(() => { load(); }, [tab]);
 
-  const saveWebsite = async (id) => {
-    const url = websiteInputs[id] || '';
+  // ✅ 정상: website_verified=true + ai_summary=NULL → 다음 수집 대상
+  const markNormal = async (f) => {
+    setSaving(s => ({...s, [f.id]: 'normal'}));
+    await SB.from('factories').update({
+      website_verified: true,
+      ai_summary: null,
+      hidden: false,
+    }).eq('id', f.id);
+    setSaving(s => ({...s, [f.id]: null}));
+    showToast('정상 처리됐어요! 다음 수집 시 AI요약 + 이메일수집 됩니다.');
+    load();
+  };
+
+  // ✏️ 수정 후 저장: website 교체, 탭 유지
+  const saveEdit = async (f) => {
+    const url = inputs[f.id] || '';
     if (!url) return;
-    setSaving(s => ({ ...s, [id]: true }));
-    const updateData = {
+    setSaving(s => ({...s, [f.id]: 'save'}));
+    await SB.from('factories').update({
       website: url,
       google_place_id: null,
       google_rating: null,
@@ -9609,314 +9620,188 @@ const AdminGoogleMismatchTab = () => {
       naver_website: null,
       website_verified: null,
       ai_summary: null,
-    };
-    // 히든 필터에서 저장 시 hidden=false로 복원
-    if (filter === 'HIDDEN') updateData.hidden = false;
-    await SB.from('factories').update(updateData).eq('id', id);
-    setSaving(s => ({ ...s, [id]: false }));
-    setToast(filter === 'HIDDEN' ? '복원 완료! 다음 수집 시 재수집됩니다.' : '저장 완료! 다음 수집 시 자동 재수집됩니다.');
-    setTimeout(() => setToast(''), 3000);
+      hidden: false,
+    }).eq('id', f.id);
+    setSaving(s => ({...s, [f.id]: null}));
+    setEditing(e => ({...e, [f.id]: false}));
+    showToast('저장됐어요! 탭에서 유지되며 다음 수집 후 재판단하세요.');
     load();
   };
 
-  const resetGoogle = async (id) => {
-    await SB.from('factories').update({
-      google_place_id: null,
-      google_rating: null,
-      google_reviews: null,
-      google_photos: null,
-      google_review_texts: null,
-    }).eq('id', id);
-    setToast('구글 데이터 초기화 완료');
-    setTimeout(() => setToast(''), 3000);
+  // ❌ 제외
+  const exclude = async (id) => {
+    await SB.from('factories').update({ website: 'EXCLUDED' }).eq('id', id);
+    showToast('영구 제외됐어요.');
     load();
   };
 
-  // 사용법 가이드
-  const GUIDE = {
-    PENDING: {
-      title: '🟢 수집 대기',
-      color: '#f0fdf4',
-      border: '#86efac',
-      textColor: '#166534',
-      desc: 'website는 있지만 아직 구글 수집이 안 된 공장들이에요. 다음 수집 실행 시 자동으로 처리돼요.',
-      steps: ['website가 올바른지 확인', '잘못됐으면 올바른 URL로 수정 후 저장', '수집 명령어 실행하면 자동 처리'],
-    },
-    ADDR_MISMATCH: {
-      title: '🔴 구글 주소 불일치',
-      color: '#fee2e2',
-      border: '#fca5a5',
-      textColor: '#991b1b',
-      desc: '구글에서 같은 회사명을 찾았지만 구글이 찾은 업체 주소가 DB 주소와 달라서 거부된 업체예요.',
-      steps: ['구글에서 올바른 홈페이지 검색', '올바른 website URL 입력 후 저장', '다음 수집 실행 시 자동 재수집', '찾기 어려우면 초기화 버튼 클릭'],
-    },
-    CROSS_MISMATCH: {
-      title: '🟡 도메인 불일치',
-      color: '#fef9c3',
-      border: '#fde047',
-      textColor: '#854d0e',
-      desc: '네이버에서 찾은 website 도메인과 구글에서 찾은 website 도메인이 서로 달라서 신뢰도가 낮은 업체예요.',
-      steps: ['네이버/구글 website 두 개를 비교', '어느 게 올바른지 판단', '올바른 URL 입력 후 저장', '크로스체크 실행 후 데이터 쌓임'],
-    },
-    NOT_FOUND: {
-      title: '⚫ 못찾음',
-      color: '#f3f4f6',
-      border: '#d1d5db',
-      textColor: '#374151',
-      desc: '구글 Places에서 해당 업체를 아예 찾지 못한 경우예요. 구글 맵에 등록되지 않은 소규모 공장일 가능성이 높아요.',
-      steps: ['올바른 website를 알면 입력 후 저장', '모르면 그냥 두어도 됨 (사진/별점 없이 유지)', '초기화 버튼으로 재시도 가능'],
-    },
-    HIDDEN: {
-      title: '🔒 히든',
-      color: '#f0fdf4',
-      border: '#86efac',
-      textColor: '#166534',
-      desc: '구글 주소 불일치로 자동 숨김 처리된 공장들이에요. 사이트에서 보이지 않는 상태예요.',
-      steps: ['올바른 website 입력 후 ✅ 복원 클릭 → 다음 수집 시 재수집', '찾기 어려우면 ❌ 영구제외로 정리'],
-    },
-    전체: {
-      title: '📋 전체 보기',
-      color: '#eff6ff',
-      border: '#93c5fd',
-      textColor: '#1e40af',
-      desc: '매장주소 불일치 / 도메인 불일치 / 못찾음 업체를 모두 함께 보여줘요.',
-      steps: ['각 필터 탭을 눌러 유형별로 관리하세요', '올바른 website 입력 후 저장하면 자동 재수집', '수집 실행은 아래 PowerShell 명령어 복사 후 실행'],
-    },
-  };
-  const guide = GUIDE[filter] || GUIDE['전체'];
+  const TABS = [
+    { id: 'pending', label: '🟢 수집 대기', desc: 'website 없음 / 네이버·구글 중 하나만 있음 / 구글 주소 불일치 히든 공장. 상호명으로 올바른 사이트를 찾아 정상 처리하거나 제외하세요.' },
+    { id: 'domain', label: '🟡 도메인 불일치', desc: '네이버와 구글이 찾은 website 도메인이 서로 달라 크로스체크 불일치된 공장. 어느 쪽이 맞는지 판단 후 정상 처리하세요.' },
+  ];
+  const currentTab = TABS.find(t => t.id === tab);
 
   return (
     <div style={{padding:24}}>
       <div style={{display:'flex', gap:20}}>
-      {/* 왼쪽 메인 영역 */}
-      <div style={{flex:1, minWidth:0}}>
-      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
-        <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
-        <div style={{display:'flex', gap:8}}>
-          {['PENDING', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
-            <button key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding:'6px 12px', borderRadius:6, fontSize:12, fontWeight:600,
-                border: '1.5px solid', cursor:'pointer',
-                background: filter === f ? 'var(--brand)' : '#fff',
-                color: filter === f ? '#fff' : 'var(--ink-2)',
-                borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
-              }}>
-              {f === 'PENDING' ? '🟢 수집 대기' : f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '🔒 히든'}
-            </button>
-          ))}
-          <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
-        </div>
-      </div>
+        {/* 왼쪽 메인 */}
+        <div style={{flex:1, minWidth:0}}>
+          <h2 style={{fontSize:18, fontWeight:700, marginBottom:16}}>검증 필요 관리</h2>
 
-      <div style={{display:'flex', gap:8, marginBottom:12}}>
-        <input
-          type="text"
-          placeholder="회사명 검색..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{flex:1, padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13}}
-        />
-        {search && (
-          <button onClick={() => setSearch('')}
-            style={{padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13, background:'#fff', cursor:'pointer', color:'var(--ink-3)'}}>
-            ✕ 초기화
-          </button>
-        )}
-      </div>
-
-      <p style={{fontSize:12, color:'var(--ink-3)', marginBottom:12}}>
-        올바른 홈페이지 URL을 입력하고 저장하면 구글 데이터가 초기화되고 다음 수집 시 자동으로 재수집돼요.
-      </p>
-
-      {/* PowerShell 명령어 */}
-      <div style={{background:'#1e1e2e', borderRadius:10, padding:'14px 16px', marginBottom:16}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
-          <span style={{fontSize:12, color:'#a6accd', fontWeight:600}}>💻 수집 실행 명령어 (PowerShell)</span>
-          <button
-            onClick={() => {
-              const cmd = `cd C:\\Users\\micro\\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`;
-              navigator.clipboard.writeText(cmd);
-              alert('복사됐어요! PowerShell에 붙여넣기 하세요.');
-            }}
-            style={{padding:'4px 10px', fontSize:11, background:'#6c63ff', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', fontWeight:600}}
-          >
-            📋 복사
-          </button>
-        </div>
-        <code style={{fontSize:11, color:'#cdd6f4', lineHeight:1.8, display:'block', whiteSpace:'pre-wrap', wordBreak:'break-all'}}>
-{`cd C:\\Users\\micro\\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`}
-        </code>
-        <div style={{marginTop:8, fontSize:12, color:'#f5c842', fontWeight:700, letterSpacing:'0.02em'}}>
-          ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지)
-        </div>
-      </div>
-
-      {loading ? (
-        <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
-      ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>회사명</th>
-                {filter === 'ADDR_MISMATCH' || filter === 'HIDDEN' ? <><th>DB 주소</th></> : <><th>네이버 website</th><th>구글 website</th></>}
-                <th style={{minWidth:200}}>올바른 website 입력</th>
-                <th>조치</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map(f => (
-                <tr key={f.id}>
-                  <td><strong>{f.name}</strong><div style={{fontSize:11,color:'var(--ink-3)'}}>{f.city}</div></td>
-                  {filter === 'ADDR_MISMATCH' || filter === 'HIDDEN' ? (
-                    <td style={{fontSize:12, color:'var(--ink-2)'}}>{f.address || [f.region, f.city].filter(Boolean).join(' ')}</td>
-                  ) : (
-                    <>
-                      <td style={{fontSize:11, maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                        {f.naver_website || f.website
-                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '')}</a>
-                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
-                      </td>
-                      <td style={{fontSize:11, maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                        {f.google_website
-                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '')}</a>
-                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
-                      </td>
-                    </>
-                  )}
-                  <td>
-                    <input
-                      type="text"
-                      placeholder="https://..."
-                      value={websiteInputs[f.id] || ''}
-                      onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
-                      style={{width:'100%', minWidth:160, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
-                    />
-                  </td>
-                  <td style={{display:'flex', gap:4}}>
-                    {filter === 'HIDDEN' ? (
-                      <>
-                        <button
-                          onClick={() => saveWebsite(f.id)}
-                          disabled={!websiteInputs[f.id] || saving[f.id]}
-                          style={{
-                            padding:'4px 10px', fontSize:11, fontWeight:600,
-                            background: '#16a34a', color: '#fff',
-                            border:'none', borderRadius:5,
-                            cursor: websiteInputs[f.id] ? 'pointer' : 'default',
-                            opacity: websiteInputs[f.id] ? 1 : 0.4,
-                          }}>
-                          {saving[f.id] ? '처리중' : '✅ 복원'}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await SB.from('factories').update({ google_place_id: 'EXCLUDED' }).eq('id', f.id);
-                            load();
-                          }}
-                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
-                          ❌ 영구제외
-                        </button>
-                      </>
-                    ) : filter === 'PENDING' ? (
-                      <>
-                        <button
-                          onClick={() => saveWebsite(f.id)}
-                          disabled={!websiteInputs[f.id] || saving[f.id]}
-                          style={{
-                            padding:'4px 10px', fontSize:11, fontWeight:600,
-                            background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
-                            color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
-                            border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
-                          }}>
-                          {saving[f.id] ? '저장중' : '수정'}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await SB.from('factories').update({ website: 'EXCLUDED' }).eq('id', f.id);
-                            setToast('제외 처리됐어요. 앞으로 website 재수집하지 않아요.');
-                            setTimeout(() => setToast(''), 3000);
-                            load();
-                          }}
-                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
-                          ❌ 제외
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => saveWebsite(f.id)}
-                          disabled={!websiteInputs[f.id] || saving[f.id]}
-                          style={{
-                            padding:'4px 10px', fontSize:11, fontWeight:600,
-                            background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
-                            color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
-                            border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
-                          }}>
-                          {saving[f.id] ? '저장중' : '저장'}
-                        </button>
-                        <button
-                          onClick={() => resetGoogle(f.id)}
-                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid var(--line)', borderRadius:5, cursor:'pointer', color:'var(--ink-3)'}}>
-                          초기화
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
-      </div>{/* 왼쪽 끝 */}
-
-      {/* 오른쪽 가이드 패널 */}
-      <div style={{width:240, flexShrink:0}}>
-        <div style={{
-          background: guide.color,
-          border: `1.5px solid ${guide.border}`,
-          borderRadius:12, padding:'16px',
-          position:'sticky', top:20,
-        }}>
-          <div style={{fontSize:14, fontWeight:700, color: guide.textColor, marginBottom:8}}>{guide.title}</div>
-          <p style={{fontSize:12, color: guide.textColor, lineHeight:1.6, marginBottom:12, opacity:0.85}}>{guide.desc}</p>
-          <div style={{fontSize:11, fontWeight:700, color: guide.textColor, marginBottom:6, opacity:0.7}}>처리 방법</div>
-          <ol style={{margin:0, padding:'0 0 0 16px', display:'flex', flexDirection:'column', gap:6}}>
-            {guide.steps.map((s, i) => (
-              <li key={i} style={{fontSize:11, color: guide.textColor, lineHeight:1.5, opacity:0.85}}>{s}</li>
+          {/* 탭 버튼 */}
+          <div style={{display:'flex', gap:8, marginBottom:16}}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding:'8px 16px', borderRadius:8, fontSize:13, fontWeight:600,
+                border:'2px solid', cursor:'pointer',
+                background: tab === t.id ? 'var(--brand)' : '#fff',
+                color: tab === t.id ? '#fff' : 'var(--ink-2)',
+                borderColor: tab === t.id ? 'var(--brand)' : 'var(--line)',
+              }}>{t.label}</button>
             ))}
-          </ol>
-        </div>
+            <button onClick={load} style={{marginLeft:'auto', padding:'8px 12px', borderRadius:8, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
+          </div>
 
-        <div style={{marginTop:12, background:'#f8fafc', border:'1px solid var(--line)', borderRadius:10, padding:'12px 14px'}}>
-          <div style={{fontSize:11, fontWeight:700, color:'var(--ink-2)', marginBottom:8}}>🔍 빠른 필터</div>
-          <div style={{display:'flex', flexDirection:'column', gap:6}}>
-            {[
-              {label:'🟢 수집 대기', key:'PENDING'},
-              {label:'🔴 구글 주소 불일치', key:'ADDR_MISMATCH'},
-              {label:'🟡 도메인 불일치', key:'CROSS_MISMATCH'},
-              {label:'⚫ 못찾음', key:'NOT_FOUND'},
-              {label:'🔒 히든', key:'HIDDEN'},
-            ].map(item => (
-              <button key={item.key}
-                onClick={() => setFilter(item.key)}
-                style={{
-                  display:'flex', justifyContent:'space-between',
-                  padding:'6px 10px', borderRadius:6, border:'1px solid var(--line)',
-                  background: filter === item.key ? 'var(--brand)' : '#fff',
-                  color: filter === item.key ? '#fff' : 'var(--ink-2)',
-                  fontSize:11, cursor:'pointer', fontWeight:500, textAlign:'left',
-                }}>
-                {item.label}
+          {/* 검색 */}
+          <div style={{display:'flex', gap:8, marginBottom:12}}>
+            <input type="text" placeholder="회사명 검색..." value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{flex:1, padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13}}/>
+            {search && <button onClick={() => setSearch('')}
+              style={{padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13, background:'#fff', cursor:'pointer', color:'var(--ink-3)'}}>✕</button>}
+          </div>
+
+          {/* PowerShell 명령어 */}
+          <div style={{background:'#1e1e2e', borderRadius:10, padding:'14px 16px', marginBottom:16}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+              <span style={{fontSize:12, color:'#a6accd', fontWeight:600}}>💻 수집 실행 명령어 (PowerShell)</span>
+              <button onClick={() => {
+                navigator.clipboard.writeText(`cd C:\\Users\\micro\\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`);
+                alert('복사됐어요! PowerShell에 붙여넣기 하세요.');
+              }} style={{padding:'4px 10px', fontSize:11, background:'#6c63ff', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', fontWeight:600}}>
+                📋 복사
               </button>
-            ))}
+            </div>
+            <code style={{fontSize:11, color:'#cdd6f4', lineHeight:1.8, display:'block', whiteSpace:'pre-wrap', wordBreak:'break-all'}}>
+{`cd C:\Users\micro\factory-match && git pull origin main && py enrich_geocode.py && py enrich_factoryon.py && py enrich_website_naver.py && py enrich_google_places.py && py enrich_crosscheck.py && py enrich_ai_summary.py && py enrich_email_only.py`}
+            </code>
+            <div style={{marginTop:8, fontSize:12, color:'#f5c842', fontWeight:700}}>
+              ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지)
+            </div>
+          </div>
+
+          {/* 테이블 */}
+          {loading ? (
+            <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
+          ) : filteredItems.length === 0 ? (
+            <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>목록이 비어있어요! 🎉</div>
+          ) : (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>상호</th>
+                    <th>현장주소</th>
+                    <th>네이버 웹페이지</th>
+                    <th>구글 웹페이지</th>
+                    <th>올바른 홈페이지 입력</th>
+                    <th>조치</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map(f => (
+                    <tr key={f.id}>
+                      <td><strong>{f.name || '-'}</strong><div style={{fontSize:11, color:'var(--ink-3)'}}>{f.city}</div></td>
+                      <td style={{fontSize:12, color:'var(--ink-2)', maxWidth:160}}>{f.address || [f.region, f.city].filter(Boolean).join(' ') || '-'}</td>
+                      <td style={{fontSize:11, maxWidth:130}}>
+                        {f.naver_website || f.website
+                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)', wordBreak:'break-all'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '')}</a>
+                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                      </td>
+                      <td style={{fontSize:11, maxWidth:130}}>
+                        {f.google_website
+                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a', wordBreak:'break-all'}}>{f.google_website.replace(/^https?:\/\//, '')}</a>
+                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                      </td>
+                      <td>
+                        {editing[f.id] ? (
+                          <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
+                            onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
+                            style={{width:'100%', minWidth:160, padding:'4px 8px', border:'1.5px solid var(--brand)', borderRadius:6, fontSize:12}}
+                            autoFocus/>
+                        ) : (
+                          <span style={{fontSize:11, color:'var(--ink-4)'}}>수정 버튼 클릭</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
+                          {/* ✅ 정상 */}
+                          <button onClick={() => markNormal(f)}
+                            disabled={saving[f.id]}
+                            style={{padding:'4px 10px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer'}}>
+                            {saving[f.id] === 'normal' ? '처리중' : '✅ 정상'}
+                          </button>
+                          {/* ✏️ 수정 / 저장 */}
+                          {editing[f.id] ? (
+                            <button onClick={() => saveEdit(f)}
+                              disabled={!inputs[f.id] || saving[f.id]}
+                              style={{padding:'4px 10px', fontSize:11, fontWeight:600,
+                                background: inputs[f.id] ? 'var(--brand)' : '#e5e7eb',
+                                color: inputs[f.id] ? '#fff' : 'var(--ink-4)',
+                                border:'none', borderRadius:5, cursor: inputs[f.id] ? 'pointer' : 'default'}}>
+                              {saving[f.id] === 'save' ? '저장중' : '저장'}
+                            </button>
+                          ) : (
+                            <button onClick={() => setEditing(e => ({...e, [f.id]: true}))}
+                              style={{padding:'4px 10px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer'}}>
+                              ✏️ 수정
+                            </button>
+                          )}
+                          {/* ❌ 제외 */}
+                          <button onClick={() => exclude(f.id)}
+                            style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
+                            ❌ 제외
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 오른쪽 가이드 */}
+        <div style={{width:220, flexShrink:0}}>
+          <div style={{
+            background: tab === 'pending' ? '#f0fdf4' : '#fef9c3',
+            border: `1.5px solid ${tab === 'pending' ? '#86efac' : '#fde047'}`,
+            borderRadius:12, padding:16, position:'sticky', top:20,
+          }}>
+            <div style={{fontSize:14, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:8}}>
+              {currentTab?.label}
+            </div>
+            <p style={{fontSize:12, color: tab === 'pending' ? '#166534' : '#854d0e', lineHeight:1.6, marginBottom:12, opacity:0.85}}>
+              {currentTab?.desc}
+            </p>
+            <div style={{fontSize:11, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6, opacity:0.7}}>버튼 설명</div>
+            <div style={{display:'flex', flexDirection:'column', gap:6}}>
+              {[
+                {label:'✅ 정상', desc:'현재 website 확정 → 탭에서 사라짐'},
+                {label:'✏️ 수정', desc:'URL 변경 후 저장 → 탭 유지'},
+                {label:'❌ 제외', desc:'영구 제외 → 탭에서 사라짐'},
+              ].map((b, i) => (
+                <div key={i} style={{padding:'6px 8px', background:'rgba(255,255,255,0.6)', borderRadius:6, fontSize:11}}>
+                  <div style={{fontWeight:700, marginBottom:2}}>{b.label}</div>
+                  <div style={{color:'var(--ink-3)'}}>{b.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      </div>{/* flex 끝 */}
+      {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
     </div>
   );
 };
