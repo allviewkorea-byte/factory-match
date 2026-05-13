@@ -3033,6 +3033,24 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
               내 공장 정보 수정
             </button>
           )}
+          {localStorage.getItem('fm-admin-secret') === '030209' && (
+            <button
+              onClick={async () => {
+                if (!confirm(`"${f.name}" 을 비공개로 전환하고 수집 대기로 이동할까요?`)) return;
+                await window._sb.from('factories').update({
+                  hidden: true,
+                  google_place_id: null,
+                  google_rating: null,
+                  google_reviews: null,
+                  google_photos: null,
+                  google_review_texts: null,
+                }).eq('id', f.id);
+                alert('비공개 처리됐어요. 관리자 콘솔 → 검증 필요 → 수집 대기에서 확인하세요.');
+              }}
+              style={{ background:'#fff', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:6, padding:'6px 12px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              검증 필요
+            </button>
+          )}
           <button className="detail-report-btn" onClick={() => {
             if (!authed) { onGate?.('report'); return; }
             onReport?.({ type: 'factory_issue', factoryId: f.id, factoryName: f.name });
@@ -8682,6 +8700,25 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
             </div>
             <div className="admin-modal-footer">
               <button className="btn btn-secondary" onClick={() => setEditTarget(null)}>취소</button>
+              {editTarget?.google_place_id && editTarget.google_place_id !== 'EXCLUDED' && (
+                <button className="btn" onClick={async () => {
+                  if (!confirm('구글 데이터를 초기화하고 수집 대기로 이동할까요?')) return;
+                  await window._sb.from('factories').update({
+                    google_place_id: null,
+                    google_rating: null,
+                    google_reviews: null,
+                    google_photos: null,
+                    google_review_texts: null,
+                    google_website: null,
+                  }).eq('id', editTarget.id);
+                  setRows(prev => prev.map(r => r.id === editTarget.id ? {...r, google_place_id: null, google_rating: null, google_photos: null} : r));
+                  setEditTarget(null);
+                  alert('구글 데이터 초기화됐어요. 검증 필요 → 수집 대기에서 확인하세요.');
+                }}
+                  style={{background:'#fff', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:6, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer'}}>
+                  🔄 구글 재수집
+                </button>
+              )}
               <button className="btn btn-primary" onClick={saveEdit} disabled={saving}>
                 {saving ? '저장 중…' : '저장'}
               </button>
