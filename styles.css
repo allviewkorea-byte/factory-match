@@ -9338,3 +9338,10 @@ a { color: inherit; text-decoration: none; }
   color: #1d4ed8;
   line-height: 1.5;
 }
+
+/* 검증 필요 탭 - 풀폭 확장 */
+.admin-page.is-verify-wide {
+  max-width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+}

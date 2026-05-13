@@ -9038,7 +9038,7 @@ const AdminPage = ({ onOpenFactory }) => {
   };
 
   return (
-    <main className="page admin-page">
+    <main className={`page admin-page${tab === 'google_mismatch' ? ' is-verify-wide' : ''}`}>
       <header className="admin-hero">
         <div>
           <div className="admin-eyebrow">
@@ -9710,15 +9710,6 @@ const AdminGoogleMismatchTab = () => {
             </div>
           </div>
 
-          {/* 검색 */}
-          <div style={{display:'flex', gap:8, marginBottom:12}}>
-            <input type="text" placeholder="회사명 검색..." value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{flex:1, padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13}}/>
-            {search && <button onClick={() => setSearch('')}
-              style={{padding:'8px 12px', border:'1.5px solid var(--line)', borderRadius:8, fontSize:13, background:'#fff', cursor:'pointer', color:'var(--ink-3)'}}>✕</button>}
-          </div>
-
           {/* PowerShell 명령어 */}
           <div style={{background:'#1e1e2e', borderRadius:10, padding:'14px 16px', marginBottom:16}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
@@ -9736,6 +9727,28 @@ const AdminGoogleMismatchTab = () => {
             <div style={{marginTop:8, fontSize:12, color:'#f5c842', fontWeight:700}}>
               ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지)
             </div>
+          </div>
+
+          {/* 검색 */}
+          <div style={{position:'relative', marginBottom:16}}>
+            <span style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'var(--ink-3)', pointerEvents:'none'}}>🔍</span>
+            <input type="text" placeholder="회사명으로 검색하세요..." value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width:'100%', padding:'11px 16px 11px 42px',
+                border:'2px solid var(--brand)',
+                borderRadius:10, fontSize:14,
+                boxShadow:'0 2px 8px rgba(59,130,246,0.12)',
+                outline:'none', boxSizing:'border-box',
+              }}/>
+            {search && (
+              <button onClick={() => setSearch('')}
+                style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                  background:'var(--ink-3)', color:'#fff', border:'none', borderRadius:'50%',
+                  width:20, height:20, fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                ✕
+              </button>
+            )}
           </div>
 
           {/* 테이블 */}
@@ -9784,10 +9797,15 @@ const AdminGoogleMismatchTab = () => {
                             style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                             {saving[f.id] === 'normal' ? '...' : '✅ 정상'}
                           </button>
-                          {inputs[f.id] && (
+                          {inputs[f.id] ? (
                             <button onClick={() => saveEdit(f)} disabled={saving[f.id]}
                               style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'var(--brand)', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
-                              {saving[f.id] === 'save' ? '...' : '저장'}
+                              {saving[f.id] === 'save' ? '...' : '💾 저장'}
+                            </button>
+                          ) : (
+                            <button onClick={() => setInputs(s => ({...s, [f.id]: f.website || f.naver_website || ''}))}
+                              style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
+                              ✏️ 수정
                             </button>
                           )}
                           <button onClick={() => exclude(f.id)}
