@@ -3227,7 +3227,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             let aiData = null;
             try { aiData = f.ai_summary ? (typeof f.ai_summary === 'string' ? JSON.parse(f.ai_summary) : f.ai_summary) : null; } catch(e) {}
             const intro = aiData?.intro || f.summary;
-            const hasAiExtra = aiData && (aiData.products?.length || aiData.equipment?.length || aiData.clients?.length || aiData.certifications?.length || aiData.strengths?.length);
+            const hasAiExtra = aiData && !!(aiData.products?.length || aiData.equipment?.length || aiData.clients?.length || aiData.certifications?.length || aiData.strengths?.length);
             return (
           <div className={intro || hasAiExtra ? 'detail-grid' : ''}>
             {intro && (
