@@ -9572,6 +9572,8 @@ const AdminGoogleMismatchTab = () => {
 
     if (filter === 'HIDDEN') {
       query = query.eq('hidden', true);
+    } else if (filter === 'PENDING') {
+      query = query.eq('hidden', false).is('google_place_id', null).not('website', 'is', null);
     } else {
       query = query.eq('hidden', false);
       if (filter === 'ADDR_MISMATCH') {
@@ -9629,6 +9631,14 @@ const AdminGoogleMismatchTab = () => {
 
   // 사용법 가이드
   const GUIDE = {
+    PENDING: {
+      title: '🟢 수집 대기',
+      color: '#f0fdf4',
+      border: '#86efac',
+      textColor: '#166534',
+      desc: 'website는 있지만 아직 구글 수집이 안 된 공장들이에요. 다음 수집 실행 시 자동으로 처리돼요.',
+      steps: ['website가 올바른지 확인', '잘못됐으면 올바른 URL로 수정 후 저장', '수집 명령어 실행하면 자동 처리'],
+    },
     ADDR_MISMATCH: {
       title: '🔴 구글 주소 불일치',
       color: '#fee2e2',
@@ -9680,7 +9690,7 @@ const AdminGoogleMismatchTab = () => {
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
         <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
         <div style={{display:'flex', gap:8}}>
-          {['전체', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
+          {['전체', 'PENDING', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
             <button key={f}
               onClick={() => setFilter(f)}
               style={{
@@ -9690,7 +9700,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
+              {f === 'PENDING' ? '🟢 수집 대기' : f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
@@ -9858,6 +9868,7 @@ const AdminGoogleMismatchTab = () => {
           <div style={{fontSize:11, fontWeight:700, color:'var(--ink-2)', marginBottom:8}}>🔍 빠른 필터</div>
           <div style={{display:'flex', flexDirection:'column', gap:6}}>
             {[
+              {label:'🟢 수집 대기', key:'PENDING'},
               {label:'🔴 구글 주소 불일치', key:'ADDR_MISMATCH'},
               {label:'🟡 도메인 불일치', key:'CROSS_MISMATCH'},
               {label:'⚫ 못찾음', key:'NOT_FOUND'},
