@@ -9554,7 +9554,7 @@ const AdminGoogleMismatchTab = () => {
   const SB = window._sb;
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [filter, setFilter] = React.useState('ADDR_MISMATCH');
+  const [filter, setFilter] = React.useState('PENDING');
   const [search, setSearch] = React.useState('');
   const [websiteInputs, setWebsiteInputs] = React.useState({});
   const [saving, setSaving] = React.useState({});
@@ -9690,7 +9690,7 @@ const AdminGoogleMismatchTab = () => {
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
         <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
         <div style={{display:'flex', gap:8}}>
-          {['전체', 'PENDING', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
+          {['PENDING', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
             <button key={f}
               onClick={() => setFilter(f)}
               style={{
@@ -9700,7 +9700,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'PENDING' ? '🟢 수집 대기' : f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
+              {f === 'PENDING' ? '🟢 수집 대기' : f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '🔒 히든'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
