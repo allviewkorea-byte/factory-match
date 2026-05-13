@@ -2708,22 +2708,28 @@ function FactoryMap({ addr, name, lat, lng }) {
 }
 
 // ── Lottie 기어 스피너 ─────────────────────────────────────────────────────
-const GearSpinner = ({ size = 80, style = {} }) => (
-  React.createElement('dotlottie-player', {
-    src: '/Gear.lottie',
-    autoplay: true,
-    loop: true,
-    style: { width: size, height: size, ...style },
-  })
-);
+const GearSpinner = ({ size = 80, style = {} }) => {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!ref.current) return;
+    const el = document.createElement('dotlottie-player');
+    el.setAttribute('src', '/Gear.lottie');
+    el.setAttribute('autoplay', '');
+    el.setAttribute('loop', '');
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    Object.assign(el.style, style);
+    ref.current.appendChild(el);
+    return () => { if (ref.current) ref.current.innerHTML = ''; };
+  }, [size]);
+  return <div ref={ref} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center' }}/>;
+};
 
 const GearSpinnerCenter = ({ size = 80, message = '' }) => (
-  React.createElement('div', {
-    style: { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding: 40 }
-  },
-    React.createElement(GearSpinner, { size }),
-    message && React.createElement('p', { style: { fontSize: 13, color: 'var(--ink-3)', marginTop: 8 } }, message)
-  )
+  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40 }}>
+    <GearSpinner size={size}/>
+    {message && <p style={{ fontSize:13, color:'var(--ink-3)', marginTop:8 }}>{message}</p>}
+  </div>
 );
 const GMAPS_KEY = (window._env || {}).GOOGLE_MAPS_API_KEY || '';
 
@@ -2919,7 +2925,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
     if (tab === 'capability' && _procLabels.length === 0 && (_f.materials || []).length === 0 && _prodLabels.length === 0) setTab('overview');
   }, [factoryId]);
 
-  if (!f) return <GearSpinnerCenter size={100} message="제조사 정보를 불러오는 중..." style={{ margin:'20vh auto' }}/>;
+  if (!f) return <GearSpinnerCenter size={100} message="제조사 정보를 불러오는 중..."/>;
 
   const isSample = /^f(\d+)$/.test(f.id) && parseInt(f.id.slice(1)) <= 14;
 
