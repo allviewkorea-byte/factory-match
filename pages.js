@@ -9102,6 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동' },
           { id: 'grants',    label: '지원사업 관리' },
           { id: 'dart',      label: 'DART 불일치' },
+          { id: 'google_mismatch', label: '구글 불일치' },
           { id: 'automation', label: '🤖 자동 수집' },
         ].map(t => (
           <button
@@ -9177,6 +9178,7 @@ const AdminPage = ({ onOpenFactory }) => {
       {tab === 'grants' && <AdminGrantsTab />}
 
       {tab === 'dart' && <AdminDartMismatchTab />}
+      {tab === 'google_mismatch' && <AdminGoogleMismatchTab />}
       {tab === 'automation' && <AdminAutomationTab />}
 
       {/* ── CSV 업로드 모달 ── */}
@@ -9402,6 +9404,167 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
+// ─── AdminGoogleMismatchTab ────────────────────────────────────────────────
+const AdminGoogleMismatchTab = () => {
+  const SB = window._sb;
+  const [items, setItems] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState('ADDR_MISMATCH');
+  const [websiteInputs, setWebsiteInputs] = React.useState({});
+  const [saving, setSaving] = React.useState({});
+  const [toast, setToast] = React.useState('');
+
+  const load = async () => {
+    setLoading(true);
+    let query = SB.from('factories')
+      .select('id,name,city,region,address,website,google_place_id,google_rating,google_reviews')
+      .order('name');
+
+    if (filter === 'ADDR_MISMATCH') {
+      query = query.eq('google_place_id', 'ADDR_MISMATCH');
+    } else if (filter === 'NOT_FOUND') {
+      query = query.eq('google_place_id', 'NOT_FOUND');
+    } else {
+      query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND');
+    }
+
+    const { data } = await query.limit(100);
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  React.useEffect(() => { load(); }, [filter]);
+
+  const saveWebsite = async (id) => {
+    const url = websiteInputs[id] || '';
+    if (!url) return;
+    setSaving(s => ({ ...s, [id]: true }));
+    await SB.from('factories').update({
+      website: url,
+      google_place_id: null,
+      google_rating: null,
+      google_reviews: null,
+      google_photos: null,
+      google_review_texts: null,
+      ai_summary: null,
+    }).eq('id', id);
+    setSaving(s => ({ ...s, [id]: false }));
+    setToast('저장 완료! 다음 수집 시 자동 재수집됩니다.');
+    setTimeout(() => setToast(''), 3000);
+    load();
+  };
+
+  const resetGoogle = async (id) => {
+    await SB.from('factories').update({
+      google_place_id: null,
+      google_rating: null,
+      google_reviews: null,
+      google_photos: null,
+      google_review_texts: null,
+    }).eq('id', id);
+    setToast('구글 데이터 초기화 완료');
+    setTimeout(() => setToast(''), 3000);
+    load();
+  };
+
+  return (
+    <div style={{padding:24}}>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
+        <h2 style={{fontSize:18, fontWeight:700}}>구글 불일치 관리</h2>
+        <div style={{display:'flex', gap:8}}>
+          {['전체', 'ADDR_MISMATCH', 'NOT_FOUND'].map(f => (
+            <button key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                padding:'6px 12px', borderRadius:6, fontSize:12, fontWeight:600,
+                border: '1.5px solid', cursor:'pointer',
+                background: filter === f ? 'var(--brand)' : '#fff',
+                color: filter === f ? '#fff' : 'var(--ink-2)',
+                borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
+              }}>
+              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '전체'}
+            </button>
+          ))}
+          <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
+        </div>
+      </div>
+
+      <p style={{fontSize:12, color:'var(--ink-3)', marginBottom:16}}>
+        올바른 홈페이지 URL을 입력하고 저장하면 구글 데이터가 초기화되고 다음 수집 시 자동으로 재수집돼요.
+      </p>
+
+      {loading ? (
+        <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>회사명</th>
+                <th>지역</th>
+                <th>현재 website</th>
+                <th>상태</th>
+                <th>올바른 website 입력</th>
+                <th>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(f => (
+                <tr key={f.id}>
+                  <td><strong>{f.name}</strong></td>
+                  <td style={{fontSize:12, color:'var(--ink-3)'}}>{f.city}</td>
+                  <td style={{fontSize:11, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                    {f.website ? (
+                      <a href={f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{f.website}</a>
+                    ) : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                  </td>
+                  <td>
+                    <span style={{
+                      fontSize:11, fontWeight:600, padding:'2px 6px', borderRadius:4,
+                      background: f.google_place_id === 'ADDR_MISMATCH' ? '#fee2e2' : '#f3f4f6',
+                      color: f.google_place_id === 'ADDR_MISMATCH' ? '#dc2626' : '#6b7280',
+                    }}>
+                      {f.google_place_id === 'ADDR_MISMATCH' ? '주소불일치' : '못찾음'}
+                    </span>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={websiteInputs[f.id] || ''}
+                      onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
+                      style={{width:200, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
+                    />
+                  </td>
+                  <td style={{display:'flex', gap:4}}>
+                    <button
+                      onClick={() => saveWebsite(f.id)}
+                      disabled={!websiteInputs[f.id] || saving[f.id]}
+                      style={{
+                        padding:'4px 10px', fontSize:11, fontWeight:600,
+                        background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
+                        color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
+                        border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
+                      }}>
+                      {saving[f.id] ? '저장중' : '저장'}
+                    </button>
+                    <button
+                      onClick={() => resetGoogle(f.id)}
+                      style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid var(--line)', borderRadius:5, cursor:'pointer', color:'var(--ink-3)'}}>
+                      초기화
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
+    </div>
+  );
+};
+
 // ─── AdminAutomationTab ────────────────────────────────────────────────
 const AdminAutomationTab = () => {
   const REPO = 'allviewkorea-byte/factory-match';
