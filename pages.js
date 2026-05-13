@@ -9102,7 +9102,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-          { id: 'google_mismatch', label: '검증 필요', desc: '구글 매장주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+          { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9126,7 +9126,7 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
-        { id: 'google_mismatch', desc: '구글 매장주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+        { id: 'google_mismatch', desc: '구글 주소 불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9487,7 +9487,7 @@ const AdminHiddenTab = () => {
       </div>
 
       <div style={{background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:12, color:'#9a3412'}}>
-        ⚠️ 매장주소 불일치로 자동 숨김 처리된 공장들이에요. 올바른 website 입력 후 <strong>복원</strong>하면 다음 수집 시 정상 재수집됩니다. 찾기 어려우면 <strong>영구 제외</strong>로 정리하세요.
+        ⚠️ 구글 주소 불일치로 자동 숨김 처리된 공장들이에요. 올바른 website 입력 후 <strong>복원</strong>하면 다음 수집 시 정상 재수집됩니다. 찾기 어려우면 <strong>영구 제외</strong>로 정리하세요.
       </div>
 
       {loading ? (
@@ -9567,7 +9567,7 @@ const AdminGoogleMismatchTab = () => {
   const load = async () => {
     setLoading(true);
     let query = SB.from('factories')
-      .select('id,name,city,region,address,website,google_place_id,google_rating,google_reviews,website_verified')
+      .select('id,name,city,region,address,website,naver_website,google_website,google_place_id,google_rating,google_reviews,website_verified')
       .order('name');
 
     if (filter === 'HIDDEN') {
@@ -9642,7 +9642,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'ADDR_MISMATCH' ? '🔴 매장주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
+              {f === 'ADDR_MISMATCH' ? '🔴 구글 주소 불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인 불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
@@ -9700,39 +9700,39 @@ const AdminGoogleMismatchTab = () => {
             <thead>
               <tr>
                 <th>회사명</th>
-                <th>지역</th>
-                <th>현재 website</th>
-                <th>상태</th>
-                <th>올바른 website 입력</th>
+                {filter === 'ADDR_MISMATCH' || filter === 'HIDDEN' ? <><th>DB 주소</th></> : <><th>네이버 website</th><th>구글 website</th></>}
+                {filter !== 'ADDR_MISMATCH' && <th>올바른 website 입력</th>}
+                {filter === 'ADDR_MISMATCH' && <th>올바른 website 입력</th>}
                 <th>조치</th>
               </tr>
             </thead>
             <tbody>
-              {items.map(f => (
+              {filteredItems.map(f => (
                 <tr key={f.id}>
-                  <td><strong>{f.name}</strong></td>
-                  <td style={{fontSize:12, color:'var(--ink-3)'}}>{f.city}</td>
-                  <td style={{fontSize:11, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                    {f.website ? (
-                      <a href={f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{f.website}</a>
-                    ) : <span style={{color:'var(--ink-4)'}}>없음</span>}
-                  </td>
-                  <td>
-                    <span style={{
-                      fontSize:11, fontWeight:600, padding:'2px 6px', borderRadius:4,
-                      background: f.google_place_id === 'ADDR_MISMATCH' ? '#fee2e2' : f.website_verified === false ? '#fef9c3' : '#f3f4f6',
-                      color: f.google_place_id === 'ADDR_MISMATCH' ? '#dc2626' : f.website_verified === false ? '#854d0e' : '#6b7280',
-                    }}>
-                      {f.google_place_id === 'ADDR_MISMATCH' ? '매장주소 불일치' : f.website_verified === false ? '도메인불일치' : '못찾음'}
-                    </span>
-                  </td>
+                  <td><strong>{f.name}</strong><div style={{fontSize:11,color:'var(--ink-3)'}}>{f.city}</div></td>
+                  {filter === 'ADDR_MISMATCH' || filter === 'HIDDEN' ? (
+                    <td style={{fontSize:12, color:'var(--ink-2)'}}>{f.address || [f.region, f.city].filter(Boolean).join(' ')}</td>
+                  ) : (
+                    <>
+                      <td style={{fontSize:11, maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                        {f.naver_website || f.website
+                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '')}</a>
+                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                      </td>
+                      <td style={{fontSize:11, maxWidth:130, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                        {f.google_website
+                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '')}</a>
+                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                      </td>
+                    </>
+                  )}
                   <td>
                     <input
                       type="text"
                       placeholder="https://..."
                       value={websiteInputs[f.id] || ''}
                       onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
-                      style={{width:200, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
+                      style={{width:180, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
                     />
                   </td>
                   <td style={{display:'flex', gap:4}}>
