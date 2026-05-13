@@ -126,7 +126,8 @@ def fetch_factories(offset, limit):
         "select": "id,name,city,region,address,phone,website",
         "website": "not.is.null",
         "ai_summary": "not.is.null",
-        "google_place_id": "is.null",
+        "google_place_id": "not.is.null",
+        "google_review_texts": "is.null",
         "offset": offset,
         "limit": limit,
         "order": "completeness_score.desc",
@@ -166,6 +167,32 @@ def main():
             name = f.get("name", "")
             address = f.get("address", "")
             city = f.get("city", "")
+            existing_place_id = f.get("google_place_id", "")
+
+            # 이미 place_id가 있으면 바로 상세 정보만 수집
+            if existing_place_id and existing_place_id not in ("NOT_FOUND", "ADDR_MISMATCH", "EXCLUDED"):
+                place_id = existing_place_id
+                details = get_place_details(place_id)
+                time.sleep(DELAY)
+                if not details:
+                    done_ids.add(fid)
+                    processed_today += 1
+                    continue
+                # 리뷰 텍스트만 업데이트
+                review_texts = []
+                for rv in details.get("reviews", [])[:5]:
+                    review_texts.append({
+                        "author": rv.get("author_name", ""),
+                        "rating": rv.get("rating", 0),
+                        "text": rv.get("text", ""),
+                        "time": rv.get("relative_time_description", ""),
+                    })
+                supabase_patch(fid, {"google_review_texts": json.dumps(review_texts) if review_texts else "[]"})
+                done_ids.add(fid)
+                processed_today += 1
+                total_processed += 1
+                print(f"✅ 리뷰수집: {name} | 리뷰 {len(review_texts)}개")
+                continue
 
             # 1단계: place_id 검색
             place_id, google_address = find_place(name, address, city)
