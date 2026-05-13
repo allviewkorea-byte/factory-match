@@ -9687,26 +9687,31 @@ const AdminGoogleMismatchTab = () => {
 
   // ✏️ 수정 후 저장: website 교체, 탭 유지
   const saveEdit = async (f) => {
-    const url = inputs[f.id] || '';
-    if (!url) return;
+    const inp = inputs[f.id] || {};
     setSaving(s => ({...s, [f.id]: 'save'}));
-    await SB.from('factories').update({
-      website: url,
+    const updateData = {
+      website: inp.website !== undefined ? inp.website : f.website,
+      naver_website: inp.naver_website !== undefined ? inp.naver_website : f.naver_website,
+      google_website: inp.google_website !== undefined ? inp.google_website : f.google_website,
       google_place_id: null,
       google_rating: null,
       google_reviews: null,
       google_photos: null,
       google_review_texts: null,
-      google_website: null,
-      naver_website: null,
       website_verified: null,
       ai_summary: null,
       hidden: false,
-    }).eq('id', f.id);
+    };
+    await SB.from('factories').update(updateData).eq('id', f.id);
+    // 전체 리로드 없이 해당 행만 업데이트
+    setItems(prev => prev.map(item => item.id === f.id
+      ? { ...item, ...updateData }
+      : item
+    ));
     setSaving(s => ({...s, [f.id]: null}));
     setEditing(e => ({...e, [f.id]: false}));
-    showToast('저장됐어요! 탭에서 유지되며 다음 수집 후 재판단하세요.');
-    load();
+    setInputs(s => ({...s, [f.id]: {}}));
+    showToast('저장됐어요! 다음 수집 후 재판단하세요.');
   };
 
   // ❌ 제외
@@ -9838,31 +9843,56 @@ const AdminGoogleMismatchTab = () => {
                 <tbody>
                   {filteredItems.map(f => (
                     <tr key={f.id}>
-                      <td style={{whiteSpace:'nowrap'}}><strong style={{fontSize:13}}>{f.name || '-'}</strong></td>
-                      <td style={{fontSize:11, color:'var(--ink-2)', whiteSpace:'nowrap', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis'}}>
-                        {(f.address || [f.region, f.city].filter(Boolean).join(' ') || '-').substring(0, 15)}
+                      <td style={{whiteSpace:'nowrap', minWidth:120}}>
+                        <strong style={{fontSize:13}}>{f.name || '-'}</strong>
                       </td>
-                      <td style={{fontSize:11}}>
-                        {f.naver_website || f.website
-                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '').substring(0, 25)}</a>
-                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
-                      </td>
-                      <td style={{fontSize:11}}>
-                        {f.google_website
-                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '').substring(0, 25)}</a>
-                          : <span style={{color:'var(--ink-4)'}}>없음</span>}
-                      </td>
-                      <td>
+                      <td style={{minWidth:180}}>
                         {editing[f.id] ? (
-                          <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
-                            onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
-                            style={{width:200, padding:'5px 8px', border:'2px solid var(--brand)', borderRadius:6, fontSize:12, outline:'none'}}
-                            autoFocus/>
+                          <input type="text" value={(inputs[f.id]?.address) ?? (f.address || '')}
+                            onChange={e => setInputs(s => ({...s, [f.id]: {...(s[f.id]||{}), address: e.target.value}}))}
+                            style={{width:'100%', padding:'4px 6px', border:'1.5px solid var(--brand)', borderRadius:5, fontSize:12}}/>
+                        ) : (
+                          <span style={{fontSize:11, color:'var(--ink-2)'}}>
+                            {f.address || [f.region, f.city].filter(Boolean).join(' ') || '-'}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{minWidth:160}}>
+                        {editing[f.id] ? (
+                          <input type="text" value={(inputs[f.id]?.naver_website) ?? (f.naver_website || f.website || '')}
+                            onChange={e => setInputs(s => ({...s, [f.id]: {...(s[f.id]||{}), naver_website: e.target.value}}))}
+                            style={{width:'100%', padding:'4px 6px', border:'1.5px solid var(--brand)', borderRadius:5, fontSize:12}}/>
+                        ) : (
+                          f.naver_website || f.website
+                            ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)', fontSize:11}}>
+                                {(f.naver_website || f.website || '').replace(/^https?:\/\//, '').substring(0, 30)}
+                              </a>
+                            : <span style={{color:'var(--ink-4)', fontSize:11}}>없음</span>
+                        )}
+                      </td>
+                      <td style={{minWidth:160}}>
+                        {editing[f.id] ? (
+                          <input type="text" value={(inputs[f.id]?.google_website) ?? (f.google_website || '')}
+                            onChange={e => setInputs(s => ({...s, [f.id]: {...(s[f.id]||{}), google_website: e.target.value}}))}
+                            style={{width:'100%', padding:'4px 6px', border:'1.5px solid var(--brand)', borderRadius:5, fontSize:12}}/>
+                        ) : (
+                          f.google_website
+                            ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a', fontSize:11}}>
+                                {f.google_website.replace(/^https?:\/\//, '').substring(0, 30)}
+                              </a>
+                            : <span style={{color:'var(--ink-4)', fontSize:11}}>없음</span>
+                        )}
+                      </td>
+                      <td style={{minWidth:160}}>
+                        {editing[f.id] ? (
+                          <input type="text" placeholder="https://..." value={(inputs[f.id]?.website) ?? (f.website || '')}
+                            onChange={e => setInputs(s => ({...s, [f.id]: {...(s[f.id]||{}), website: e.target.value}}))}
+                            style={{width:'100%', padding:'4px 6px', border:'2px solid var(--brand)', borderRadius:5, fontSize:12}}/>
                         ) : (
                           <span style={{fontSize:11, color:'var(--ink-4)'}}>—</span>
                         )}
                       </td>
-                      <td>
+                      <td style={{minWidth:160}}>
                         <div style={{display:'flex', gap:4}}>
                           <button onClick={() => markNormal(f)} disabled={saving[f.id]}
                             style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
@@ -9874,7 +9904,7 @@ const AdminGoogleMismatchTab = () => {
                               {saving[f.id] === 'save' ? '...' : '💾 저장'}
                             </button>
                           ) : (
-                            <button onClick={() => { setEditing(e => ({...e, [f.id]: true})); setInputs(s => ({...s, [f.id]: f.website || f.naver_website || ''})); }}
+                            <button onClick={() => { setEditing(e => ({...e, [f.id]: true})); setInputs(s => ({...s, [f.id]: {}})); }}
                               style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                               ✏️ 수정
                             </button>
