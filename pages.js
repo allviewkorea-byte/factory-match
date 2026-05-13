@@ -9103,7 +9103,6 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
           { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
-          { id: 'hidden_mgmt', label: '🔒 히든 관리', desc: '주소불일치 등으로 자동 숨김 처리된 공장 목록. 검토 후 복원하거나 영구 제외 가능.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9128,7 +9127,6 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
         { id: 'google_mismatch', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
-        { id: 'hidden_mgmt', desc: '주소불일치 등으로 자동 숨김 처리된 공장 목록. 올바른 website 입력 후 복원하거나 그대로 영구 제외 가능.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9199,7 +9197,6 @@ const AdminPage = ({ onOpenFactory }) => {
 
       {tab === 'dart' && <AdminDartMismatchTab />}
       {tab === 'google_mismatch' && <AdminGoogleMismatchTab />}
-      {tab === 'hidden_mgmt' && <AdminHiddenTab />}
 
       {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
@@ -9565,17 +9562,22 @@ const AdminGoogleMismatchTab = () => {
   const load = async () => {
     setLoading(true);
     let query = SB.from('factories')
-      .select('id,name,city,region,address,website,google_place_id,google_rating,google_reviews')
+      .select('id,name,city,region,address,website,google_place_id,google_rating,google_reviews,website_verified')
       .order('name');
 
-    if (filter === 'ADDR_MISMATCH') {
-      query = query.eq('google_place_id', 'ADDR_MISMATCH');
-    } else if (filter === 'CROSS_MISMATCH') {
-      query = query.eq('website_verified', false);
-    } else if (filter === 'NOT_FOUND') {
-      query = query.eq('google_place_id', 'NOT_FOUND');
+    if (filter === 'HIDDEN') {
+      query = query.eq('hidden', true);
     } else {
-      query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND,website_verified.eq.false');
+      query = query.eq('hidden', false);
+      if (filter === 'ADDR_MISMATCH') {
+        query = query.eq('google_place_id', 'ADDR_MISMATCH');
+      } else if (filter === 'CROSS_MISMATCH') {
+        query = query.eq('website_verified', false);
+      } else if (filter === 'NOT_FOUND') {
+        query = query.eq('google_place_id', 'NOT_FOUND');
+      } else {
+        query = query.or('google_place_id.eq.ADDR_MISMATCH,google_place_id.eq.NOT_FOUND,website_verified.eq.false');
+      }
     }
 
     const { data } = await query.limit(100);
@@ -9589,7 +9591,7 @@ const AdminGoogleMismatchTab = () => {
     const url = websiteInputs[id] || '';
     if (!url) return;
     setSaving(s => ({ ...s, [id]: true }));
-    await SB.from('factories').update({
+    const updateData = {
       website: url,
       google_place_id: null,
       google_rating: null,
@@ -9597,9 +9599,12 @@ const AdminGoogleMismatchTab = () => {
       google_photos: null,
       google_review_texts: null,
       ai_summary: null,
-    }).eq('id', id);
+    };
+    // 히든 필터에서 저장 시 hidden=false로 복원
+    if (filter === 'HIDDEN') updateData.hidden = false;
+    await SB.from('factories').update(updateData).eq('id', id);
     setSaving(s => ({ ...s, [id]: false }));
-    setToast('저장 완료! 다음 수집 시 자동 재수집됩니다.');
+    setToast(filter === 'HIDDEN' ? '복원 완료! 다음 수집 시 재수집됩니다.' : '저장 완료! 다음 수집 시 자동 재수집됩니다.');
     setTimeout(() => setToast(''), 3000);
     load();
   };
@@ -9622,7 +9627,7 @@ const AdminGoogleMismatchTab = () => {
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
         <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
         <div style={{display:'flex', gap:8}}>
-          {['전체', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND'].map(f => (
+          {['전체', 'ADDR_MISMATCH', 'CROSS_MISMATCH', 'NOT_FOUND', 'HIDDEN'].map(f => (
             <button key={f}
               onClick={() => setFilter(f)}
               style={{
@@ -9632,7 +9637,7 @@ const AdminGoogleMismatchTab = () => {
                 color: filter === f ? '#fff' : 'var(--ink-2)',
                 borderColor: filter === f ? 'var(--brand)' : 'var(--line)',
               }}>
-              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : '전체'}
+              {f === 'ADDR_MISMATCH' ? '🔴 주소불일치' : f === 'CROSS_MISMATCH' ? '🟡 도메인불일치' : f === 'NOT_FOUND' ? '⚫ 못찾음' : f === 'HIDDEN' ? '🔒 히든' : '전체'}
             </button>
           ))}
           <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
@@ -9710,22 +9715,49 @@ const AdminGoogleMismatchTab = () => {
                     />
                   </td>
                   <td style={{display:'flex', gap:4}}>
-                    <button
-                      onClick={() => saveWebsite(f.id)}
-                      disabled={!websiteInputs[f.id] || saving[f.id]}
-                      style={{
-                        padding:'4px 10px', fontSize:11, fontWeight:600,
-                        background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
-                        color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
-                        border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
-                      }}>
-                      {saving[f.id] ? '저장중' : '저장'}
-                    </button>
-                    <button
-                      onClick={() => resetGoogle(f.id)}
-                      style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid var(--line)', borderRadius:5, cursor:'pointer', color:'var(--ink-3)'}}>
-                      초기화
-                    </button>
+                    {filter === 'HIDDEN' ? (
+                      <>
+                        <button
+                          onClick={() => saveWebsite(f.id)}
+                          disabled={!websiteInputs[f.id] || saving[f.id]}
+                          style={{
+                            padding:'4px 10px', fontSize:11, fontWeight:600,
+                            background: '#16a34a', color: '#fff',
+                            border:'none', borderRadius:5,
+                            cursor: websiteInputs[f.id] ? 'pointer' : 'default',
+                            opacity: websiteInputs[f.id] ? 1 : 0.4,
+                          }}>
+                          {saving[f.id] ? '처리중' : '✅ 복원'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await SB.from('factories').update({ google_place_id: 'EXCLUDED' }).eq('id', f.id);
+                            load();
+                          }}
+                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
+                          ❌ 영구제외
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => saveWebsite(f.id)}
+                          disabled={!websiteInputs[f.id] || saving[f.id]}
+                          style={{
+                            padding:'4px 10px', fontSize:11, fontWeight:600,
+                            background: websiteInputs[f.id] ? 'var(--brand)' : '#e5e7eb',
+                            color: websiteInputs[f.id] ? '#fff' : 'var(--ink-4)',
+                            border:'none', borderRadius:5, cursor: websiteInputs[f.id] ? 'pointer' : 'default',
+                          }}>
+                          {saving[f.id] ? '저장중' : '저장'}
+                        </button>
+                        <button
+                          onClick={() => resetGoogle(f.id)}
+                          style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid var(--line)', borderRadius:5, cursor:'pointer', color:'var(--ink-3)'}}>
+                          초기화
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
