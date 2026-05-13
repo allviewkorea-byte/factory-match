@@ -9575,10 +9575,25 @@ const AdminGoogleMismatchTab = () => {
       .limit(200);
 
     if (tab === 'pending') {
-      // 수집 대기: website없음 OR 네이버만OR구글만 + 구글주소불일치 히든
-      query = query.or(
-        'website.is.null,naver_website.is.null,google_website.is.null,google_place_id.eq.ADDR_MISMATCH'
-      ).neq('website', 'EXCLUDED');
+      // 수집 대기: website 있는데 naver 또는 google website 하나만 있는 것 + 구글주소불일치
+      const { data: d1 } = await SB.from('factories')
+        .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
+        .not('website', 'is', null)
+        .neq('website', 'EXCLUDED')
+        .or('naver_website.is.null,google_website.is.null')
+        .eq('hidden', false)
+        .order('name').limit(100);
+
+      const { data: d2 } = await SB.from('factories')
+        .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
+        .eq('google_place_id', 'ADDR_MISMATCH')
+        .order('name').limit(100);
+
+      const merged = [...(d1 || []), ...(d2 || [])];
+      const unique = merged.filter((f, i, arr) => arr.findIndex(x => x.id === f.id) === i);
+      setItems(unique);
+      setLoading(false);
+      return;
     } else {
       // 도메인 불일치: 크로스체크 후 불일치
       query = query.eq('website_verified', false).eq('hidden', false);
@@ -9712,26 +9727,23 @@ const AdminGoogleMismatchTab = () => {
                   {filteredItems.map(f => (
                     <tr key={f.id}>
                       <td style={{whiteSpace:'nowrap'}}><strong style={{fontSize:13}}>{f.name || '-'}</strong></td>
-                      <td style={{fontSize:12, color:'var(--ink-2)', whiteSpace:'nowrap'}}>{f.address || [f.region, f.city].filter(Boolean).join(' ') || '-'}</td>
+                      <td style={{fontSize:11, color:'var(--ink-2)', whiteSpace:'nowrap', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis'}}>
+                        {(f.address || [f.region, f.city].filter(Boolean).join(' ') || '-').substring(0, 15)}
+                      </td>
                       <td style={{fontSize:11}}>
                         {f.naver_website || f.website
-                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '').substring(0, 30)}</a>
+                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '').substring(0, 25)}</a>
                           : <span style={{color:'var(--ink-4)'}}>없음</span>}
                       </td>
                       <td style={{fontSize:11}}>
                         {f.google_website
-                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '').substring(0, 30)}</a>
+                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '').substring(0, 25)}</a>
                           : <span style={{color:'var(--ink-4)'}}>없음</span>}
                       </td>
                       <td>
-                        {editing[f.id] ? (
-                          <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
-                            onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
-                            style={{width:200, padding:'4px 8px', border:'1.5px solid var(--brand)', borderRadius:6, fontSize:12}}
-                            autoFocus/>
-                        ) : (
-                          <span style={{fontSize:11, color:'var(--ink-4)'}}>—</span>
-                        )}
+                        <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
+                          onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
+                          style={{width:180, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}/>
                       </td>
                       <td>
                         <div style={{display:'flex', gap:4}}>
@@ -9739,18 +9751,10 @@ const AdminGoogleMismatchTab = () => {
                             style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                             {saving[f.id] === 'normal' ? '...' : '✅ 정상'}
                           </button>
-                          {editing[f.id] ? (
-                            <button onClick={() => saveEdit(f)} disabled={!inputs[f.id] || saving[f.id]}
-                              style={{padding:'4px 8px', fontSize:11, fontWeight:600,
-                                background: inputs[f.id] ? 'var(--brand)' : '#e5e7eb',
-                                color: inputs[f.id] ? '#fff' : 'var(--ink-4)',
-                                border:'none', borderRadius:5, cursor: inputs[f.id] ? 'pointer' : 'default', whiteSpace:'nowrap'}}>
+                          {inputs[f.id] && (
+                            <button onClick={() => saveEdit(f)} disabled={saving[f.id]}
+                              style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'var(--brand)', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                               {saving[f.id] === 'save' ? '...' : '저장'}
-                            </button>
-                          ) : (
-                            <button onClick={() => setEditing(e => ({...e, [f.id]: true}))}
-                              style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
-                              ✏️ 수정
                             </button>
                           )}
                           <button onClick={() => exclude(f.id)}
