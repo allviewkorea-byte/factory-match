@@ -186,7 +186,7 @@ def main():
                 no_result += 1
                 done_ids.add(fid)
                 processed_today += 1
-                supabase_patch(fid, {"google_place_id": "ADDR_MISMATCH"})
+                supabase_patch(fid, {"google_place_id": "ADDR_MISMATCH", "hidden": True})
                 continue
 
             # 2단계: 상세 정보 수집

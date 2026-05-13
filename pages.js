@@ -9103,6 +9103,7 @@ const AdminPage = ({ onOpenFactory }) => {
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
           { id: 'dart',      label: 'DART 불일치', desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
           { id: 'google_mismatch', label: '검증 필요', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+          { id: 'hidden_mgmt', label: '🔒 히든 관리', desc: '주소불일치 등으로 자동 숨김 처리된 공장 목록. 검토 후 복원하거나 영구 제외 가능.' },
         ].map(t => (
           <button
             key={t.id}
@@ -9127,6 +9128,7 @@ const AdminPage = ({ onOpenFactory }) => {
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
         { id: 'dart',      desc: 'DART 재무정보 수집 시 회사명이 불일치한 건. 수동으로 올바른 업체 매칭하거나 초기화 가능.' },
         { id: 'google_mismatch', desc: '구글 주소불일치 / 네이버·구글 도메인 불일치 / 구글 못찾음 업체 목록. 올바른 홈페이지 URL 입력 시 다음 수집에 자동 재수집.' },
+        { id: 'hidden_mgmt', desc: '주소불일치 등으로 자동 숨김 처리된 공장 목록. 올바른 website 입력 후 복원하거나 그대로 영구 제외 가능.' },
       ].filter(t => t.id === tab).map(t => (
         <div key={t.id} className="admin-tab-desc">
           ℹ️ {t.desc}
@@ -9197,6 +9199,7 @@ const AdminPage = ({ onOpenFactory }) => {
 
       {tab === 'dart' && <AdminDartMismatchTab />}
       {tab === 'google_mismatch' && <AdminGoogleMismatchTab />}
+      {tab === 'hidden_mgmt' && <AdminHiddenTab />}
 
       {/* ── CSV 업로드 모달 ── */}
       {showUpload && (
@@ -9421,6 +9424,134 @@ const AdminPage = ({ onOpenFactory }) => {
     </main>
   );
 };
+// ─── AdminHiddenTab ────────────────────────────────────────────────
+const AdminHiddenTab = () => {
+  const SB = window._sb;
+  const [items, setItems] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [toast, setToast] = React.useState('');
+  const [websiteInputs, setWebsiteInputs] = React.useState({});
+  const [saving, setSaving] = React.useState({});
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await SB.from('factories')
+      .select('id,name,city,region,address,website,google_place_id,completeness_score')
+      .eq('hidden', true)
+      .order('completeness_score', { ascending: false })
+      .limit(200);
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  React.useEffect(() => { load(); }, []);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
+
+  // 복원 (hidden=false + google_place_id 초기화)
+  const restore = async (id) => {
+    const url = websiteInputs[id] || '';
+    setSaving(s => ({...s, [id]: true}));
+    const updateData = {
+      hidden: false,
+      google_place_id: null,
+      google_rating: null,
+      google_reviews: null,
+      google_photos: null,
+      google_review_texts: null,
+      ai_summary: null,
+    };
+    if (url) updateData.website = url;
+    await SB.from('factories').update(updateData).eq('id', id);
+    setSaving(s => ({...s, [id]: false}));
+    showToast('복원 완료! 다음 수집 시 재수집됩니다.');
+    load();
+  };
+
+  // 영구 제외 (hidden=true 유지, 표시만 제거)
+  const exclude = async (id) => {
+    if (!confirm('영구 제외하면 히든 목록에서도 사라져요. 계속할까요?')) return;
+    await SB.from('factories').update({ google_place_id: 'EXCLUDED' }).eq('id', id);
+    showToast('영구 제외 처리됐어요.');
+    load();
+  };
+
+  return (
+    <div style={{padding:24}}>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+        <h2 style={{fontSize:18, fontWeight:700}}>🔒 히든 공장 관리</h2>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <span style={{fontSize:12, color:'var(--ink-3)'}}>총 {items.length}개</span>
+          <button onClick={load} style={{padding:'6px 12px', borderRadius:6, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
+        </div>
+      </div>
+
+      <div style={{background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:12, color:'#9a3412'}}>
+        ⚠️ 주소불일치로 자동 숨김 처리된 공장들이에요. 올바른 website 입력 후 <strong>복원</strong>하면 다음 수집 시 정상 재수집됩니다. 찾기 어려우면 <strong>영구 제외</strong>로 정리하세요.
+      </div>
+
+      {loading ? (
+        <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>로딩 중...</div>
+      ) : items.length === 0 ? (
+        <div style={{textAlign:'center', padding:40, color:'var(--ink-3)'}}>숨김 처리된 공장이 없어요!</div>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>회사명</th>
+                <th>지역</th>
+                <th>현재 website</th>
+                <th>올바른 website 입력</th>
+                <th>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(f => (
+                <tr key={f.id}>
+                  <td><strong>{f.name}</strong></td>
+                  <td style={{fontSize:12, color:'var(--ink-3)'}}>{f.city}</td>
+                  <td style={{fontSize:11, maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                    {f.website
+                      ? <a href={f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{f.website}</a>
+                      : <span style={{color:'var(--ink-4)'}}>없음</span>}
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={websiteInputs[f.id] || ''}
+                      onChange={e => setWebsiteInputs(s => ({...s, [f.id]: e.target.value}))}
+                      style={{width:200, padding:'4px 8px', border:'1.5px solid var(--line)', borderRadius:6, fontSize:12}}
+                    />
+                  </td>
+                  <td style={{display:'flex', gap:4}}>
+                    <button
+                      onClick={() => restore(f.id)}
+                      disabled={saving[f.id]}
+                      style={{padding:'4px 10px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer'}}>
+                      {saving[f.id] ? '처리중' : '✅ 복원'}
+                    </button>
+                    <button
+                      onClick={() => exclude(f.id)}
+                      style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
+                      ❌ 영구제외
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
+    </div>
+  );
+};
+
 // ─── AdminGoogleMismatchTab ────────────────────────────────────────────────
 const AdminGoogleMismatchTab = () => {
   const SB = window._sb;
