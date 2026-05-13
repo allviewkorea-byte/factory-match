@@ -9689,21 +9689,27 @@ const AdminGoogleMismatchTab = () => {
   const saveEdit = async (f) => {
     const inp = inputs[f.id] || {};
     setSaving(s => ({...s, [f.id]: 'save'}));
-    const updateData = {
-      website: inp.website !== undefined ? inp.website : f.website,
-      naver_website: inp.naver_website !== undefined ? inp.naver_website : f.naver_website,
-      google_website: inp.google_website !== undefined ? inp.google_website : f.google_website,
-      google_place_id: null,
-      google_rating: null,
-      google_reviews: null,
-      google_photos: null,
-      google_review_texts: null,
-      website_verified: null,
-      ai_summary: null,
-      hidden: false,
-    };
+
+    // 각 칼럼 독립적으로 저장 - 입력된 것만 업데이트
+    const updateData = {};
+    if (inp.address !== undefined) updateData.address = inp.address;
+    if (inp.naver_website !== undefined) updateData.naver_website = inp.naver_website || null;
+    if (inp.google_website !== undefined) updateData.google_website = inp.google_website || null;
+    // 올바른 홈페이지가 입력된 경우에만 website 업데이트 + 구글 초기화
+    if (inp.website) {
+      updateData.website = inp.website;
+      updateData.google_place_id = null;
+      updateData.google_rating = null;
+      updateData.google_reviews = null;
+      updateData.google_photos = null;
+      updateData.google_review_texts = null;
+      updateData.website_verified = null;
+      updateData.ai_summary = null;
+      updateData.hidden = false;
+    }
+
     await SB.from('factories').update(updateData).eq('id', f.id);
-    // 전체 리로드 없이 해당 행만 업데이트
+    // 해당 행만 업데이트
     setItems(prev => prev.map(item => item.id === f.id
       ? { ...item, ...updateData }
       : item
@@ -9711,7 +9717,7 @@ const AdminGoogleMismatchTab = () => {
     setSaving(s => ({...s, [f.id]: null}));
     setEditing(e => ({...e, [f.id]: false}));
     setInputs(s => ({...s, [f.id]: {}}));
-    showToast('저장됐어요! 다음 수집 후 재판단하세요.');
+    showToast('저장됐어요!');
   };
 
   // ❌ 제외
@@ -9885,7 +9891,7 @@ const AdminGoogleMismatchTab = () => {
                       </td>
                       <td style={{minWidth:160}}>
                         {editing[f.id] ? (
-                          <input type="text" placeholder="https://..." value={(inputs[f.id]?.website) ?? (f.website || '')}
+                          <input type="text" placeholder="https://..." value={(inputs[f.id]?.website) ?? ''}
                             onChange={e => setInputs(s => ({...s, [f.id]: {...(s[f.id]||{}), website: e.target.value}}))}
                             style={{width:'100%', padding:'4px 6px', border:'2px solid var(--brand)', borderRadius:5, fontSize:12}}/>
                         ) : (
