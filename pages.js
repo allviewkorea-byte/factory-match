@@ -9711,56 +9711,51 @@ const AdminGoogleMismatchTab = () => {
                 <tbody>
                   {filteredItems.map(f => (
                     <tr key={f.id}>
-                      <td><strong>{f.name || '-'}</strong><div style={{fontSize:11, color:'var(--ink-3)'}}>{f.city}</div></td>
-                      <td style={{fontSize:12, color:'var(--ink-2)', maxWidth:160}}>{f.address || [f.region, f.city].filter(Boolean).join(' ') || '-'}</td>
-                      <td style={{fontSize:11, maxWidth:130}}>
+                      <td style={{whiteSpace:'nowrap'}}><strong style={{fontSize:13}}>{f.name || '-'}</strong></td>
+                      <td style={{fontSize:12, color:'var(--ink-2)', whiteSpace:'nowrap'}}>{f.address || [f.region, f.city].filter(Boolean).join(' ') || '-'}</td>
+                      <td style={{fontSize:11}}>
                         {f.naver_website || f.website
-                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)', wordBreak:'break-all'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '')}</a>
+                          ? <a href={f.naver_website || f.website} target="_blank" rel="noopener noreferrer" style={{color:'var(--brand)'}}>{(f.naver_website || f.website || '').replace(/^https?:\/\//, '').substring(0, 30)}</a>
                           : <span style={{color:'var(--ink-4)'}}>없음</span>}
                       </td>
-                      <td style={{fontSize:11, maxWidth:130}}>
+                      <td style={{fontSize:11}}>
                         {f.google_website
-                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a', wordBreak:'break-all'}}>{f.google_website.replace(/^https?:\/\//, '')}</a>
+                          ? <a href={f.google_website} target="_blank" rel="noopener noreferrer" style={{color:'#16a34a'}}>{f.google_website.replace(/^https?:\/\//, '').substring(0, 30)}</a>
                           : <span style={{color:'var(--ink-4)'}}>없음</span>}
                       </td>
                       <td>
                         {editing[f.id] ? (
                           <input type="text" placeholder="https://..." value={inputs[f.id] || ''}
                             onChange={e => setInputs(s => ({...s, [f.id]: e.target.value}))}
-                            style={{width:'100%', minWidth:160, padding:'4px 8px', border:'1.5px solid var(--brand)', borderRadius:6, fontSize:12}}
+                            style={{width:200, padding:'4px 8px', border:'1.5px solid var(--brand)', borderRadius:6, fontSize:12}}
                             autoFocus/>
                         ) : (
-                          <span style={{fontSize:11, color:'var(--ink-4)'}}>수정 버튼 클릭</span>
+                          <span style={{fontSize:11, color:'var(--ink-4)'}}>—</span>
                         )}
                       </td>
                       <td>
-                        <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
-                          {/* ✅ 정상 */}
-                          <button onClick={() => markNormal(f)}
-                            disabled={saving[f.id]}
-                            style={{padding:'4px 10px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer'}}>
-                            {saving[f.id] === 'normal' ? '처리중' : '✅ 정상'}
+                        <div style={{display:'flex', gap:4}}>
+                          <button onClick={() => markNormal(f)} disabled={saving[f.id]}
+                            style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#16a34a', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
+                            {saving[f.id] === 'normal' ? '...' : '✅ 정상'}
                           </button>
-                          {/* ✏️ 수정 / 저장 */}
                           {editing[f.id] ? (
-                            <button onClick={() => saveEdit(f)}
-                              disabled={!inputs[f.id] || saving[f.id]}
-                              style={{padding:'4px 10px', fontSize:11, fontWeight:600,
+                            <button onClick={() => saveEdit(f)} disabled={!inputs[f.id] || saving[f.id]}
+                              style={{padding:'4px 8px', fontSize:11, fontWeight:600,
                                 background: inputs[f.id] ? 'var(--brand)' : '#e5e7eb',
                                 color: inputs[f.id] ? '#fff' : 'var(--ink-4)',
-                                border:'none', borderRadius:5, cursor: inputs[f.id] ? 'pointer' : 'default'}}>
-                              {saving[f.id] === 'save' ? '저장중' : '저장'}
+                                border:'none', borderRadius:5, cursor: inputs[f.id] ? 'pointer' : 'default', whiteSpace:'nowrap'}}>
+                              {saving[f.id] === 'save' ? '...' : '저장'}
                             </button>
                           ) : (
                             <button onClick={() => setEditing(e => ({...e, [f.id]: true}))}
-                              style={{padding:'4px 10px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer'}}>
+                              style={{padding:'4px 8px', fontSize:11, fontWeight:600, background:'#fff', border:'1.5px solid var(--brand)', color:'var(--brand)', borderRadius:5, cursor:'pointer', whiteSpace:'nowrap'}}>
                               ✏️ 수정
                             </button>
                           )}
-                          {/* ❌ 제외 */}
                           <button onClick={() => exclude(f.id)}
-                            style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626'}}>
-                            ❌ 제외
+                            style={{padding:'4px 8px', fontSize:11, background:'#fff', border:'1.5px solid #dc2626', borderRadius:5, cursor:'pointer', color:'#dc2626', whiteSpace:'nowrap'}}>
+                            ❌
                           </button>
                         </div>
                       </td>
@@ -9773,31 +9768,54 @@ const AdminGoogleMismatchTab = () => {
         </div>
 
         {/* 오른쪽 가이드 */}
-        <div style={{width:220, flexShrink:0}}>
+        <div style={{width:200, flexShrink:0}}>
+          {/* 탭 설명 */}
           <div style={{
             background: tab === 'pending' ? '#f0fdf4' : '#fef9c3',
             border: `1.5px solid ${tab === 'pending' ? '#86efac' : '#fde047'}`,
-            borderRadius:12, padding:16, position:'sticky', top:20,
+            borderRadius:12, padding:'14px 16px',
+            position:'sticky', top:20,
           }}>
-            <div style={{fontSize:14, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:8}}>
+            <div style={{fontSize:13, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6}}>
               {currentTab?.label}
             </div>
-            <p style={{fontSize:12, color: tab === 'pending' ? '#166534' : '#854d0e', lineHeight:1.6, marginBottom:12, opacity:0.85}}>
+            <p style={{fontSize:11.5, color: tab === 'pending' ? '#166534' : '#854d0e', lineHeight:1.6, marginBottom:12, opacity:0.85}}>
               {currentTab?.desc}
             </p>
-            <div style={{fontSize:11, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6, opacity:0.7}}>버튼 설명</div>
-            <div style={{display:'flex', flexDirection:'column', gap:6}}>
-              {[
-                {label:'✅ 정상', desc:'현재 website 확정 → 탭에서 사라짐'},
-                {label:'✏️ 수정', desc:'URL 변경 후 저장 → 탭 유지'},
-                {label:'❌ 제외', desc:'영구 제외 → 탭에서 사라짐'},
-              ].map((b, i) => (
-                <div key={i} style={{padding:'6px 8px', background:'rgba(255,255,255,0.6)', borderRadius:6, fontSize:11}}>
-                  <div style={{fontWeight:700, marginBottom:2}}>{b.label}</div>
-                  <div style={{color:'var(--ink-3)'}}>{b.desc}</div>
-                </div>
-              ))}
-            </div>
+            <div style={{fontSize:11, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6, opacity:0.7, textTransform:'uppercase', letterSpacing:'0.05em'}}>버튼 안내</div>
+            {[
+              {label:'✅ 정상', color:'#16a34a', desc:'현재 website 확정 → AI요약+이메일 대상 → 목록 제거'},
+              {label:'✏️ 수정', color:'var(--brand)', desc:'URL 교체 후 저장 → 목록 유지'},
+              {label:'❌ 제외', color:'#dc2626', desc:'영구 제외 → 목록 제거'},
+            ].map((b, i) => (
+              <div key={i} style={{
+                padding:'8px 10px', borderRadius:8, marginBottom:6,
+                background:'rgba(255,255,255,0.7)',
+                borderLeft:`3px solid ${b.color}`,
+              }}>
+                <div style={{fontSize:11, fontWeight:700, color: b.color, marginBottom:2}}>{b.label}</div>
+                <div style={{fontSize:10.5, color:'var(--ink-3)', lineHeight:1.4}}>{b.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 빠른 탭 전환 */}
+          <div style={{marginTop:12, background:'#f8fafc', border:'1px solid var(--line)', borderRadius:10, padding:'12px 14px'}}>
+            <div style={{fontSize:11, fontWeight:700, color:'var(--ink-2)', marginBottom:8}}>🔍 탭 전환</div>
+            {[
+              {label:'🟢 수집 대기', key:'pending'},
+              {label:'🟡 도메인 불일치', key:'domain'},
+            ].map(item => (
+              <button key={item.key} onClick={() => setTab(item.key)} style={{
+                display:'block', width:'100%', textAlign:'left',
+                padding:'7px 10px', borderRadius:6, marginBottom:4,
+                border:'1px solid var(--line)', fontSize:11, cursor:'pointer', fontWeight:500,
+                background: tab === item.key ? 'var(--brand)' : '#fff',
+                color: tab === item.key ? '#fff' : 'var(--ink-2)',
+              }}>
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
