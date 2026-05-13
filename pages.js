@@ -11495,7 +11495,7 @@ const GrantsPage = ({ onNav, authed, onGate }) => {
       </div>
 
       {loading ? (
-        <div className="grants-loading">불러오는 중…</div>
+        <GearSpinnerCenter size={80} message="지원사업 정보를 불러오는 중…"/>
       ) : error ? (
         <div className="grants-empty">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>
       ) : displayItems.length === 0 ? (
