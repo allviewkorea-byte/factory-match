@@ -143,6 +143,8 @@ function detectCompanySearch(query) {
   if (isShort && !hasProductKeyword) return query.trim();
   return null;
 }
+
+async function fetchFactoriesByKeywords(keywords) {
   if (!keywords || keywords.length === 0) return [];
   const orParts = keywords.flatMap(kw => {
     const enc = encodeURIComponent('%' + kw + '%');
