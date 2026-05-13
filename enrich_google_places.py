@@ -237,15 +237,18 @@ def main():
                 "google_review_texts": json.dumps(review_texts) if review_texts else None,
             }
 
+            # 구글 website 저장 (크로스체크용)
+            website = details.get("website")
+            if website:
+                update_data["google_website"] = website
+                # website 없는 경우 구글 것으로 보완
+                if not f.get("website"):
+                    update_data["website"] = website
+
             # 전화번호 없는 경우 구글 것으로 보완
             phone = details.get("formatted_phone_number")
             if phone and not f.get("phone"):
                 update_data["phone"] = phone
-
-            # 웹사이트 없는 경우 구글 것으로 보완
-            website = details.get("website")
-            if website and not f.get("website"):
-                update_data["website"] = website
 
             # 좌표 없는 경우 구글 것으로 보완
             if lat and lng:
