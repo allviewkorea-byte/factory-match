@@ -302,8 +302,9 @@ window._dbRowToFactory = (row) => {
   let geoLat = null;
   let geoLng = null;
   if (row.lat != null && row.lng != null) {
-    const lat = Number(row.lat);
-    const lng = Number(row.lng);
+    // DB에 lat/lng가 뒤바뀌어 저장됨 - 실제 위도(lat)는 row.lng, 경도(lng)는 row.lat
+    const lat = Number(row.lng);
+    const lng = Number(row.lat);
     const inKorea = lat >= 33.0 && lat <= 38.9 && lng >= 124.5 && lng <= 132.0;
     if (inKorea) {
       geoLat = lat;

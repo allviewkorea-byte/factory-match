@@ -2242,7 +2242,9 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   }, []);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = [...filtered]
+    .sort((a, b) => (b.google_photos?.length || 0) - (a.google_photos?.length || 0))
+    .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const selectedFactory = selected ? filtered.find(f => f.id === selected) : null;
 
   const hasFilter = !!(query || activeProcess !== 'all' || activeRegion !== 'all' || oemOnly || exportOnly || activeIndustry !== 'all');
