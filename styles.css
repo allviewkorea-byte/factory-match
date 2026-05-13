@@ -174,7 +174,7 @@ a { color: inherit; text-decoration: none; }
 }
 .logo-img-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 0; }
 .hdr-logo-img { height: 64px; width: auto; object-fit: contain; display: block; }
-.hdr-logo-text { height: 72px; width: auto; object-fit: contain; display: block; margin-left: 0px; }
+.hdr-logo-text { height: 216px; width: auto; object-fit: contain; display: block; margin-left: 0px; }
 .logo-mark {
   width: 32px; height: 32px;
   background: var(--brand);
