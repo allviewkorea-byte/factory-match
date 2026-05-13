@@ -9658,23 +9658,56 @@ const AdminGoogleMismatchTab = () => {
 
   return (
     <div style={{padding:24}}>
-      <div style={{display:'flex', gap:20}}>
-        {/* 왼쪽 메인 */}
-        <div style={{flex:1, minWidth:0}}>
-          <h2 style={{fontSize:18, fontWeight:700, marginBottom:16}}>검증 필요 관리</h2>
+      <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:16}}>
+        <h2 style={{fontSize:18, fontWeight:700}}>검증 필요 관리</h2>
+        <div style={{display:'flex', gap:6, marginLeft:8}}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding:'7px 14px', borderRadius:8, fontSize:13, fontWeight:600,
+              border:'2px solid', cursor:'pointer',
+              background: tab === t.id ? 'var(--brand)' : '#fff',
+              color: tab === t.id ? '#fff' : 'var(--ink-2)',
+              borderColor: tab === t.id ? 'var(--brand)' : 'var(--line)',
+            }}>{t.label}</button>
+          ))}
+        </div>
+        <button onClick={load} style={{marginLeft:'auto', padding:'7px 12px', borderRadius:8, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
+      </div>
 
-          {/* 탭 버튼 */}
-          <div style={{display:'flex', gap:8, marginBottom:16}}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{
-                padding:'8px 16px', borderRadius:8, fontSize:13, fontWeight:600,
-                border:'2px solid', cursor:'pointer',
-                background: tab === t.id ? 'var(--brand)' : '#fff',
-                color: tab === t.id ? '#fff' : 'var(--ink-2)',
-                borderColor: tab === t.id ? 'var(--brand)' : 'var(--line)',
-              }}>{t.label}</button>
-            ))}
-            <button onClick={load} style={{marginLeft:'auto', padding:'8px 12px', borderRadius:8, fontSize:12, border:'1.5px solid var(--line)', cursor:'pointer', background:'#fff'}}>🔄 새로고침</button>
+      <div style={{display:'flex', gap:20}}>
+        {/* 풀폭 메인 */}
+        <div style={{flex:1, minWidth:0}}>
+
+          {/* 탭 설명 - 가로 풀폭 */}
+          <div style={{
+            background: tab === 'pending' ? '#f0fdf4' : '#fef9c3',
+            border: `1.5px solid ${tab === 'pending' ? '#86efac' : '#fde047'}`,
+            borderRadius:10, padding:'12px 16px', marginBottom:12,
+            display:'flex', gap:24, alignItems:'flex-start',
+          }}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:4}}>
+                {currentTab?.label}
+              </div>
+              <p style={{fontSize:12, color: tab === 'pending' ? '#166534' : '#854d0e', lineHeight:1.5, margin:0, opacity:0.85}}>
+                {currentTab?.desc}
+              </p>
+            </div>
+            <div style={{display:'flex', gap:8, flexShrink:0}}>
+              {[
+                {label:'✅ 정상', color:'#16a34a', desc:'현재 website 확정 → 목록 제거'},
+                {label:'저장', color:'var(--brand)', desc:'URL 교체 후 저장 → 목록 유지'},
+                {label:'❌ 제외', color:'#dc2626', desc:'영구 제외 → 목록 제거'},
+              ].map((b, i) => (
+                <div key={i} style={{
+                  padding:'8px 10px', borderRadius:8, background:'rgba(255,255,255,0.7)',
+                  borderLeft:`3px solid ${b.color}`, minWidth:90,
+                }}>
+                  <div style={{fontSize:11, fontWeight:700, color:b.color, marginBottom:2}}>{b.label}</div>
+                  <div style={{fontSize:10, color:'var(--ink-3)', lineHeight:1.3}}>{b.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* 검색 */}
@@ -9769,58 +9802,6 @@ const AdminGoogleMismatchTab = () => {
               </table>
             </div>
           )}
-        </div>
-
-        {/* 오른쪽 가이드 */}
-        <div style={{width:200, flexShrink:0}}>
-          {/* 탭 설명 */}
-          <div style={{
-            background: tab === 'pending' ? '#f0fdf4' : '#fef9c3',
-            border: `1.5px solid ${tab === 'pending' ? '#86efac' : '#fde047'}`,
-            borderRadius:12, padding:'14px 16px',
-            position:'sticky', top:20,
-          }}>
-            <div style={{fontSize:13, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6}}>
-              {currentTab?.label}
-            </div>
-            <p style={{fontSize:11.5, color: tab === 'pending' ? '#166534' : '#854d0e', lineHeight:1.6, marginBottom:12, opacity:0.85}}>
-              {currentTab?.desc}
-            </p>
-            <div style={{fontSize:11, fontWeight:700, color: tab === 'pending' ? '#166534' : '#854d0e', marginBottom:6, opacity:0.7, textTransform:'uppercase', letterSpacing:'0.05em'}}>버튼 안내</div>
-            {[
-              {label:'✅ 정상', color:'#16a34a', desc:'현재 website 확정 → AI요약+이메일 대상 → 목록 제거'},
-              {label:'✏️ 수정', color:'var(--brand)', desc:'URL 교체 후 저장 → 목록 유지'},
-              {label:'❌ 제외', color:'#dc2626', desc:'영구 제외 → 목록 제거'},
-            ].map((b, i) => (
-              <div key={i} style={{
-                padding:'8px 10px', borderRadius:8, marginBottom:6,
-                background:'rgba(255,255,255,0.7)',
-                borderLeft:`3px solid ${b.color}`,
-              }}>
-                <div style={{fontSize:11, fontWeight:700, color: b.color, marginBottom:2}}>{b.label}</div>
-                <div style={{fontSize:10.5, color:'var(--ink-3)', lineHeight:1.4}}>{b.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 빠른 탭 전환 */}
-          <div style={{marginTop:12, background:'#f8fafc', border:'1px solid var(--line)', borderRadius:10, padding:'12px 14px'}}>
-            <div style={{fontSize:11, fontWeight:700, color:'var(--ink-2)', marginBottom:8}}>🔍 탭 전환</div>
-            {[
-              {label:'🟢 수집 대기', key:'pending'},
-              {label:'🟡 도메인 불일치', key:'domain'},
-            ].map(item => (
-              <button key={item.key} onClick={() => setTab(item.key)} style={{
-                display:'block', width:'100%', textAlign:'left',
-                padding:'7px 10px', borderRadius:6, marginBottom:4,
-                border:'1px solid var(--line)', fontSize:11, cursor:'pointer', fontWeight:500,
-                background: tab === item.key ? 'var(--brand)' : '#fff',
-                color: tab === item.key ? '#fff' : 'var(--ink-2)',
-              }}>
-                {item.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
       {toast && <div className="fe-toast fe-toast-ok">{toast}</div>}
