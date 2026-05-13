@@ -9633,40 +9633,38 @@ const AdminGoogleMismatchTab = () => {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  const SEL = 'id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden';
+
   const load = async () => {
     setLoading(true);
-    let query = SB.from('factories')
-      .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
-      .order('name')
-      .limit(200);
 
     if (tab === 'pending') {
-      // 수집 대기: website 있는데 naver 또는 google website 하나만 있는 것 + 구글주소불일치
-      const { data: d1 } = await SB.from('factories')
-        .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
-        .not('website', 'is', null)
-        .neq('website', 'EXCLUDED')
-        .or('naver_website.is.null,google_website.is.null')
-        .eq('hidden', false)
-        .order('name').limit(100);
-
-      const { data: d2 } = await SB.from('factories')
-        .select('id,name,address,city,region,website,naver_website,google_website,google_place_id,website_verified,hidden')
-        .eq('google_place_id', 'ADDR_MISMATCH')
-        .order('name').limit(100);
-
-      const merged = [...(d1 || []), ...(d2 || [])];
+      // 두 쿼리 병렬 실행
+      const [r1, r2] = await Promise.all([
+        SB.from('factories')
+          .select(SEL)
+          .not('website', 'is', null)
+          .neq('website', 'EXCLUDED')
+          .or('naver_website.is.null,google_website.is.null')
+          .eq('hidden', false)
+          .order('name').limit(100),
+        SB.from('factories')
+          .select(SEL)
+          .eq('google_place_id', 'ADDR_MISMATCH')
+          .order('name').limit(100),
+      ]);
+      const merged = [...(r1.data || []), ...(r2.data || [])];
       const unique = merged.filter((f, i, arr) => arr.findIndex(x => x.id === f.id) === i);
       setItems(unique);
-      setLoading(false);
-      return;
     } else {
-      // 도메인 불일치: 크로스체크 후 불일치
-      query = query.eq('website_verified', false).eq('hidden', false);
+      const { data } = await SB.from('factories')
+        .select(SEL)
+        .eq('website_verified', false)
+        .eq('hidden', false)
+        .order('name').limit(200);
+      setItems(data || []);
     }
 
-    const { data } = await query;
-    setItems(data || []);
     setLoading(false);
   };
 
