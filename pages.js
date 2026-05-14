@@ -766,42 +766,33 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     }).catch(() => {});
   }, [mapsKey]);
 
-  // Sync markers with geoFactories — apply MarkerClusterer
+  // pagedFactories(현재 페이지 20개)만 핀으로 표시
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
-    // Destroy previous clusterer and clear markers
-    if (clustererRef.current) {
-      clustererRef.current.clearMarkers();
-      clustererRef.current = null;
-    }
+    // 기존 마커 전부 제거
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
     window.__omf = (id) => onOpenRef.current(id);
-    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
+
+    const pinIcon = {
+      path: 'M 0,-1 C -0.5,-1 -1,-0.5 -1,0 C -1,0.7 0,1.8 0,1.8 C 0,1.8 1,0.7 1,0 C 1,-0.5 0.5,-1 0,-1 Z',
+      fillColor: '#2563eb',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 0.8,
+      scale: 10,
+      anchor: new google.maps.Point(0, 1.8),
+    };
+
     const newMarkers = [];
-    (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
-      const isCurrentPage = pagedIds.has(f.id);
-      // No 'map' prop — clusterer manages visibility
+    (pagedFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
       const marker = new google.maps.Marker({
         position: { lat: f.lat, lng: f.lng },
+        map: mapRef.current,
         title: f.name,
-        icon: isCurrentPage ? {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#2563eb',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-        } : {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          fillColor: '#94a3b8',
-          fillOpacity: 0.7,
-          strokeColor: '#ffffff',
-          strokeWeight: 1.5,
-        },
+        icon: pinIcon,
       });
       marker.addListener('click', () => {
         if (!window._factoryCache) window._factoryCache = {};
@@ -816,49 +807,15 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         );
         infoWindowRef.current.open(mapRef.current, marker);
       });
-      marker._fid = f.id; // pagedFactories 아이콘 업데이트용
+      marker._fid = f.id;
       newMarkers.push(marker);
     });
     markersRef.current = newMarkers;
 
-    // 클러스터링 없이 직접 지도에 표시
-    newMarkers.forEach(m => m.setMap(mapRef.current));
-
     return () => {
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
-        clustererRef.current = null;
-      }
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
     };
-  }, [mapReady, geoFactories]);
-
-  // pagedFactories 변경 시 기존 마커 아이콘만 업데이트 (재생성 없이)
-  const pagedIdsRef = React.useRef(new Set());
-  React.useEffect(() => {
-    if (!mapReady || !mapRef.current || !markersRef.current.length) return;
-    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
-    // 이전과 같으면 스킵
-    const prev = pagedIdsRef.current;
-    const same = pagedIds.size === prev.size && [...pagedIds].every(id => prev.has(id));
-    if (same) return;
-    pagedIdsRef.current = pagedIds;
-    // 아이콘만 업데이트
-    markersRef.current.forEach(m => {
-      const fid = m._fid;
-      if (!fid) return;
-      const isCurrentPage = pagedIds.has(fid);
-      m.setIcon(isCurrentPage ? {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 9, fillColor: '#2563eb', fillOpacity: 1,
-        strokeColor: '#ffffff', strokeWeight: 2,
-      } : {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 6, fillColor: '#94a3b8', fillOpacity: 0.7,
-        strokeColor: '#ffffff', strokeWeight: 1.5,
-      });
-    });
   }, [mapReady, pagedFactories]);
 
   // Dynamic geocoding — pagedFactories without pre-geocoded coords
@@ -2178,7 +2135,17 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     const source = activeRegion !== 'all' ? regionRows : factories;
     let arr = source.filter(f => {
       if (f.hidden) return false;
-      if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
+      if (activeProcess !== 'all') {
+        const proc = PROCESSES.find(p => p.id === activeProcess);
+        const kwList = proc ? [proc.label, ...(proc.aliases || [])] : [activeProcess];
+        const pidMatch = f.processes.includes(activeProcess);
+        const textMatch = kwList.some(kw =>
+          (f.summary || '').includes(kw) ||
+          (f.industries || []).some(ind => ind.includes(kw)) ||
+          (f.products || []).some(pr => pr.includes(kw))
+        );
+        if (!pidMatch && !textMatch) return false;
+      }
       if (activeRegion === 'other') {
         if (KNOWN_REGIONS.has(f.region)) return false;
       } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
@@ -2711,6 +2678,36 @@ function FactoryMap({ addr, name, lat, lng }) {
   );
 }
 
+// ── 스트리트뷰 or 일반지도 폴백 ──────────────────────────────────────────
+const StreetViewOrMap = ({ lat, lng, gmapsKey }) => {
+  const [mode, setMode] = React.useState('loading');
+
+  React.useEffect(() => {
+    if (!lat || !lng || !gmapsKey) { setMode('map'); return; }
+    setMode('loading');
+    fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${gmapsKey}`)
+      .then(r => r.json())
+      .then(d => setMode(d.status === 'OK' ? 'sv' : 'map'))
+      .catch(() => setMode('map'));
+  }, [lat, lng]);
+
+  if (mode === 'loading') return <GearSpinnerCenter size={60} message="지도 불러오는 중..."/>;
+
+  const src = mode === 'sv'
+    ? `https://www.google.com/maps/embed/v1/streetview?key=${gmapsKey}&location=${lat},${lng}&heading=0&pitch=0&fov=90`
+    : `https://www.google.com/maps/embed/v1/place?key=${gmapsKey}&q=${lat},${lng}&zoom=16`;
+
+  return (
+    <iframe
+      title={mode === 'sv' ? 'streetview' : 'map'}
+      width="100%"
+      style={{border:0, borderRadius:10, display:'block', minHeight:400}}
+      src={src}
+      allowFullScreen
+    />
+  );
+};
+
 // ── Lottie 기어 스피너 ─────────────────────────────────────────────────────
 const GearSpinner = ({ size = 80, style = {} }) => {
   const ref = React.useRef(null);
@@ -3221,7 +3218,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             let aiData = null;
             try { aiData = f.ai_summary ? (typeof f.ai_summary === 'string' ? JSON.parse(f.ai_summary) : f.ai_summary) : null; } catch(e) {}
             const intro = aiData?.intro || f.summary;
-            const hasAiExtra = aiData && (aiData.products?.length || aiData.equipment?.length || aiData.clients?.length || aiData.certifications?.length || aiData.strengths?.length);
+            const hasAiExtra = aiData && !!(aiData.products?.length || aiData.equipment?.length || aiData.clients?.length || aiData.certifications?.length || aiData.strengths?.length);
             return (
           <div className={intro || hasAiExtra ? 'detail-grid' : ''}>
             {intro && (
@@ -3701,13 +3698,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div style={{minHeight: 400, display:'flex', flexDirection:'column'}}>
               {f.lat && f.lng ? (
                 <div className="detail-map-tab" style={{flex:1, display:'flex', flexDirection:'column'}}>
-                  <iframe
-                    title="streetview"
-                    width="100%"
-                    style={{border:0, borderRadius:10, display:'block', flex:1, minHeight:400}}
-                    src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
-                    allowFullScreen
-                  />
+                  <StreetViewOrMap lat={f.lat} lng={f.lng} addr={f.roadAddress || f.address} gmapsKey={GMAPS_KEY}/>
                   <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
                     <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
                   </a>
