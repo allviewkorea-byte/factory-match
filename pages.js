@@ -8948,7 +8948,7 @@ const AdminGrantsTab = () => {
 
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
-const AdminPage = ({ onOpenFactory }) => {
+const AdminPage = ({ onOpenFactory, onAdminAuth }) => {
   const [authed, setAuthed] = useState(() => {
     try {
       // 비밀 URL (?k=030209)로 접근한 경우 자동 인증
@@ -9169,7 +9169,7 @@ const AdminPage = ({ onOpenFactory }) => {
   ];
 
   // 비밀번호 게이트 — 모든 훅 선언 이후에 위치
-  if (!authed) return <AdminPasswordGate onAuth={() => setAuthed(true)}/>;
+  if (!authed) return <AdminPasswordGate onAuth={() => { setAuthed(true); onAdminAuth?.(); }}/>;
 
   const handleLogout = () => {
     try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch {}

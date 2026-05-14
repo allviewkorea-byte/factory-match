@@ -431,7 +431,7 @@ function App() {
         )
       )}
       {route === 'admin' && (
-        <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')}/>
+        <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')} onAdminAuth={() => { setAuthed(true); }}/>
       )}
       {route === 'grants' && <GrantsPage onNav={nav} authed={authed} onGate={showGate}/>}
       {route === 'terms' && <TermsPage />}
