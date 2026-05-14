@@ -144,6 +144,8 @@ function App() {
         setProfile(null);
       }
     });
+    return () => subscription.unsubscribe();
+  }, []);
 
 
   useEffect(() => {
