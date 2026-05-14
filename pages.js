@@ -829,8 +829,6 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     });
     markersRef.current = newMarkers;
 
-    return () => {};
-    };
   }, [mapReady, pagedFactories]);
 
   // Dynamic geocoding — pagedFactories without pre-geocoded coords
