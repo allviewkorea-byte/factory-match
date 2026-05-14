@@ -5098,15 +5098,11 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
       setTimeout(() => setSocialToast(null), 3000);
       return;
     }
-    const redirectUri = encodeURIComponent(window.location.origin + '/');
     sessionStorage.setItem('_sgn_provider', provider);
-    if (provider === 'kakao') {
-      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
-    } else {
-      const state = Math.random().toString(36).slice(2);
-      sessionStorage.setItem('_naver_state', state);
-      window.location.href = `https://nid.naver.com/oauth2.0/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-    }
+    window._sb.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: window.location.origin + '/' }
+    });
   };
 
   const pwStrength = (() => {
@@ -6108,15 +6104,11 @@ function SignupPage({ onNav }) {
       setTimeout(() => setSgnSocialToast(null), 3000);
       return;
     }
-    const redirectUri = encodeURIComponent(window.location.origin + '/');
     sessionStorage.setItem('_sgn_provider', provider);
-    if (provider === 'kakao') {
-      window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
-    } else {
-      const state = Math.random().toString(36).slice(2);
-      sessionStorage.setItem('_naver_state', state);
-      window.location.href = `https://nid.naver.com/oauth2.0/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
-    }
+    window._sb.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: window.location.origin + '/' }
+    });
   };
 
   const [form, setForm] = useStateP({
