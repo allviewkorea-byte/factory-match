@@ -8673,12 +8673,12 @@ const AdminFactoriesTab = ({ onOpenFactory }) => {
                 <td>{f.phone || '—'}</td>
                 <td>
                   {f.email
-                    ? <span className="admin-link-cell">{f.email}</span>
+                    ? <a href={`mailto:${f.email}`} className="admin-link-cell" style={{color:'var(--brand)'}}>{f.email}</a>
                     : <span style={{color:'#ccc'}}>—</span>}
                 </td>
                 <td>
                   {f.website
-                    ? <span className="admin-link-cell" title={f.website}>{f.website.replace(/^https?:\/\//, '').slice(0, 28)}</span>
+                    ? <a href={f.website} target="_blank" rel="noopener noreferrer" className="admin-link-cell" title={f.website} style={{color:'var(--brand)'}}>{f.website.replace(/^https?:\/\//, '').slice(0, 28)}</a>
                     : '—'}
                 </td>
                 <td>
