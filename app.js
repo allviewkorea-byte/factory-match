@@ -133,8 +133,11 @@ function App() {
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
-        // 소셜 로그인 콜백 (카카오/네이버)
-        await handleSession(session);
+        // 소셜 로그인 콜백만 처리 (카카오/네이버) - 이메일 로그인은 제외
+        const provider = session?.user?.app_metadata?.provider;
+        if (provider && provider !== 'email') {
+          await handleSession(session);
+        }
       } else if (event === 'SIGNED_OUT') {
         try { localStorage.removeItem('fm-authed'); localStorage.removeItem('fm-profile'); } catch {}
         setAuthed(false);
