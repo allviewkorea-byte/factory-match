@@ -157,10 +157,10 @@ function App() {
     };
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
-        // 소셜 로그인 콜백만 처리 (카카오/네이버) - 이메일 로그인은 제외
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         const provider = session?.user?.app_metadata?.provider;
-        if (provider && provider !== 'email') {
+        // 소셜 로그인(카카오/네이버)이고 fm-authed가 없으면 처리
+        if (provider && provider !== 'email' && localStorage.getItem('fm-authed') !== '1') {
           await handleSession(session);
         }
       } else if (event === 'SIGNED_OUT') {
