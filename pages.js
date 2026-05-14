@@ -5111,10 +5111,8 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   const [socialToast, setSocialToast] = useAuthState(null);
 
   const handleSocialLogin = (provider) => {
-    const clientId = provider === 'kakao' ? window._KAKAO_CLIENT_ID : window._NAVER_CLIENT_ID;
-    if (!clientId) {
-      const label = provider === 'kakao' ? '카카오' : '네이버';
-      setSocialToast(`${label} 로그인 서비스를 준비 중입니다`);
+    if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
+      setSocialToast('네이버 로그인 서비스를 준비 중입니다');
       setTimeout(() => setSocialToast(null), 3000);
       return;
     }
@@ -6117,10 +6115,8 @@ function SignupPage({ onNav }) {
   const [sgnSocialToast, setSgnSocialToast] = useStateP(null);
 
   const handleSgnSocial = (provider) => {
-    const clientId = provider === 'kakao' ? window._KAKAO_CLIENT_ID : window._NAVER_CLIENT_ID;
-    if (!clientId) {
-      const label = provider === 'kakao' ? '카카오' : '네이버';
-      setSgnSocialToast(`${label} 로그인 서비스를 준비 중입니다`);
+    if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
+      setSgnSocialToast('네이버 로그인 서비스를 준비 중입니다');
       setTimeout(() => setSgnSocialToast(null), 3000);
       return;
     }
