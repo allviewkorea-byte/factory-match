@@ -118,6 +118,9 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (code) {
+      // URL에서 code 먼저 제거 (재처리 방지)
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => {
       window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) { console.error('exchangeCodeForSession error:', error); return; }
         if (data?.session?.user) {
@@ -135,8 +138,7 @@ function App() {
           });
         }
       });
-      // URL에서 code 제거
-      window.history.replaceState({}, '', window.location.pathname);
+      }, 1500);
     }
 
     const handleSession = async (session) => {
@@ -170,29 +172,7 @@ function App() {
       }
     });
 
-    // 앱 로드 시 localStorage에 카카오 토큰이 있으면 직접 처리
-    // (INITIAL_SESSION이 initializePromise pending으로 놓칠 수 있어서)
-    setTimeout(() => {
-      try {
-        const stored = localStorage.getItem('sb-yezxwlzyiqgewpkkyget-auth-token');
-        if (stored && localStorage.getItem('fm-authed') !== '1') {
-          const tokenData = JSON.parse(stored);
-          const provider = tokenData?.user?.app_metadata?.provider;
-          const userId = tokenData?.user?.id;
-          if (provider && provider !== 'email' && userId) {
-            window._sb.from('user_profiles').select('id').eq('id', userId).maybeSingle().then(({ data }) => {
-              if (!data) {
-                setAuthed(false);
-                nav('signup');
-              } else {
-                try { localStorage.setItem('fm-authed', '1'); } catch {}
-                setAuthed(true);
-              }
-            });
-          }
-        }
-      } catch(e) {}
-    }, 2000);
+
 
     return () => subscription.unsubscribe();
   }, []);
