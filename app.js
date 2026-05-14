@@ -147,6 +147,7 @@ function App() {
 
     // 페이지 로드 시 이미 세션이 있으면 (일반 이메일 로그인 복원)
     // fm-authed가 없는데 세션이 있는 경우만 처리 (소셜 로그인 콜백)
+    setTimeout(() => {
     window._sb.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && localStorage.getItem('fm-authed') !== '1') {
         // user_profiles 있으면 로그인 복원, 없으면 소셜 신규가입 → signup
