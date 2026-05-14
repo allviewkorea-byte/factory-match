@@ -2203,12 +2203,6 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         const hay = ((f.name || '') + (f.en || '') + (f.city || '') + (f.summary || '') + (f.materials || []).join(' ')).toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      // 플로팅 키워드 필터
-      if (activeKw) {
-        const kw = activeKw.toLowerCase();
-        const hay = ((f.name || '') + (f.summary || '') + (f.industries || []).join(' ') + (f.processes || []).join(' ') + (f.materials || []).join(' ') + (f.products || []).join(' ')).toLowerCase();
-        if (!hay.includes(kw)) return false;
-      }
       return true;
     });
     if (sort === 'rating') arr.sort((a, b) => b.rating - a.rating);
@@ -2216,7 +2210,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     else if (sort === 'deals') arr.sort((a, b) => b.deals - a.deals);
     else arr.sort((a, b) => (b.rating * 50 + b.deals / 10) - (a.rating * 50 + a.deals / 10));
     return arr;
-  }, [factories, regionRows, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry, activeKw]);
+  }, [factories, regionRows, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
   // 지도 핀: 현재 페이지에 보이는 공장만 표시 + 결과 없으면 빈 배열
   const filteredGeoFactories = React.useMemo(() => {
