@@ -5122,42 +5122,65 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   return (
     <div className="signup-shell">
       <button className="signup-close" onClick={() => onNav('home')}>✕</button>
-      <div className="signup-card">
+      <div className="signup-card" style={{maxWidth:440, width:'100%'}}>
         <AuthLogo size={36}/>
-        <h2 className="signup-title">공장매칭 시작하기</h2>
-        <p className="signup-sub">소셜 계정으로 로그인하세요</p>
+        <h2 className="signup-title" style={{marginTop:16, marginBottom:4}}>공장매칭 시작하기</h2>
+        <p className="signup-sub" style={{marginBottom:24}}>소셜 계정으로 로그인하세요</p>
 
-        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:20}}>
-          <button className="auth-social-btn auth-kakao-btn" onClick={() => handleSocial('kakao')}>
+        {/* 소셜 버튼 */}
+        <div style={{display:'flex', flexDirection:'column', gap:10}}>
+          <button
+            onClick={() => handleSocial('kakao')}
+            style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'13px 20px', borderRadius:10, border:'none', background:'#FEE500', color:'#3C1E1E', fontWeight:700, fontSize:15, cursor:'pointer', fontFamily:'inherit'}}
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.733 1.617 5.13 4.056 6.548L5.1 21l4.663-2.47A11.3 11.3 0 0 0 12 18.6c5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/></svg>
             카카오로 시작하기
           </button>
-          <button className="auth-social-btn auth-naver-btn" onClick={() => handleSocial('naver')}>
+          <button
+            onClick={() => handleSocial('naver')}
+            style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'13px 20px', borderRadius:10, border:'none', background:'#03C75A', color:'#fff', fontWeight:700, fontSize:15, cursor:'pointer', fontFamily:'inherit'}}
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg>
             네이버로 시작하기
           </button>
         </div>
 
-        <div className="sgn-divider"><span>또는 유형 선택 후 이메일로</span></div>
+        {/* 구분선 */}
+        <div style={{display:'flex', alignItems:'center', gap:10, margin:'20px 0'}}>
+          <div style={{flex:1, height:1, background:'var(--border)'}}/>
+          <span style={{fontSize:12, color:'var(--ink-3)', whiteSpace:'nowrap'}}>또는 유형 선택 후 이메일로</span>
+          <div style={{flex:1, height:1, background:'var(--border)'}}/>
+        </div>
 
-        <div className="sgn-role-grid">
-          <button className="sgn-role-btn" onClick={() => handleSocial('kakao')}>
-            <span className="sgn-role-icon" style={{background:'#e8f4fd'}}>
+        {/* 바이어/제조사 선택 */}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
+          <button
+            onClick={() => handleSocial('kakao')}
+            style={{padding:'20px 12px', borderRadius:12, border:'1.5px solid var(--border)', background:'#fff', cursor:'pointer', textAlign:'center', transition:'all 0.15s', fontFamily:'inherit'}}
+          >
+            <div style={{width:48, height:48, borderRadius:12, background:'#e8f4fd', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px'}}>
               <Icon name="search" size={22} stroke={1.8} style={{color:'var(--brand)'}}/>
-            </span>
-            <span className="sgn-role-name">바이어</span>
-            <span className="sgn-role-desc">제조사를 찾고<br/>견적을 받고 싶어요</span>
+            </div>
+            <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)', marginBottom:6}}>바이어</div>
+            <div style={{fontSize:12, color:'var(--ink-3)', lineHeight:1.5}}>제조사를 찾고<br/>견적을 받고 싶어요</div>
           </button>
-          <button className="sgn-role-btn" onClick={() => handleSocial('kakao')}>
-            <span className="sgn-role-icon" style={{background:'#e8fdf0'}}>
+          <button
+            onClick={() => handleSocial('kakao')}
+            style={{padding:'20px 12px', borderRadius:12, border:'1.5px solid var(--border)', background:'#fff', cursor:'pointer', textAlign:'center', transition:'all 0.15s', fontFamily:'inherit'}}
+          >
+            <div style={{width:48, height:48, borderRadius:12, background:'#e8fdf0', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px'}}>
               <Icon name="bar_chart" size={22} stroke={1.8} style={{color:'var(--emerald)'}}/>
-            </span>
-            <span className="sgn-role-name">제조사</span>
-            <span className="sgn-role-desc">공장을 등록하고<br/>바이어를 받고 싶어요</span>
+            </div>
+            <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)', marginBottom:6}}>제조사</div>
+            <div style={{fontSize:12, color:'var(--ink-3)', lineHeight:1.5}}>공장을 등록하고<br/>바이어를 받고 싶어요</div>
           </button>
         </div>
 
-        {socialToast && <div className="auth-toast">{socialToast}</div>}
+        {socialToast && (
+          <div style={{marginTop:16, padding:'10px 16px', background:'#fef3c7', borderRadius:8, fontSize:13, color:'#92400e', textAlign:'center'}}>
+            {socialToast}
+          </div>
+        )}
       </div>
     </div>
   );
