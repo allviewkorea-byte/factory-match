@@ -114,6 +114,31 @@ function App() {
 
   // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
   useEffect(() => {
+    // OAuth 콜백 처리 - URL에 code 파라미터가 있으면 세션 교환
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) { console.error('exchangeCodeForSession error:', error); return; }
+        if (data?.session?.user) {
+          const provider = data.session.user?.app_metadata?.provider;
+          window._sb.from('user_profiles').select('id').eq('id', data.session.user.id).maybeSingle().then(({ data: profile }) => {
+            if (!profile) {
+              if (provider && provider !== 'email') {
+                setAuthed(false);
+                nav('signup');
+              }
+            } else {
+              try { localStorage.setItem('fm-authed', '1'); } catch {}
+              setAuthed(true);
+            }
+          });
+        }
+      });
+      // URL에서 code 제거
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     const handleSession = async (session) => {
       if (!session?.user) return;
       const { data } = await window._sb
