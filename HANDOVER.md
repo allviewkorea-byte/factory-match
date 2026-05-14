@@ -181,17 +181,81 @@ py enrich_dart.py                                         # DART 재무 (일 10,
 
 ---
 
-## 🔐 카카오 로그인 설정 현황
+## 🔐 카카오 로그인 설정 현황 ⚠️ 미완료
 
 카카오 개발자센터 앱 ID: 1449602
 - REST API 키: 9f4362740ae36ff6463fc200b27322d8
 - JavaScript 키: 8b3808a2c6376f9824924c482b3ea860
+- Native 앱 키: 3d45aa867b9c78ff1eeabae6bfa18aeb
 - Client Secret: FkiGEMEbTJegODBwyTRo4etzb9cM2PrH
 - Redirect URI: https://yezxwlzyiqgewpkkyget.supabase.co/auth/v1/callback
 - 비즈 앱 전환 완료 ✅
 - 동의항목: 닉네임(필수), 프로필사진(필수), 이메일(필수) ✅
 - Supabase Kakao Provider 활성화 완료 ✅
-- index.html에 window._KAKAO_CLIENT_ID 설정 완료 ✅
+- Supabase URL Configuration:
+  - Site URL: https://factorymatch.co.kr
+  - Redirect URLs: https://factorymatch.co.kr/, https://steady-mousse-5900f8.netlify.app/
+- index.html에 flowType: 'pkce', detectSessionInUrl: true, persistSession: true 설정 ✅
+
+### 카카오 로그인 디버깅 (2026-05-14 진행 중)
+
+**증상:** 카카오 로그인 후 홈으로 리다이렉트되지만 로그인 처리가 안 됨 (signup 페이지로 안 가고 비회원 상태 유지)
+
+**확인된 사실:**
+- 카카오 OAuth 흐름은 정상 작동 (302 응답)
+- Supabase callback에서 ?code=... 파라미터로 돌아옴
+- localStorage에 sb-yezxwlzyiqgewpkkyget-auth-token 저장됨 (provider: kakao 확인)
+- 하지만 getSession() Promise가 pending 상태로 유지됨 (initializePromise pending)
+
+**시도한 것들 (모두 실패):**
+1. exchangeCodeForSession으로 명시적 세션 교환
+2. INITIAL_SESSION 이벤트 처리
+3. localStorage 토큰 직접 읽어서 처리
+4. setTimeout으로 1.5~2초 delay
+5. flowType: 'pkce' 명시
+6. Supabase URL Configuration 설정
+
+**근본 문제:** Supabase가 카카오 콜백 처리 시 세션이 즉시 잡히지 않음
+- onAuthStateChange의 SIGNED_IN 이벤트가 안 옴
+- INITIAL_SESSION 이벤트만 오는데 user가 undefined
+- getSession()도 Promise pending 유지
+
+**다음 채팅에서 시도할 것:**
+- 다른 OAuth 방식 시도 (signInWithOAuth 옵션 변경)
+- @supabase/auth-js 버전 업그레이드
+- 또는 자체 카카오 OAuth 구현 (Supabase 우회)
+- 또는 Supabase 이슈 트래커 확인
+
+### 카카오 테스트 시 주의사항
+- Supabase Users에 테스트 유저가 남아있으면 계속 충돌 → 매번 삭제하고 테스트
+- 캐시 문제 자주 발생 → Ctrl+Shift+R 강력 새로고침
+
+---
+
+## 🎨 가입/로그인 UI 통합 (2026-05-14)
+
+**변경 사항:**
+- 헤더: "로그인" + "무료로 시작하기" 2개 → "로그인 및 가입하기" 1개로 통합
+- 가입 페이지 단순화: 카카오/네이버 소셜 로그인만
+- 이메일/비번 가입 제거 (소셜만 사용)
+- OnboardingPage: 이름 + 회사명 + 역할(바이어/제조사) 입력 팝업
+
+**핵심 흐름:**
+1. "로그인 및 가입하기" 클릭 → AuthFormPage (카카오/네이버 버튼만)
+2. 카카오/네이버 클릭 → OAuth → 콜백
+3. 신규: OnboardingPage 팝업 (이름+회사명+역할) → user_profiles upsert → 홈
+4. 기존: 바로 홈
+
+**디자인 클래스 (styles.css):**
+- .signup-shell: 그라데이션 배경, 정중앙 정렬
+- .signup-card: 흰 카드, 그림자, 둥근 모서리
+- .signup-close: 우상단 X 버튼 (absolute position)
+- .signup-logo: 좌상단 로고 (absolute position)
+- .signup-title, .signup-sub: 타이틀/서브 타이틀
+
+**제조사 편집 권한 정책 결정:**
+- 1단계 (지금): 소유권 인증(사업자등록증) → 관리자 승인 → 즉시 수정 반영
+- 2단계 (나중에): 수정 후 관리자 승인 도입 (사용자 늘면)
 
 ---
 
@@ -203,8 +267,8 @@ py enrich_dart.py                                         # DART 재무 (일 10,
 - DART 수집 후 completeness_score SQL 재계산
 
 기능 개발:
+- ⚠️ 카카오 로그인 작동 문제 해결 (위 카카오 로그인 디버깅 섹션 참고)
 - 네이버 소셜 로그인 연동 (네이버 개발자센터 앱 등록 필요)
-- 카카오 로그인 실사용 테스트 (KOE006 오류 수정 완료, 재테스트 필요)
 - 제조사 소유권 인증 (사업자등록증 업로드 → 관리자 승인 → 편집 권한)
 - 공장 사진 업로드 (여러 장)
 - SMS 알림 실제 연동 (Twilio 등 필요)
