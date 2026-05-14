@@ -115,7 +115,7 @@ function App() {
   // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
   useEffect(() => {
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         const { data } = await window._sb
           .from('user_profiles')
           .select('id')
@@ -128,7 +128,12 @@ function App() {
         } else {
           try { localStorage.setItem('fm-authed', '1'); } catch {}
           setAuthed(true);
+          nav('home');
         }
+      } else if (event === 'SIGNED_OUT') {
+        try { localStorage.removeItem('fm-authed'); localStorage.removeItem('fm-profile'); } catch {}
+        setAuthed(false);
+        setProfile(null);
       }
     });
     return () => subscription.unsubscribe();
