@@ -156,8 +156,15 @@ function App() {
             try { localStorage.setItem('fm-authed', '1'); } catch {}
             setAuthed(true);
           } else {
-            // 신규 소셜 유저인데 세션만 있는 경우 - 세션 제거
-            window._sb.auth.signOut();
+            // 소셜 유저인데 user_profiles 없음 → 온보딩으로
+            const provider = session.user?.app_metadata?.provider;
+            if (provider && provider !== 'email') {
+              setAuthed(false);
+              nav('signup');
+            } else {
+              // 이메일 유저인데 user_profiles 없음 → 세션 제거
+              window._sb.auth.signOut();
+            }
           }
         });
       }
