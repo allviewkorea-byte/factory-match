@@ -131,8 +131,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
               >
                 <Icon name="shield" size={16} stroke={1.8}/>
               </button>
-              <button className="hdr-login-btn" onClick={() => onNav('login')}>로그인</button>
-              <button className="hdr-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'header' }); onNav('signup'); }}>무료로 시작하기</button>
+              <button className="hdr-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'header' }); onNav('login'); }}>로그인 및 가입하기</button>
             </>
           )}
         </div>
@@ -5102,15 +5101,9 @@ function ForgotPasswordPage({ onNav }) {
 }
 
 function AuthFormPage({ mode, onNav, onSubmit }) {
-  const isSignup = mode === 'signup';
-  const [email, setEmail] = useAuthState('');
-  const [password, setPassword] = useAuthState('');
-  const [showPw, setShowPw] = useAuthState(false);
-  const [agree, setAgree] = useAuthState({ tos: false, privacy: false, marketing: false });
-  const allAgreed = agree.tos && agree.privacy;
   const [socialToast, setSocialToast] = useAuthState(null);
 
-  const handleSocialLogin = (provider) => {
+  const handleSocial = (provider) => {
     if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
       setSocialToast('네이버 로그인 서비스를 준비 중입니다');
       setTimeout(() => setSocialToast(null), 3000);
@@ -5126,236 +5119,49 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
     });
   };
 
-  const pwStrength = (() => {
-    if (!password) return 0;
-    let s = 0;
-    if (password.length >= 8) s++;
-    if (/[A-Z]/.test(password) || /[a-z]/.test(password)) s++;
-    if (/[0-9]/.test(password)) s++;
-    if (/[^A-Za-z0-9]/.test(password)) s++;
-    return s;
-  })();
-  const pwLabel = ['', '약함', '보통', '강함', '매우 강함'][pwStrength];
-  const pwColor = ['var(--ink-5)', 'var(--rose)', 'var(--amber)', 'var(--brand)', 'var(--emerald)'][pwStrength];
-
-  const [authError, setAuthError] = useAuthState('');
-
-  const canSubmit = email.includes('@') && password.length >= 8 && (!isSignup || allAgreed);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setAuthError('');
-    if (!isSignup) {
-      // 로그인: Supabase 인증
-      try {
-        const { error } = await window._sb.auth.signInWithPassword({ email, password });
-        if (error) {
-          if (error.message.includes('Invalid login')) setAuthError('이메일 또는 비밀번호가 올바르지 않습니다.');
-          else setAuthError('로그인에 실패했습니다. 다시 시도해주세요.');
-          return;
-        }
-        onSubmit({ email, isLogin: true });
-      } catch {
-        setAuthError('로그인 중 오류가 발생했습니다.');
-      }
-    } else {
-      onSubmit({ email });
-    }
-  };
-
   return (
     <div className="auth-shell">
-      <div className="auth-shell-bg"/>
-      <div className="auth-shell-inner">
-        <header className="auth-mini-hdr">
-          <AuthLogo size={32}/>
-          <button className="auth-back-btn" onClick={() => onNav('home')}>
-            <Icon name="close" size={14} stroke={2}/>
+      <div className="auth-card">
+        <AuthLogo size={36}/>
+        <h2 className="auth-title">공장매칭 시작하기</h2>
+        <p className="auth-sub">소셜 계정으로 로그인하세요</p>
+
+        <div className="auth-social-btns" style={{display:'flex', flexDirection:'column', gap:12, marginTop:24}}>
+          <button
+            className="auth-social-btn auth-kakao-btn"
+            onClick={() => handleSocial('kakao')}
+            style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'14px 20px', borderRadius:10, border:'none', background:'#FEE500', color:'#3C1E1E', fontWeight:600, fontSize:15, cursor:'pointer'}}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.733 1.617 5.13 4.056 6.548L5.1 21l4.663-2.47A11.3 11.3 0 0 0 12 18.6c5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/></svg>
+            카카오로 시작하기
           </button>
-        </header>
-
-        <div className="auth-card">
-          <div className="auth-card-head">
-            <h1>{isSignup ? '공장매칭 시작하기' : '다시 오신 걸 환영해요'}</h1>
-            <p>{isSignup
-              ? '가입 후 1분이면 맞춤 제조사를 만나볼 수 있어요.'
-              : '이메일로 로그인하거나 구글 계정을 사용하세요.'}</p>
-          </div>
-
-          {socialToast && (
-            <div className="auth-social-toast">
-              <Icon name="info" size={13} stroke={2}/>
-              {socialToast}
-            </div>
-          )}
-
-          <div className="auth-social-btns">
-            <button
-              className="auth-social-btn auth-kakao-btn"
-              onClick={() => handleSocialLogin('kakao')}
-            >
-              <svg width="18" height="17" viewBox="0 0 18 17" fill="none">
-                <path fill="currentColor" d="M9 0C4.03 0 0 3.13 0 7c0 2.48 1.57 4.67 3.96 5.93l-.85 3.18 3.6-2.35c.74.1 1.5.24 2.29.24 4.97 0 9-3.13 9-7S13.97 0 9 0z"/>
-              </svg>
-              {isSignup ? '카카오로 가입' : '카카오로 로그인'}
-            </button>
-            <button
-              className="auth-social-btn auth-naver-btn"
-              onClick={() => handleSocialLogin('naver')}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path fill="currentColor" d="M9.13 8.16L6.12 3H3v10h3.87V7.84L9.88 13H13V3H9.13z"/>
-              </svg>
-              {isSignup ? '네이버로 가입' : '네이버로 로그인'}
-            </button>
-            <button
-              className="auth-social-btn auth-google-btn"
-              onClick={() => onSubmit({ email: 'user@gmail.com', google: true })}
-            >
-              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2.1 1.4-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.2-8L6.2 33C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.7l6.2 5.2c-.4.4 6.6-4.8 6.6-14.9 0-1.3-.1-2.4-.4-3.5z"/></svg>
-              {isSignup ? '구글로 가입' : '구글로 로그인'}
-            </button>
-          </div>
-
-          <div className="auth-divider">
-            <span className="auth-divider-line"/>
-            <span className="auth-divider-text">또는 이메일로 로그인</span>
-            <span className="auth-divider-line"/>
-          </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label className="auth-field">
-              <span className="auth-field-label">이메일</span>
-              <div className="auth-input-wrap">
-                <Icon name="mail" size={16} stroke={1.8}/>
-                <input
-                  className="auth-input"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
-                {email.includes('@') && (
-                  <span className="auth-input-check">
-                    <Icon name="check" size={12} stroke={3}/>
-                  </span>
-                )}
-              </div>
-            </label>
-
-            <label className="auth-field">
-              <span className="auth-field-label">
-                비밀번호
-                {!isSignup && <button type="button" className="auth-field-link" onClick={() => onNav('forgot')}>비밀번호 찾기</button>}
-              </span>
-              <div className="auth-input-wrap">
-                <Icon name="lock" size={16} stroke={1.8}/>
-                <input
-                  className="auth-input"
-                  type={showPw ? 'text' : 'password'}
-                  placeholder={isSignup ? '8자 이상, 영문·숫자 포함' : '비밀번호'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={isSignup ? 'new-password' : 'current-password'}
-                />
-                <button type="button" className="auth-input-eye" onClick={() => setShowPw(!showPw)} aria-label="비밀번호 표시 전환">
-                  <Icon name={showPw ? 'eye_off' : 'eye'} size={15} stroke={1.8}/>
-                </button>
-              </div>
-              {isSignup && password && (
-                <div className="auth-pw-meter">
-                  <div className="auth-pw-meter-bar">
-                    {[0,1,2,3].map(i => (
-                      <span key={i} className="auth-pw-meter-seg" style={{ background: i < pwStrength ? pwColor : 'var(--bg-soft)' }}/>
-                    ))}
-                  </div>
-                  <span className="auth-pw-meter-label" style={{ color: pwColor }}>{pwLabel}</span>
-                </div>
-              )}
-            </label>
-
-            {isSignup && (
-              <div className="auth-agree">
-                <label className="auth-agree-all">
-                  <input
-                    type="checkbox"
-                    checked={agree.tos && agree.privacy && agree.marketing}
-                    onChange={(e) => setAgree({ tos: e.target.checked, privacy: e.target.checked, marketing: e.target.checked })}
-                  />
-                  <span className="auth-cb"><Icon name="check" size={11} stroke={3.2}/></span>
-                  <strong>전체 동의</strong>
-                </label>
-                <div className="auth-agree-list">
-                  {[
-                    { k: 'tos', label: '서비스 이용약관 동의', req: true },
-                    { k: 'privacy', label: '개인정보 수집·이용 동의', req: true },
-                    { k: 'marketing', label: '마케팅 정보 수신 동의', req: false },
-                  ].map(a => (
-                    <label key={a.k} className="auth-agree-item">
-                      <input
-                        type="checkbox"
-                        checked={agree[a.k]}
-                        onChange={(e) => setAgree({ ...agree, [a.k]: e.target.checked })}
-                      />
-                      <span className="auth-cb"><Icon name="check" size={10} stroke={3.2}/></span>
-                      <span className="auth-agree-text">
-                        {a.label}
-                        {a.req ? <em className="auth-req">(필수)</em> : <em className="auth-opt">(선택)</em>}
-                      </span>
-                      <button type="button" className="auth-agree-view">보기</button>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {authError && (
-              <div className="sgn-error-box" style={{ marginBottom:8 }}>
-                <Icon name="info" size={14} stroke={2}/>
-                {authError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn-primary auth-submit"
-              disabled={!canSubmit}
-            >
-              {isSignup ? '이메일로 가입' : '로그인'}
-            </button>
-          </form>
-
-          <div className="auth-card-foot">
-            {isSignup ? (
-              <>이미 계정이 있으신가요? <button className="auth-foot-link" onClick={() => onNav('login')}>로그인</button></>
-            ) : (
-              <>아직 계정이 없으신가요? <button className="auth-foot-link" onClick={() => onNav('signup')}>무료 가입</button></>
-            )}
-          </div>
+          <button
+            className="auth-social-btn auth-naver-btn"
+            onClick={() => handleSocial('naver')}
+            style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'14px 20px', borderRadius:10, border:'none', background:'#03C75A', color:'#fff', fontWeight:600, fontSize:15, cursor:'pointer'}}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg>
+            네이버로 시작하기
+          </button>
         </div>
 
-        <div className="auth-illust">
-          <div className="auth-illust-card">
-            <Icon name="shield" size={20} stroke={1.8}/>
-            <div>
-              <strong>안전한 B2B 인증</strong>
-              <span>휴대폰 + 이메일로 신뢰도를 확인합니다</span>
-            </div>
+        {socialToast && (
+          <div className="auth-toast" style={{marginTop:16, padding:'10px 16px', background:'#fef3c7', borderRadius:8, fontSize:13, color:'#92400e', textAlign:'center'}}>
+            {socialToast}
           </div>
-          <div className="auth-illust-card">
-            <Icon name="sparkle" size={20} stroke={1.8}/>
-            <div>
-              <strong>가입 즉시 맞춤 추천</strong>
-              <span>관심 분야·발주 규모 기반 자동 매칭</span>
-            </div>
-          </div>
-        </div>
+        )}
+
+        <button
+          onClick={() => onNav('home')}
+          style={{marginTop:20, background:'none', border:'none', color:'var(--ink-3)', fontSize:13, cursor:'pointer', textDecoration:'underline'}}
+        >
+          나중에 할게요
+        </button>
       </div>
     </div>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // 3) VERIFY (휴대폰 + 이메일 인증)
@@ -5569,108 +5375,101 @@ const AuthStepLine = ({ done }) => (
 // 4) ONBOARDING (4 steps)
 // ═══════════════════════════════════════════════════════════
 function OnboardingPage({ onComplete, onNav }) {
-  const [step, setStep] = useAuthState(0);
-  const [data, setData] = useAuthState({
-    role: null, // 'buyer' | 'maker'
-    company: '',
-    position: '',
-    employees: null,
-    interests: [],
-    products: [],
-    moq: 'medium',
-    notify: { email: true, sms: true, kakao: false, marketing: false },
-  });
+  const [role, setRole] = useAuthState(null);
+  const [companyName, setCompanyName] = useAuthState('');
+  const [loading, setLoading] = useAuthState(false);
+  const [error, setError] = useAuthState('');
 
-  const update = (patch) => setData({ ...data, ...patch });
-
-  const stepValid = [
-    !!data.role,
-    data.company.length >= 2 && data.position.length >= 1 && !!data.employees,
-    data.interests.length >= 1, // 가공방식 (잘모르겠어요 포함)
-    true, // 발주분야 선택 (선택사항)
-    true, // notify always valid
-  ];
-
-  const TOTAL = 5;
-  const next = () => {
-    if (step < TOTAL - 1) setStep(step + 1);
-    else onComplete(data);
+  const handleComplete = async () => {
+    if (!role) { setError('바이어 또는 제조사를 선택해주세요'); return; }
+    if (!companyName.trim()) { setError('회사명을 입력해주세요'); return; }
+    setLoading(true);
+    try {
+      const { data: { user } } = await window._sb.auth.getUser();
+      if (!user) throw new Error('로그인 정보를 찾을 수 없습니다');
+      const { error: dbError } = await window._sb.from('user_profiles').upsert({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        role: role,
+        company_name: companyName.trim(),
+        status: 'active',
+      });
+      if (dbError) throw dbError;
+      try { localStorage.setItem('fm-authed', '1'); } catch {}
+      onComplete({ role, company_name: companyName.trim() });
+    } catch(e) {
+      setError(e.message || '오류가 발생했습니다');
+    }
+    setLoading(false);
   };
-  const prev = () => step > 0 ? setStep(step - 1) : onNav('login');
-  const skip = () => {
-    if (step < TOTAL - 1) setStep(step + 1);
-    else onComplete(data);
-  };
-
-  const stepTitles = ['역할 선택', '회사 정보', '가공 방식', '발주 분야', '알림 설정'];
-  const skippable = [false, false, true, true, false];
 
   return (
-    <div className="onb-shell">
-      <div className="auth-shell-bg"/>
-      <div className="onb-inner">
-        <header className="auth-mini-hdr onb-mini-hdr">
-          <AuthLogo size={32}/>
-          <button className="onb-skip-btn" onClick={onComplete}>나중에 설정하기</button>
-        </header>
+    <div className="auth-shell">
+      <div className="auth-card" style={{maxWidth:420}}>
+        <AuthLogo size={36}/>
+        <h2 className="auth-title" style={{marginTop:16}}>거의 다 됐어요!</h2>
+        <p className="auth-sub">서비스 이용을 위해 간단한 정보만 입력해주세요</p>
 
-        {/* Step indicator */}
-        <div className="auth-steps">
-          <AuthStep n={1} label="이메일·비밀번호" done/>
-          <AuthStepLine done/>
-          <AuthStep n={2} label="휴대폰·이메일 인증" done/>
-          <AuthStepLine done/>
-          <AuthStep n={3} label="프로필 설정" active/>
-          <AuthStepLine/>
-          <AuthStep n={4} label="완료"/>
-        </div>
-
-        {/* Sub-progress */}
-        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:24 }}>
-          {[0,1,2,3,4].map(i => (
-            <div key={i} style={{
-              width: i === step ? 24 : 8, height: 8,
-              borderRadius: 4,
-              background: i < step ? 'var(--brand)' : i === step ? 'var(--brand)' : 'var(--line-2)',
-              transition: 'all 0.2s',
-            }}/>
-          ))}
-        </div>
-
-        <div className="onb-card">
-          {step === 0 && <OnbStepRole data={data} update={update}/>}
-          {step === 1 && <OnbStepCompany data={data} update={update}/>}
-          {step === 2 && <OnbStepProcesses data={data} update={update}/>}
-          {step === 3 && <OnbStepInterests data={data} update={update}/>}
-          {step === 4 && <OnbStepNotify data={data} update={update}/>}
-
-          <div className="onb-foot">
-            <button className="btn-ghost onb-back" onClick={prev}>
-              <Icon name="arrow_left" size={14} stroke={2.4}/>
-              이전
-            </button>
-            <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:6}}>
-              <div className="onb-foot-meta">{step + 1} / {TOTAL}</div>
-              {skippable[step] && (
-                <button className="onb-skip-step-btn" onClick={skip}>이 단계 건너뛰기</button>
-              )}
-            </div>
+        <div style={{marginTop:28, display:'flex', flexDirection:'column', gap:12}}>
+          <p style={{fontSize:14, fontWeight:600, color:'var(--ink-1)', marginBottom:4}}>어떤 목적으로 이용하시나요?</p>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
             <button
-              className="btn-primary onb-next"
-              onClick={next}
-              disabled={!stepValid[step]}
+              onClick={() => setRole('buyer')}
+              style={{
+                padding:'20px 12px', borderRadius:12, border:`2px solid ${role==='buyer' ? 'var(--brand)' : 'var(--border)'}`,
+                background: role==='buyer' ? 'oklch(0.97 0.02 250)' : '#fff',
+                cursor:'pointer', textAlign:'center', transition:'all 0.15s'
+              }}
             >
-              {step < TOTAL - 1 ? '다음' : '완료하고 시작하기'}
-              <Icon name="arrow_right" size={14} stroke={2.4}/>
+              <div style={{fontSize:28, marginBottom:8}}>🔍</div>
+              <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)'}}>바이어</div>
+              <div style={{fontSize:12, color:'var(--ink-3)', marginTop:4}}>제조사를 찾고<br/>견적을 받고 싶어요</div>
+            </button>
+            <button
+              onClick={() => setRole('manufacturer')}
+              style={{
+                padding:'20px 12px', borderRadius:12, border:`2px solid ${role==='manufacturer' ? 'var(--brand)' : 'var(--border)'}`,
+                background: role==='manufacturer' ? 'oklch(0.97 0.02 250)' : '#fff',
+                cursor:'pointer', textAlign:'center', transition:'all 0.15s'
+              }}
+            >
+              <div style={{fontSize:28, marginBottom:8}}>🏭</div>
+              <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)'}}>제조사</div>
+              <div style={{fontSize:12, color:'var(--ink-3)', marginTop:4}}>공장을 등록하고<br/>바이어를 받고 싶어요</div>
             </button>
           </div>
+
+          <div style={{marginTop:8}}>
+            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:6}}>회사명 *</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={e => setCompanyName(e.target.value)}
+              placeholder="(주)회사명"
+              style={{width:'100%', padding:'12px 14px', borderRadius:8, border:'1.5px solid var(--border)', fontSize:14, boxSizing:'border-box', outline:'none'}}
+            />
+          </div>
+
+          {error && <p style={{color:'var(--rose)', fontSize:13, textAlign:'center'}}>{error}</p>}
+
+          <button
+            onClick={handleComplete}
+            disabled={loading}
+            style={{
+              marginTop:8, padding:'14px', borderRadius:10, border:'none',
+              background: 'var(--brand)', color:'#fff', fontWeight:700, fontSize:15,
+              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
+            }}
+          >
+            {loading ? '처리 중...' : '시작하기'}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Onb Step 0: Role ───
 function OnbStepRole({ data, update }) {
   return (
     <div className="onb-step">

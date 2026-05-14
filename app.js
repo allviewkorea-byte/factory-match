@@ -149,12 +149,14 @@ function App() {
         .eq('id', session.user.id)
         .maybeSingle();
       if (!data) {
-        // 신규 소셜 유저 → 가입 온보딩으로
-        setAuthed(false);
-        nav('signup');
+        // 신규 소셜 유저 → 역할 선택 팝업
+        try { localStorage.setItem('fm-authed', '1'); } catch {}
+        setAuthed(true);
+        nav('onboarding');
       } else {
         try { localStorage.setItem('fm-authed', '1'); } catch {}
         setAuthed(true);
+        nav('home');
       }
     };
 
