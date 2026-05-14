@@ -269,6 +269,8 @@ function App() {
     try {
       localStorage.removeItem('fm-authed');
       localStorage.removeItem('fm-profile');
+      localStorage.removeItem('fm-admin-secret');
+      sessionStorage.removeItem('fm-admin-auth');
     } catch {}
     setAuthed(false);
     setProfile(null);

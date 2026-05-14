@@ -751,7 +751,7 @@ function _loadMapsApi(key) {
 }
 
 // Google Maps JS API panel — native Markers (follow pan/zoom)
-function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, onOpenFactory }) {
+function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, onOpenFactory, hoveredId }) {
   const mapDivRef = React.useRef(null);
   const mapRef = React.useRef(null);
   const clustererRef = React.useRef(null);  // MarkerClusterer instance
@@ -2589,6 +2589,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             selectedFactory={selectedFactory}
             mapsKey={mapsKey}
             onOpenFactory={onOpenFactory}
+            hoveredId={hovered}
           />
           {selectedFactory && (
             <div className="map-side">
