@@ -112,33 +112,17 @@ function App() {
   const [rfqIds, setRfqIds] = useState([]);
   const [searchQ, setSearchQ] = useState('');
 
-  // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
+  // 소셜 로그인 후 user_profiles 없으면 onboarding으로 연결
   useEffect(() => {
-    // OAuth 콜백 처리 - URL에 code 파라미터가 있으면 세션 교환
+    // OAuth 리다이렉트 콜백 처리 (네이버 등 향후 연동용, 카카오는 JS SDK 팝업 사용)
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (code) {
-      // URL에서 code 먼저 제거 (재처리 방지)
       window.history.replaceState({}, '', window.location.pathname);
-      setTimeout(() => {
       window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) { console.error('exchangeCodeForSession error:', error); return; }
-        if (data?.session?.user) {
-          const provider = data.session.user?.app_metadata?.provider;
-          window._sb.from('user_profiles').select('id').eq('id', data.session.user.id).maybeSingle().then(({ data: profile }) => {
-            if (!profile) {
-              if (provider && provider !== 'email') {
-                setAuthed(false);
-                nav('signup');
-              }
-            } else {
-              try { localStorage.setItem('fm-authed', '1'); } catch {}
-              setAuthed(true);
-            }
-          });
-        }
+        // SIGNED_IN 이벤트가 자동 발화됨
       });
-      }, 1500);
     }
 
     const handleSession = async (session) => {
@@ -149,31 +133,29 @@ function App() {
         .eq('id', session.user.id)
         .maybeSingle();
       if (!data) {
-        // 신규 소셜 유저 → 역할 선택 팝업
+        // 신규 소셜 유저 → 온보딩 팝업
         try { localStorage.setItem('fm-authed', '1'); } catch {}
         setAuthed(true);
         nav('onboarding');
       } else {
         try { localStorage.setItem('fm-authed', '1'); } catch {}
         setAuthed(true);
-        nav('home');
+        const cur = window.location.hash.replace('#/', '').replace('#', '') || 'home';
+        if (['auth', 'signup', 'onboarding'].includes(cur)) {
+          nav('home');
+        }
       }
     };
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
-        const provider = session?.user?.app_metadata?.provider;
-        if (provider && provider !== 'email' && localStorage.getItem('fm-authed') !== '1') {
-          await handleSession(session);
-        }
+        await handleSession(session);
       } else if (event === 'SIGNED_OUT') {
         try { localStorage.removeItem('fm-authed'); localStorage.removeItem('fm-profile'); } catch {}
         setAuthed(false);
         setProfile(null);
       }
     });
-
-
 
     return () => subscription.unsubscribe();
   }, []);

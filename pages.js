@@ -5109,6 +5109,41 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
       setTimeout(() => setSocialToast(null), 3000);
       return;
     }
+    if (provider === 'kakao') {
+      if (!window.Kakao || !window.Kakao.isInitialized()) {
+        setSocialToast('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        setTimeout(() => setSocialToast(null), 3000);
+        return;
+      }
+      window.Kakao.Auth.login({
+        scope: 'profile_nickname,profile_image,account_email,openid',
+        success: async (authObj) => {
+          if (!authObj.id_token) {
+            setSocialToast('카카오 OpenID 토큰을 받지 못했습니다. 설정을 확인해주세요.');
+            setTimeout(() => setSocialToast(null), 4000);
+            return;
+          }
+          const { data, error } = await window._sb.auth.signInWithIdToken({
+            provider: 'kakao',
+            token: authObj.id_token,
+          });
+          if (error) {
+            console.error('Kakao signInWithIdToken error:', error);
+            setSocialToast('카카오 로그인 오류: ' + (error.message || '다시 시도해주세요'));
+            setTimeout(() => setSocialToast(null), 4000);
+          }
+          // 성공 시 onAuthStateChange의 SIGNED_IN이 처리
+        },
+        fail: (err) => {
+          console.error('Kakao login fail:', err);
+          if (err && err.error !== 'access_denied') {
+            setSocialToast('카카오 로그인에 실패했습니다');
+            setTimeout(() => setSocialToast(null), 3000);
+          }
+        },
+      });
+      return;
+    }
     sessionStorage.setItem('_sgn_provider', provider);
     window._sb.auth.signInWithOAuth({
       provider: provider,
@@ -5919,6 +5954,40 @@ function SignupPage({ onNav }) {
     if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
       setSgnSocialToast('네이버 로그인 서비스를 준비 중입니다');
       setTimeout(() => setSgnSocialToast(null), 3000);
+      return;
+    }
+    if (provider === 'kakao') {
+      if (!window.Kakao || !window.Kakao.isInitialized()) {
+        setSgnSocialToast('카카오 SDK 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        setTimeout(() => setSgnSocialToast(null), 3000);
+        return;
+      }
+      window.Kakao.Auth.login({
+        scope: 'profile_nickname,profile_image,account_email,openid',
+        success: async (authObj) => {
+          if (!authObj.id_token) {
+            setSgnSocialToast('카카오 OpenID 토큰을 받지 못했습니다. 설정을 확인해주세요.');
+            setTimeout(() => setSgnSocialToast(null), 4000);
+            return;
+          }
+          const { data, error } = await window._sb.auth.signInWithIdToken({
+            provider: 'kakao',
+            token: authObj.id_token,
+          });
+          if (error) {
+            console.error('Kakao signInWithIdToken error:', error);
+            setSgnSocialToast('카카오 로그인 오류: ' + (error.message || '다시 시도해주세요'));
+            setTimeout(() => setSgnSocialToast(null), 4000);
+          }
+        },
+        fail: (err) => {
+          console.error('Kakao login fail:', err);
+          if (err && err.error !== 'access_denied') {
+            setSgnSocialToast('카카오 로그인에 실패했습니다');
+            setTimeout(() => setSgnSocialToast(null), 3000);
+          }
+        },
+      });
       return;
     }
     sessionStorage.setItem('_sgn_provider', provider);
