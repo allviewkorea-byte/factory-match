@@ -114,47 +114,41 @@ function App() {
 
   // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
   useEffect(() => {
-    // OAuth 콜백일 때만 (URL에 code= 파라미터 있을 때) 세션 체크
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('code')) {
-      window._sb.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          window._sb.from('user_profiles').select('id').eq('id', session.user.id).maybeSingle().then(({ data }) => {
-            if (!data) {
-              setAuthed(false);
-              nav('signup');
-            } else {
-              try { localStorage.setItem('fm-authed', '1'); } catch {}
-              setAuthed(true);
-              nav('home');
-            }
-          });
-        }
-      });
-    }
+    const handleSession = async (session) => {
+      if (!session?.user) return;
+      const { data } = await window._sb
+        .from('user_profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (!data) {
+        // 신규 소셜 유저 → 가입 온보딩으로
+        setAuthed(false);
+        nav('signup');
+      } else {
+        try { localStorage.setItem('fm-authed', '1'); } catch {}
+        setAuthed(true);
+      }
+    };
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-        const { data } = await window._sb
-          .from('user_profiles')
-          .select('id')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        if (!data) {
-          // 신규 소셜 유저 → 가입 온보딩으로
-          setAuthed(false);
-          nav('signup');
-        } else {
-          try { localStorage.setItem('fm-authed', '1'); } catch {}
-          setAuthed(true);
-          nav('home');
-        }
+      if (event === 'SIGNED_IN') {
+        // 소셜 로그인 콜백 (카카오/네이버)
+        await handleSession(session);
       } else if (event === 'SIGNED_OUT') {
         try { localStorage.removeItem('fm-authed'); localStorage.removeItem('fm-profile'); } catch {}
         setAuthed(false);
         setProfile(null);
       }
     });
+
+    // 페이지 로드 시 이미 세션이 있으면 (일반 이메일 로그인 복원)
+    window._sb.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && localStorage.getItem('fm-authed') !== '1') {
+        handleSession(session);
+      }
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
