@@ -169,6 +169,29 @@ function App() {
         setProfile(null);
       }
     });
+
+    // 앱 로드 시 localStorage에 카카오 토큰이 있으면 직접 처리
+    // (INITIAL_SESSION이 initializePromise pending으로 놓칠 수 있어서)
+    try {
+      const stored = localStorage.getItem('sb-yezxwlzyiqgewpkkyget-auth-token');
+      if (stored && localStorage.getItem('fm-authed') !== '1') {
+        const tokenData = JSON.parse(stored);
+        const provider = tokenData?.user?.app_metadata?.provider;
+        const userId = tokenData?.user?.id;
+        if (provider && provider !== 'email' && userId) {
+          window._sb.from('user_profiles').select('id').eq('id', userId).maybeSingle().then(({ data }) => {
+            if (!data) {
+              setAuthed(false);
+              nav('signup');
+            } else {
+              try { localStorage.setItem('fm-authed', '1'); } catch {}
+              setAuthed(true);
+            }
+          });
+        }
+      }
+    } catch(e) {}
+
     return () => subscription.unsubscribe();
   }, []);
 
