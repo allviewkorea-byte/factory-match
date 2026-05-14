@@ -117,7 +117,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
               </button>
               {onLogout && (
                 <button className="hdr-icon-btn hdr-logout" onClick={onLogout} aria-label="로그아웃" title="로그아웃">
-                  <Icon name="arrow_right" size={16} stroke={2}/>
+                  <Icon name="log_out" size={16} stroke={2}/>
                 </button>
               )}
             </>
