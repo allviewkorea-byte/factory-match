@@ -811,26 +811,28 @@ a { color: inherit; text-decoration: none; }
   transform: translate(-50%, -100%);
   display: flex; flex-direction: column; align-items: center;
   z-index: 2;
+  transition: z-index 0s;
 }
 .map-pin:hover, .map-pin.is-hovered { z-index: 5; }
 .map-pin.is-selected { z-index: 10; }
 .map-pin-dot {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: var(--ink-2);
+  width: 14px; height: 20px;
+  border-radius: 50% 50% 50% 0;
+  background: #e53935;
   border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
-  transition: all 0.15s;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+  transform: rotate(-45deg);
+  transition: all 0.2s;
 }
-.map-pin.is-premium .map-pin-dot { background: var(--brand); width: 14px; height: 14px; }
+.map-pin.is-premium .map-pin-dot { background: var(--brand); }
 .map-pin:hover .map-pin-dot, .map-pin.is-hovered .map-pin-dot {
-  transform: scale(1.25);
-  background: var(--brand);
+  background: #c62828;
+  transform: rotate(-45deg) scale(1.2);
 }
 .map-pin.is-selected .map-pin-dot {
-  width: 16px; height: 16px;
   background: var(--brand);
-  box-shadow: 0 0 0 6px oklch(0.55 0.15 250 / 0.18), 0 2px 8px rgba(15, 23, 42, 0.25);
+  transform: rotate(-45deg) scale(1.3);
+  box-shadow: 0 0 0 5px oklch(0.55 0.15 250 / 0.2), 0 2px 8px rgba(15, 23, 42, 0.3);
 }
 .map-pin-label {
   margin-top: 4px;

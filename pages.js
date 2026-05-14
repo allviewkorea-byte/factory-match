@@ -1949,6 +1949,11 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
   const [exportOnly, setExportOnly] = useStateP(_freshSearch ? false : (_listStateCache?.exportOnly ?? false));
   const [sort, setSort] = useStateP(_freshSearch ? 'match' : (_listStateCache?.sort ?? 'match'));
   const [hovered, setHovered] = useStateP(null);
+  const hoverTimerRef = React.useRef(null);
+  const setHoveredDebounced = React.useCallback((id) => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHovered(id), 80);
+  }, []);
   const [selected, setSelected] = useStateP(null);
   const [page, setPage] = useStateP(_freshSearch ? 1 : (_listStateCache?.page ?? 1));
   const PAGE_SIZE = 20;
@@ -2511,8 +2516,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
                 : paginated.map(f => (
                     <div
                       key={f.id}
-                      onMouseEnter={() => setHovered(f.id)}
-                      onMouseLeave={() => setHovered(null)}
+                      onMouseEnter={() => setHoveredDebounced(f.id)}
+                      onMouseLeave={() => setHoveredDebounced(null)}
                       onClick={() => setSelected(f.id)}
                       className={`list-result-wrap ${selected === f.id ? 'is-active' : ''}`}
                     >
