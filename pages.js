@@ -56,9 +56,12 @@ const Icon = ({ name, size = 16, className = '', stroke = 1.6 }) => {
 // ──────────────────────────────────────────────────────────
 // Header
 // ──────────────────────────────────────────────────────────
-const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
+const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile }) => {
   const isAdmin = localStorage.getItem('fm-admin-secret') === '030209';
   const effectiveAuthed = authed || isAdmin;
+  const displayName = isAdmin ? '관리자' : (profile?.name || profile?.email?.split('@')[0] || '');
+  const displayOrg = isAdmin ? 'FactoryMatch' : (profile?.company_name || '');
+  const displayInitial = isAdmin ? '관' : (displayName ? displayName[0] : '');
   const navItems = [
     { id: 'home',   label: '홈' },
     { id: 'ai',     label: 'AI 상담' },
@@ -105,10 +108,10 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
                 <Icon name="shield" size={16} stroke={1.8}/>
               </button>
               <button className="hdr-user" onClick={() => onNav('mypage')}>
-                <span className="hdr-avatar">{localStorage.getItem('fm-admin-secret') === '030209' ? '관' : '윤'}</span>
+                <span className="hdr-avatar">{displayInitial}</span>
                 <span className="hdr-user-meta">
-                  <span className="hdr-user-name">{localStorage.getItem('fm-admin-secret') === '030209' ? '관리자' : '윤도현 · Buyer'}</span>
-                  <span className="hdr-user-org">{localStorage.getItem('fm-admin-secret') === '030209' ? 'FactoryMatch' : 'YD Innovations'}</span>
+                <span className="hdr-user-name">{displayName}{!isAdmin && profile?.role ? ' · ' + (profile.role === 'buyer' ? 'Buyer' : 'Manufacturer') : ''}</span>
+                <span className="hdr-user-org">{displayOrg}</span>
                 </span>
               </button>
               {onLogout && (
