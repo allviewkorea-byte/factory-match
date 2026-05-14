@@ -2678,6 +2678,36 @@ function FactoryMap({ addr, name, lat, lng }) {
   );
 }
 
+// ── 스트리트뷰 or 일반지도 폴백 ──────────────────────────────────────────
+const StreetViewOrMap = ({ lat, lng, gmapsKey }) => {
+  const [mode, setMode] = React.useState('loading');
+
+  React.useEffect(() => {
+    if (!lat || !lng || !gmapsKey) { setMode('map'); return; }
+    setMode('loading');
+    fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${gmapsKey}`)
+      .then(r => r.json())
+      .then(d => setMode(d.status === 'OK' ? 'sv' : 'map'))
+      .catch(() => setMode('map'));
+  }, [lat, lng]);
+
+  if (mode === 'loading') return <GearSpinnerCenter size={60} message="지도 불러오는 중..."/>;
+
+  const src = mode === 'sv'
+    ? `https://www.google.com/maps/embed/v1/streetview?key=${gmapsKey}&location=${lat},${lng}&heading=0&pitch=0&fov=90`
+    : `https://www.google.com/maps/embed/v1/place?key=${gmapsKey}&q=${lat},${lng}&zoom=16`;
+
+  return (
+    <iframe
+      title={mode === 'sv' ? 'streetview' : 'map'}
+      width="100%"
+      style={{border:0, borderRadius:10, display:'block', minHeight:400}}
+      src={src}
+      allowFullScreen
+    />
+  );
+};
+
 // ── Lottie 기어 스피너 ─────────────────────────────────────────────────────
 const GearSpinner = ({ size = 80, style = {} }) => {
   const ref = React.useRef(null);
@@ -3668,13 +3698,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div style={{minHeight: 400, display:'flex', flexDirection:'column'}}>
               {f.lat && f.lng ? (
                 <div className="detail-map-tab" style={{flex:1, display:'flex', flexDirection:'column'}}>
-                  <iframe
-                    title="streetview"
-                    width="100%"
-                    style={{border:0, borderRadius:10, display:'block', flex:1, minHeight:400}}
-                    src={`https://www.google.com/maps/embed/v1/streetview?key=${GMAPS_KEY}&location=${f.lat},${f.lng}&heading=0&pitch=0&fov=90`}
-                    allowFullScreen
-                  />
+                  <StreetViewOrMap lat={f.lat} lng={f.lng} addr={f.roadAddress || f.address} gmapsKey={GMAPS_KEY}/>
                   <a href={`https://maps.google.com/?q=${f.lat},${f.lng}`} target="_blank" rel="noopener noreferrer" className="detail-map-link">
                     <Icon name="pin" size={13} stroke={2}/> Google Maps에서 열기
                   </a>
