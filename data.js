@@ -13,15 +13,15 @@ const PROCESS_CATEGORIES = [
   {
     id: 'cutting_machining', label: '절삭/기계가공',
     items: [
-      { id: 'cnc', label: 'CNC 가공' },
-      { id: 'cutting', label: '절삭 가공' },
-      { id: 'lathe', label: '선반 가공' },
-      { id: 'milling', label: '밀링 가공' },
-      { id: 'grinding', label: '연삭 가공' },
-      { id: 'edm', label: '방전 가공(EDM)' },
-      { id: 'laser_cut', label: '레이저 커팅' },
-      { id: 'waterjet', label: '워터젯' },
-      { id: 'plasma_cut', label: '플라즈마 커팅' },
+      { id: 'cnc', label: 'CNC 가공', aliases: ['CNC', 'cnc', '머시닝', '기계가공'] },
+      { id: 'cutting', label: '절삭 가공', aliases: ['절삭', '절삭가공'] },
+      { id: 'lathe', label: '선반 가공', aliases: ['선반', '선반가공', '터닝'] },
+      { id: 'milling', label: '밀링 가공', aliases: ['밀링', '밀링가공'] },
+      { id: 'grinding', label: '연삭 가공', aliases: ['연삭', '연삭가공', '그라인딩'] },
+      { id: 'edm', label: '방전 가공(EDM)', aliases: ['방전', 'EDM', '방전가공'] },
+      { id: 'laser_cut', label: '레이저 커팅', aliases: ['레이저', '레이저커팅', '레이저가공'] },
+      { id: 'waterjet', label: '워터젯', aliases: ['워터젯', '수압절삭'] },
+      { id: 'plasma_cut', label: '플라즈마 커팅', aliases: ['플라즈마', '플라즈마커팅'] },
     ]
   },
   {

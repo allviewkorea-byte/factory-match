@@ -766,44 +766,33 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     }).catch(() => {});
   }, [mapsKey]);
 
-  // Sync markers with geoFactories — apply MarkerClusterer
+  // pagedFactories(현재 페이지 20개)만 핀으로 표시
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
-    // Destroy previous clusterer and clear markers
-    if (clustererRef.current) {
-      clustererRef.current.clearMarkers();
-      clustererRef.current = null;
-    }
+    // 기존 마커 전부 제거
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
     window.__omf = (id) => onOpenRef.current(id);
-    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
+
+    const pinIcon = {
+      path: 'M 0,-1 C -0.5,-1 -1,-0.5 -1,0 C -1,0.7 0,1.8 0,1.8 C 0,1.8 1,0.7 1,0 C 1,-0.5 0.5,-1 0,-1 Z',
+      fillColor: '#2563eb',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 0.8,
+      scale: 10,
+      anchor: new google.maps.Point(0, 1.8),
+    };
+
     const newMarkers = [];
-    (geoFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
-      const isCurrentPage = pagedIds.has(f.id);
-      // No 'map' prop — clusterer manages visibility
+    (pagedFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
       const marker = new google.maps.Marker({
         position: { lat: f.lat, lng: f.lng },
+        map: mapRef.current,
         title: f.name,
-        icon: isCurrentPage ? {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
-              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#2563eb"/>
-              <circle cx="12" cy="12" r="5" fill="white"/>
-            </svg>`),
-          scaledSize: new google.maps.Size(24, 32),
-          anchor: new google.maps.Point(12, 32),
-        } : {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="24" viewBox="0 0 24 32">
-              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#94a3b8"/>
-              <circle cx="12" cy="12" r="5" fill="white"/>
-            </svg>`),
-          scaledSize: new google.maps.Size(18, 24),
-          anchor: new google.maps.Point(9, 24),
-        },
+        icon: pinIcon,
       });
       marker.addListener('click', () => {
         if (!window._factoryCache) window._factoryCache = {};
@@ -818,49 +807,15 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         );
         infoWindowRef.current.open(mapRef.current, marker);
       });
-      marker._fid = f.id; // pagedFactories 아이콘 업데이트용
+      marker._fid = f.id;
       newMarkers.push(marker);
     });
     markersRef.current = newMarkers;
 
-    // 클러스터링 없이 직접 지도에 표시
-    newMarkers.forEach(m => m.setMap(mapRef.current));
-
     return () => {
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers();
-        clustererRef.current = null;
-      }
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
     };
-  }, [mapReady, geoFactories]);
-
-  // pagedFactories 변경 시 기존 마커 아이콘만 업데이트 (재생성 없이)
-  const pagedIdsRef = React.useRef(new Set());
-  React.useEffect(() => {
-    if (!mapReady || !mapRef.current || !markersRef.current.length) return;
-    const pagedIds = new Set((pagedFactories || []).map(f => f.id));
-    // 이전과 같으면 스킵
-    const prev = pagedIdsRef.current;
-    const same = pagedIds.size === prev.size && [...pagedIds].every(id => prev.has(id));
-    if (same) return;
-    pagedIdsRef.current = pagedIds;
-    // 아이콘만 업데이트
-    markersRef.current.forEach(m => {
-      const fid = m._fid;
-      if (!fid) return;
-      const isCurrentPage = pagedIds.has(fid);
-      m.setIcon(isCurrentPage ? {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 9, fillColor: '#2563eb', fillOpacity: 1,
-        strokeColor: '#ffffff', strokeWeight: 2,
-      } : {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 6, fillColor: '#94a3b8', fillOpacity: 0.7,
-        strokeColor: '#ffffff', strokeWeight: 1.5,
-      });
-    });
   }, [mapReady, pagedFactories]);
 
   // Dynamic geocoding — pagedFactories without pre-geocoded coords
@@ -2180,7 +2135,17 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     const source = activeRegion !== 'all' ? regionRows : factories;
     let arr = source.filter(f => {
       if (f.hidden) return false;
-      if (activeProcess !== 'all' && !f.processes.includes(activeProcess)) return false;
+      if (activeProcess !== 'all') {
+        const proc = PROCESSES.find(p => p.id === activeProcess);
+        const kwList = proc ? [proc.label, ...(proc.aliases || [])] : [activeProcess];
+        const pidMatch = f.processes.includes(activeProcess);
+        const textMatch = kwList.some(kw =>
+          (f.summary || '').includes(kw) ||
+          (f.industries || []).some(ind => ind.includes(kw)) ||
+          (f.products || []).some(pr => pr.includes(kw))
+        );
+        if (!pidMatch && !textMatch) return false;
+      }
       if (activeRegion === 'other') {
         if (KNOWN_REGIONS.has(f.region)) return false;
       } else if (activeRegion !== 'all' && f.region !== activeRegion) return false;
