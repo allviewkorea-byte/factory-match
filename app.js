@@ -159,9 +159,8 @@ function App() {
     };
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN') {
         const provider = session?.user?.app_metadata?.provider;
-        // 소셜 로그인(카카오/네이버)이고 fm-authed가 없으면 처리
         if (provider && provider !== 'email' && localStorage.getItem('fm-authed') !== '1') {
           await handleSession(session);
         }
