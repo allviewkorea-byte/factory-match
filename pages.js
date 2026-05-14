@@ -5121,13 +5121,13 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
 
   return (
     <div className="signup-shell">
+      <AuthLogo size={36} style={{position:'fixed', top:24, left:24}}/>
       <button className="signup-close" onClick={() => onNav('home')}>✕</button>
-      <div className="signup-card" style={{maxWidth:440, width:'100%'}}>
-        <AuthLogo size={36}/>
-        <h2 className="signup-title" style={{marginTop:16, marginBottom:4}}>공장매칭 시작하기</h2>
-        <p className="signup-sub" style={{marginBottom:28}}>소셜 계정으로 로그인하세요</p>
+      <div className="signup-card">
+        <h2 className="signup-title">공장매칭 시작하기</h2>
+        <p className="signup-sub">소셜 계정으로 로그인하세요</p>
 
-        <div style={{display:'flex', flexDirection:'column', gap:12}}>
+        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:24}}>
           <button
             onClick={() => handleSocial('kakao')}
             style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'14px 20px', borderRadius:10, border:'none', background:'#FEE500', color:'#3C1E1E', fontWeight:700, fontSize:15, cursor:'pointer', fontFamily:'inherit'}}

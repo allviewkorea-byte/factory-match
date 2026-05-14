@@ -2592,7 +2592,7 @@ a { color: inherit; text-decoration: none; }
 /* ═══ Auth & Onboarding ════════════════════════════════════ */
 
 /* Shared shell */
-.auth-shell, .onb-shell, .landing {
+.auth-shell, .onb-shell, .landing, .signup-shell {
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink-1);
@@ -2643,6 +2643,58 @@ a { color: inherit; text-decoration: none; }
 .auth-back-btn:hover { color: var(--ink-1); border-color: var(--ink-4); }
 
 /* Auth card */
+.signup-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 1100px 600px at 90% -10%, oklch(0.92 0.08 230 / 0.55), transparent 60%),
+    radial-gradient(ellipse 800px 500px at 0% 110%, oklch(0.92 0.05 200 / 0.5), transparent 65%),
+    linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+}
+.signup-card {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 36px;
+  text-align: center;
+}
+.signup-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-1);
+  margin: 12px 0 4px;
+}
+.signup-sub {
+  font-size: 14px;
+  color: var(--ink-3);
+  margin: 0 0 8px;
+}
+.signup-close {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+.signup-logo {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+}
 .auth-card {
   width: 100%;
   max-width: 460px;
