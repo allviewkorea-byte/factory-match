@@ -9861,14 +9861,14 @@ const AdminGoogleMismatchTab = () => {
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
               <span style={{fontSize:12, color:'#a6accd', fontWeight:600}}>💻 수집 실행 명령어 (PowerShell)</span>
               <button onClick={() => {
-                navigator.clipboard.writeText(`cd C:\\Users\\micro\\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_ai_summary.py; py enrich_email_only.py`);
+                navigator.clipboard.writeText(`cd C:\\Users\\micro\\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_dart.py; py enrich_ai_summary.py; py enrich_email_only.py`);
                 alert('복사됐어요! PowerShell에 붙여넣기 하세요.');
               }} style={{padding:'4px 10px', fontSize:11, background:'#6c63ff', color:'#fff', border:'none', borderRadius:5, cursor:'pointer', fontWeight:600}}>
                 📋 복사
               </button>
             </div>
             <code style={{fontSize:11, color:'#cdd6f4', lineHeight:1.8, display:'block', whiteSpace:'pre-wrap', wordBreak:'break-all'}}>
-{`cd C:\Users\micro\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_ai_summary.py; py enrich_email_only.py`}
+{`cd C:\Users\micro\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_dart.py; py enrich_ai_summary.py; py enrich_email_only.py`}
             </code>
             <div style={{marginTop:8, fontSize:12, color:'#f5c842', fontWeight:700}}>
               ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지)
