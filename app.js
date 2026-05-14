@@ -143,9 +143,20 @@ function App() {
     });
 
     // 페이지 로드 시 이미 세션이 있으면 (일반 이메일 로그인 복원)
+    // fm-authed가 없는데 세션이 있는 경우만 처리 (소셜 로그인 콜백)
     window._sb.auth.getSession().then(({ data: { session } }) => {
       if (session?.user && localStorage.getItem('fm-authed') !== '1') {
-        handleSession(session);
+        // user_profiles 있으면 로그인 복원, 없으면 소셜 신규가입 → signup
+        window._sb.from('user_profiles').select('id').eq('id', session.user.id).maybeSingle().then(({ data }) => {
+          if (data) {
+            // 기존 유저 - 로그인 복원
+            try { localStorage.setItem('fm-authed', '1'); } catch {}
+            setAuthed(true);
+          } else {
+            // 신규 소셜 유저인데 세션만 있는 경우 - 세션 제거
+            window._sb.auth.signOut();
+          }
+        });
       }
     });
 
