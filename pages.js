@@ -8053,7 +8053,7 @@ const AdminPasswordGate = ({ onAuth }) => {
       });
       const data = await res.json();
       if (data.ok) {
-        try { sessionStorage.setItem(ADMIN_SESSION_KEY, '1'); } catch {}
+        try { sessionStorage.setItem(ADMIN_SESSION_KEY, '1'); localStorage.setItem('fm-admin-secret', '030209'); } catch {}
         onAuth();
       } else {
         setError('비밀번호가 올바르지 않습니다.');
