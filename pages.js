@@ -18,6 +18,7 @@ const Icon = ({ name, size = 16, className = '', stroke = 1.6 }) => {
     check: <path d="m4 12 5 5L20 6"/>,
     plus: <><path d="M12 5v14M5 12h14"/></>,
     arrow_right: <><path d="M5 12h14M13 5l7 7-7 7"/></>,
+    log_out: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
     arrow_up_right: <><path d="M7 17 17 7M8 7h9v9"/></>,
     pin: <><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></>,
     factory: <><path d="M3 21V10l6 4V10l6 4V7l6-3v17z"/><path d="M3 21h18"/></>,
