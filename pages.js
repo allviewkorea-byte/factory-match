@@ -783,15 +783,11 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
   React.useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
-    // 기존 마커 전부 제거
-    markersRef.current.forEach(m => m.setMap(null));
-    markersRef.current = [];
-
     window.__omf = (id) => onOpenRef.current(id);
 
     const pinIcon = {
       path: 'M 0,-1 C -0.5,-1 -1,-0.5 -1,0 C -1,0.7 0,1.8 0,1.8 C 0,1.8 1,0.7 1,0 C 1,-0.5 0.5,-1 0,-1 Z',
-      fillColor: '#2563eb',
+      fillColor: '#e53935',
       fillOpacity: 1,
       strokeColor: '#ffffff',
       strokeWeight: 0.8,
@@ -799,8 +795,16 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
       anchor: new google.maps.Point(0, 1.8),
     };
 
-    const newMarkers = [];
-    (pagedFactories || []).filter(f => f.lat != null && f.lng != null).forEach(f => {
+    // 기존 마커 중 새 목록에 없는 것만 제거 (깜빡임 방지)
+    const newIds = new Set((pagedFactories || []).filter(f => f.lat != null && f.lng != null).map(f => f.id));
+    markersRef.current = markersRef.current.filter(m => {
+      if (!newIds.has(m._fid)) { m.setMap(null); return false; }
+      return true;
+    });
+    const existingIds = new Set(markersRef.current.map(m => m._fid));
+
+    const newMarkers = [...markersRef.current];
+    (pagedFactories || []).filter(f => f.lat != null && f.lng != null && !existingIds.has(f.id)).forEach(f => {
       const marker = new google.maps.Marker({
         position: { lat: f.lat, lng: f.lng },
         map: mapRef.current,
@@ -815,7 +819,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
           `<div style="font-family:sans-serif;padding:4px 6px;min-width:140px">` +
           `<div style="font-weight:600;font-size:13px;margin-bottom:2px">${f.name}</div>` +
           `<div style="font-size:12px;color:#555;margin-bottom:6px">${f.city}</div>` +
-          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
+          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#e53935;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
           `</div>`
         );
         infoWindowRef.current.open(mapRef.current, marker);
@@ -825,9 +829,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
     });
     markersRef.current = newMarkers;
 
-    return () => {
-      markersRef.current.forEach(m => m.setMap(null));
-      markersRef.current = [];
+    return () => {};
     };
   }, [mapReady, pagedFactories]);
 
@@ -863,7 +865,7 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
           `<div style="font-family:sans-serif;padding:4px 6px;min-width:140px">` +
           `<div style="font-weight:600;font-size:13px;margin-bottom:2px">${f.name}</div>` +
           `<div style="font-size:12px;color:#555;margin-bottom:6px">${_addrCity(f.roadAddress) || f.city}</div>` +
-          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
+          `<button onclick="window.__omf('${safeId}')" style="font-size:12px;padding:4px 10px;background:#e53935;color:#fff;border:none;border-radius:4px;cursor:pointer">상세보기</button>` +
           `</div>`
         );
         infoWindowRef.current.open(mapRef.current, marker);
