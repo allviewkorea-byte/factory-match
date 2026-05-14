@@ -1,6 +1,6 @@
 # 공장매칭 (FactoryMatch) 인수인계서
 > 새 채팅에서 이 문서를 보여주면 바로 작업 시작 가능
-> 마지막 업데이트: 2026-05-11
+> 마지막 업데이트: 2026-05-14
 
 ---
 
@@ -17,6 +17,12 @@
 ```
 Claude 웹채팅 → git clone → 코드 수정 → node build.js → git push → Netlify 자동배포
 ```
+
+### ⭐ Claude가 직접 작업 가능 (PowerShell 불필요)
+Claude 서버에서 git clone이 가능하므로 대부분의 코드 수정을 Claude가 직접 처리.
+- raw.githubusercontent.com 접근 불가 (host_not_allowed)
+- github.com git clone/push는 가능 ✅
+- 새 채팅 시작 시: HANDOVER.md 업로드 → Claude가 clone → 바로 작업
 
 ---
 
@@ -107,7 +113,10 @@ GrantsPage, MyPage, AdminPage
 
 로그인: 이메일+비밀번호 → Supabase 인증 → 바로 홈 (verify 없음)
 이메일 가입: SignupPage 4단계 → status=active 즉시 활성화
-소셜 로그인: 카카오/네이버 UI만 있음(미연동), 구글 Supabase 연동됨
+소셜 로그인:
+- 카카오: Supabase OAuth 연동 완료 ✅ (JavaScript 키: 8b3808a2c6376f9824924c482b3ea860)
+- 네이버: UI만 있음 (미연동)
+- 구글: Supabase 연동됨
 
 게이트 모달 조건:
 - 공장 상세: 비로그인 2회 허용 → 3번째 게이트
@@ -138,6 +147,10 @@ GrantsPage, MyPage, AdminPage
 
 관리자 콘솔 (AdminPage):
 - DART 불일치 탭, 방문자 통계, 제조사 편집
+- 접근: ?k=030209 또는 상단 방패 버튼 클릭 후 030209 입력
+- 비로그인 상태에서도 방패 버튼 표시됨 ✅
+- 관리자 인증 시 헤더에 "관리자 · FactoryMatch" 표시 ✅
+- 관리자 인증 시 게이트 모달 미표시 ✅
 
 ---
 
@@ -148,8 +161,16 @@ GrantsPage, MyPage, AdminPage
 py enrich_geocode.py        # 주소→좌표
 py enrich_factoryon.py      # 공장온 정보
 py enrich_website_naver.py  # 웹사이트 수집
+py enrich_google_places.py  # 구글 사진/별점/리뷰
+py enrich_crosscheck.py     # 네이버 vs 구글 도메인 크로스체크
+py enrich_dart.py           # DART 재무정보 (일 10,000건)
 py enrich_ai_summary.py     # AI 요약
 py enrich_email_only.py     # 이메일 수집
+```
+
+한줄 실행 (관리자 콘솔 → 검증 필요 탭에서도 복사 가능):
+```powershell
+cd C:\Users\micro\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_dart.py; py enrich_ai_summary.py; py enrich_email_only.py
 ```
 
 1회성:
@@ -157,6 +178,20 @@ py enrich_email_only.py     # 이메일 수집
 del lndpcl_progress.json && py collect_kicox_lndpcl.py  # bizrno 수집 (일 1,000건)
 py enrich_dart.py                                         # DART 재무 (일 10,000건, IP승인 후)
 ```
+
+---
+
+## 🔐 카카오 로그인 설정 현황
+
+카카오 개발자센터 앱 ID: 1449602
+- REST API 키: 9f4362740ae36ff6463fc200b27322d8
+- JavaScript 키: 8b3808a2c6376f9824924c482b3ea860
+- Client Secret: FkiGEMEbTJegODBwyTRo4etzb9cM2PrH
+- Redirect URI: https://yezxwlzyiqgewpkkyget.supabase.co/auth/v1/callback
+- 비즈 앱 전환 완료 ✅
+- 동의항목: 닉네임(필수), 프로필사진(필수), 이메일(필수) ✅
+- Supabase Kakao Provider 활성화 완료 ✅
+- index.html에 window._KAKAO_CLIENT_ID 설정 완료 ✅
 
 ---
 
@@ -168,7 +203,8 @@ py enrich_dart.py                                         # DART 재무 (일 10,
 - DART 수집 후 completeness_score SQL 재계산
 
 기능 개발:
-- 카카오/네이버 소셜 로그인 연동 (각 개발자센터 앱 등록 필요)
+- 네이버 소셜 로그인 연동 (네이버 개발자센터 앱 등록 필요)
+- 카카오 로그인 실사용 테스트 (KOE006 오류 수정 완료, 재테스트 필요)
 - 제조사 소유권 인증 (사업자등록증 업로드 → 관리자 승인 → 편집 권한)
 - 공장 사진 업로드 (여러 장)
 - SMS 알림 실제 연동 (Twilio 등 필요)
