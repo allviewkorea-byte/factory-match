@@ -5127,26 +5127,37 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
         <h2 className="signup-title">공장매칭 시작하기</h2>
         <p className="signup-sub">소셜 계정으로 로그인하세요</p>
 
-        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:24}}>
-          <button
-            className="auth-social-btn auth-kakao-btn"
-            onClick={() => handleSocial('kakao')}
-          >
+        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:20}}>
+          <button className="auth-social-btn auth-kakao-btn" onClick={() => handleSocial('kakao')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.733 1.617 5.13 4.056 6.548L5.1 21l4.663-2.47A11.3 11.3 0 0 0 12 18.6c5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/></svg>
             카카오로 시작하기
           </button>
-          <button
-            className="auth-social-btn auth-naver-btn"
-            onClick={() => handleSocial('naver')}
-          >
+          <button className="auth-social-btn auth-naver-btn" onClick={() => handleSocial('naver')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg>
             네이버로 시작하기
           </button>
         </div>
 
-        {socialToast && (
-          <div className="auth-toast">{socialToast}</div>
-        )}
+        <div className="sgn-divider"><span>또는 유형 선택 후 이메일로</span></div>
+
+        <div className="sgn-role-grid">
+          <button className="sgn-role-btn" onClick={() => handleSocial('kakao')}>
+            <span className="sgn-role-icon" style={{background:'#e8f4fd'}}>
+              <Icon name="search" size={22} stroke={1.8} style={{color:'var(--brand)'}}/>
+            </span>
+            <span className="sgn-role-name">바이어</span>
+            <span className="sgn-role-desc">제조사를 찾고<br/>견적을 받고 싶어요</span>
+          </button>
+          <button className="sgn-role-btn" onClick={() => handleSocial('kakao')}>
+            <span className="sgn-role-icon" style={{background:'#e8fdf0'}}>
+              <Icon name="bar_chart" size={22} stroke={1.8} style={{color:'var(--emerald)'}}/>
+            </span>
+            <span className="sgn-role-name">제조사</span>
+            <span className="sgn-role-desc">공장을 등록하고<br/>바이어를 받고 싶어요</span>
+          </button>
+        </div>
+
+        {socialToast && <div className="auth-toast">{socialToast}</div>}
       </div>
     </div>
   );
@@ -5362,13 +5373,15 @@ const AuthStepLine = ({ done }) => (
 // ═══════════════════════════════════════════════════════════
 function OnboardingPage({ onComplete, onNav }) {
   const [role, setRole] = useAuthState(null);
+  const [name, setName] = useAuthState('');
   const [companyName, setCompanyName] = useAuthState('');
   const [loading, setLoading] = useAuthState(false);
   const [error, setError] = useAuthState('');
 
   const handleComplete = async () => {
-    if (!role) { setError('바이어 또는 제조사를 선택해주세요'); return; }
+    if (!name.trim()) { setError('이름을 입력해주세요'); return; }
     if (!companyName.trim()) { setError('회사명을 입력해주세요'); return; }
+    if (!role) { setError('바이어 또는 제조사를 선택해주세요'); return; }
     setLoading(true);
     try {
       const { data: { user } } = await window._sb.auth.getUser();
@@ -5376,14 +5389,14 @@ function OnboardingPage({ onComplete, onNav }) {
       const { error: dbError } = await window._sb.from('user_profiles').upsert({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        name: name.trim(),
         role: role,
         company_name: companyName.trim(),
         status: 'active',
       });
       if (dbError) throw dbError;
       try { localStorage.setItem('fm-authed', '1'); } catch {}
-      onComplete({ role, company_name: companyName.trim() });
+      onComplete({ role, name: name.trim(), company_name: companyName.trim() });
     } catch(e) {
       setError(e.message || '오류가 발생했습니다');
     }
@@ -5391,64 +5404,73 @@ function OnboardingPage({ onComplete, onNav }) {
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card" style={{maxWidth:420}}>
+    <div className="signup-shell">
+      <div className="signup-card" style={{maxWidth:440}}>
         <AuthLogo size={36}/>
-        <h2 className="auth-title" style={{marginTop:16}}>거의 다 됐어요!</h2>
-        <p className="auth-sub">서비스 이용을 위해 간단한 정보만 입력해주세요</p>
+        <h2 className="signup-title">거의 다 됐어요!</h2>
+        <p className="signup-sub">간단한 정보만 입력하면 바로 시작할 수 있어요</p>
 
-        <div style={{marginTop:28, display:'flex', flexDirection:'column', gap:12}}>
-          <p style={{fontSize:14, fontWeight:600, color:'var(--ink-1)', marginBottom:4}}>어떤 목적으로 이용하시나요?</p>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
-            <button
-              onClick={() => setRole('buyer')}
-              style={{
-                padding:'20px 12px', borderRadius:12, border:`2px solid ${role==='buyer' ? 'var(--brand)' : 'var(--border)'}`,
-                background: role==='buyer' ? 'oklch(0.97 0.02 250)' : '#fff',
-                cursor:'pointer', textAlign:'center', transition:'all 0.15s'
-              }}
-            >
-              <div style={{fontSize:28, marginBottom:8}}>🔍</div>
-              <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)'}}>바이어</div>
-              <div style={{fontSize:12, color:'var(--ink-3)', marginTop:4}}>제조사를 찾고<br/>견적을 받고 싶어요</div>
-            </button>
-            <button
-              onClick={() => setRole('manufacturer')}
-              style={{
-                padding:'20px 12px', borderRadius:12, border:`2px solid ${role==='manufacturer' ? 'var(--brand)' : 'var(--border)'}`,
-                background: role==='manufacturer' ? 'oklch(0.97 0.02 250)' : '#fff',
-                cursor:'pointer', textAlign:'center', transition:'all 0.15s'
-              }}
-            >
-              <div style={{fontSize:28, marginBottom:8}}>🏭</div>
-              <div style={{fontWeight:700, fontSize:14, color:'var(--ink-1)'}}>제조사</div>
-              <div style={{fontSize:12, color:'var(--ink-3)', marginTop:4}}>공장을 등록하고<br/>바이어를 받고 싶어요</div>
-            </button>
+        <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
+          {/* 이름 */}
+          <div>
+            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:6}}>이름 *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="홍길동"
+              className="sgn-input"
+            />
           </div>
 
-          <div style={{marginTop:8}}>
+          {/* 회사명 */}
+          <div>
             <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:6}}>회사명 *</label>
             <input
               type="text"
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               placeholder="(주)회사명"
-              style={{width:'100%', padding:'12px 14px', borderRadius:8, border:'1.5px solid var(--border)', fontSize:14, boxSizing:'border-box', outline:'none'}}
+              className="sgn-input"
             />
           </div>
 
-          {error && <p style={{color:'var(--rose)', fontSize:13, textAlign:'center'}}>{error}</p>}
+          {/* 역할 선택 */}
+          <div>
+            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:8}}>어떤 목적으로 이용하시나요? *</label>
+            <div className="sgn-role-grid">
+              <button
+                className={"sgn-role-btn" + (role === 'buyer' ? ' is-active' : '')}
+                onClick={() => setRole('buyer')}
+              >
+                <span className="sgn-role-icon" style={{background:'#e8f4fd'}}>
+                  <Icon name="search" size={22} stroke={1.8} style={{color:'var(--brand)'}}/>
+                </span>
+                <span className="sgn-role-name">바이어</span>
+                <span className="sgn-role-desc">제조사를 찾고<br/>견적을 받고 싶어요</span>
+              </button>
+              <button
+                className={"sgn-role-btn" + (role === 'manufacturer' ? ' is-active' : '')}
+                onClick={() => setRole('manufacturer')}
+              >
+                <span className="sgn-role-icon" style={{background:'#e8fdf0'}}>
+                  <Icon name="bar_chart" size={22} stroke={1.8} style={{color:'var(--emerald)'}}/>
+                </span>
+                <span className="sgn-role-name">제조사</span>
+                <span className="sgn-role-desc">공장을 등록하고<br/>바이어를 받고 싶어요</span>
+              </button>
+            </div>
+          </div>
+
+          {error && <p style={{color:'var(--rose)', fontSize:13, textAlign:'center', margin:0}}>{error}</p>}
 
           <button
             onClick={handleComplete}
             disabled={loading}
-            style={{
-              marginTop:8, padding:'14px', borderRadius:10, border:'none',
-              background: 'var(--brand)', color:'#fff', fontWeight:700, fontSize:15,
-              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
-            }}
+            className="sgn-submit-btn"
+            style={{marginTop:4}}
           >
-            {loading ? '처리 중...' : '시작하기'}
+            {loading ? '처리 중...' : '시작하기 →'}
           </button>
         </div>
       </div>
