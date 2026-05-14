@@ -57,6 +57,8 @@ const Icon = ({ name, size = 16, className = '', stroke = 1.6 }) => {
 // Header
 // ──────────────────────────────────────────────────────────
 const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
+  const isAdmin = localStorage.getItem('fm-admin-secret') === '030209';
+  const effectiveAuthed = authed || isAdmin;
   const navItems = [
     { id: 'home',   label: '홈' },
     { id: 'ai',     label: 'AI 상담' },
@@ -91,7 +93,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
           </nav>
         </div>
         <div className="hdr-right">
-          {authed ? (
+          {effectiveAuthed ? (
             <>
               <div className="hdr-divider"/>
               <button
@@ -103,10 +105,10 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
                 <Icon name="shield" size={16} stroke={1.8}/>
               </button>
               <button className="hdr-user" onClick={() => onNav('mypage')}>
-                <span className="hdr-avatar">윤</span>
+                <span className="hdr-avatar">{localStorage.getItem('fm-admin-secret') === '030209' ? '관' : '윤'}</span>
                 <span className="hdr-user-meta">
-                  <span className="hdr-user-name">윤도현 · Buyer</span>
-                  <span className="hdr-user-org">YD Innovations</span>
+                  <span className="hdr-user-name">{localStorage.getItem('fm-admin-secret') === '030209' ? '관리자' : '윤도현 · Buyer'}</span>
+                  <span className="hdr-user-org">{localStorage.getItem('fm-admin-secret') === '030209' ? 'FactoryMatch' : 'YD Innovations'}</span>
                 </span>
               </button>
               {onLogout && (
@@ -117,6 +119,14 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0 }) => {
             </>
           ) : (
             <>
+              <button
+                className={'hdr-icon-btn hdr-admin' + (route === 'admin' ? ' is-active' : '')}
+                onClick={() => onNav('admin')}
+                aria-label="운영자 콘솔"
+                title="운영자 콘솔"
+              >
+                <Icon name="shield" size={16} stroke={1.8}/>
+              </button>
               <button className="hdr-login-btn" onClick={() => onNav('login')}>로그인</button>
               <button className="hdr-signup-btn" onClick={() => { window.logVisitor?.('signup_triggered', { trigger: 'header' }); onNav('signup'); }}>무료로 시작하기</button>
             </>
