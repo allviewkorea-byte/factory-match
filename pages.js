@@ -5121,7 +5121,7 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
 
   return (
     <div className="signup-shell">
-      <AuthLogo size={36} style={{position:'fixed', top:24, left:24}}/>
+      <div className="signup-logo"><AuthLogo size={36}/></div>
       <button className="signup-close" onClick={() => onNav('home')}>✕</button>
       <div className="signup-card">
         <h2 className="signup-title">공장매칭 시작하기</h2>
