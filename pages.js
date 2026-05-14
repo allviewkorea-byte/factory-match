@@ -5119,7 +5119,10 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
     sessionStorage.setItem('_sgn_provider', provider);
     window._sb.auth.signInWithOAuth({
       provider: provider,
-      options: { redirectTo: window.location.origin + '/' }
+      options: { redirectTo: window.location.origin + '/', skipBrowserRedirect: false }
+    }).then(({ data, error }) => {
+      if (error) { console.error('OAuth error:', error); return; }
+      if (data?.url) window.location.href = data.url;
     });
   };
 
@@ -6123,7 +6126,10 @@ function SignupPage({ onNav }) {
     sessionStorage.setItem('_sgn_provider', provider);
     window._sb.auth.signInWithOAuth({
       provider: provider,
-      options: { redirectTo: window.location.origin + '/' }
+      options: { redirectTo: window.location.origin + '/', skipBrowserRedirect: false }
+    }).then(({ data, error }) => {
+      if (error) { console.error('OAuth error:', error); return; }
+      if (data?.url) window.location.href = data.url;
     });
   };
 
