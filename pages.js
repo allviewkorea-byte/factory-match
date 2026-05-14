@@ -788,19 +788,21 @@ function ListMapPanel({ geoFactories, pagedFactories, selectedFactory, mapsKey, 
         position: { lat: f.lat, lng: f.lng },
         title: f.name,
         icon: isCurrentPage ? {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#2563eb',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#2563eb"/>
+              <circle cx="12" cy="12" r="5" fill="white"/>
+            </svg>`),
+          scaledSize: new google.maps.Size(24, 32),
+          anchor: new google.maps.Point(12, 32),
         } : {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          fillColor: '#94a3b8',
-          fillOpacity: 0.7,
-          strokeColor: '#ffffff',
-          strokeWeight: 1.5,
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="24" viewBox="0 0 24 32">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#94a3b8"/>
+              <circle cx="12" cy="12" r="5" fill="white"/>
+            </svg>`),
+          scaledSize: new google.maps.Size(18, 24),
+          anchor: new google.maps.Point(9, 24),
         },
       });
       marker.addListener('click', () => {
