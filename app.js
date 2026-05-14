@@ -114,6 +114,21 @@ function App() {
 
   // 소셜 로그인 후 user_profiles 없으면 signup으로 연결
   useEffect(() => {
+    // URL에 access_token이 있으면 Supabase가 처리하도록 getSession 먼저 호출
+    window._sb.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        window._sb.from('user_profiles').select('id').eq('id', session.user.id).maybeSingle().then(({ data }) => {
+          if (!data) {
+            setAuthed(false);
+            nav('signup');
+          } else {
+            try { localStorage.setItem('fm-authed', '1'); } catch {}
+            setAuthed(true);
+          }
+        });
+      }
+    });
+
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         const { data } = await window._sb
