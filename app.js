@@ -114,15 +114,49 @@ function App() {
 
   // 소셜 로그인 후 user_profiles 없으면 onboarding으로 연결
   useEffect(() => {
-    // OAuth 리다이렉트 콜백 처리 (네이버 등 향후 연동용, 카카오는 JS SDK 팝업 사용)
+    // OAuth 리다이렉트 콜백 처리
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const state = urlParams.get('state');
     if (code) {
+      // URL에서 code/state 제거 (재처리 방지)
       window.history.replaceState({}, '', window.location.pathname);
-      window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) { console.error('exchangeCodeForSession error:', error); return; }
-        // SIGNED_IN 이벤트가 자동 발화됨
-      });
+
+      if (state === 'kakao_login') {
+        // 카카오 OAuth: Netlify Function으로 id_token 교환 → signInWithIdToken
+        (async () => {
+          try {
+            const res = await fetch('/.netlify/functions/kakao-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, redirect_uri: window.location.origin + '/' }),
+            });
+            const tok = await res.json();
+            if (!res.ok || !tok.id_token) {
+              console.error('Kakao token exchange failed:', tok);
+              alert('카카오 로그인 실패: ' + (tok.error || '토큰 교환 실패'));
+              return;
+            }
+            const { data, error } = await window._sb.auth.signInWithIdToken({
+              provider: 'kakao',
+              token: tok.id_token,
+            });
+            if (error) {
+              console.error('signInWithIdToken error:', error);
+              alert('카카오 로그인 실패: ' + (error.message || '세션 생성 실패'));
+            }
+            // 성공 시 SIGNED_IN 이벤트가 자동 발화됨
+          } catch (e) {
+            console.error('Kakao callback error:', e);
+            alert('카카오 로그인 오류: ' + e.message);
+          }
+        })();
+      } else {
+        // 그 외 OAuth (구글, 향후 네이버 등) - Supabase 표준 흐름
+        window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+          if (error) { console.error('exchangeCodeForSession error:', error); return; }
+        });
+      }
     }
 
     const handleSession = async (session) => {

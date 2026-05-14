@@ -5115,32 +5115,11 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
         setTimeout(() => setSocialToast(null), 3000);
         return;
       }
-      window.Kakao.Auth.login({
-        scope: 'profile_nickname,profile_image,account_email,openid',
-        success: async (authObj) => {
-          if (!authObj.id_token) {
-            setSocialToast('카카오 OpenID 토큰을 받지 못했습니다. 설정을 확인해주세요.');
-            setTimeout(() => setSocialToast(null), 4000);
-            return;
-          }
-          const { data, error } = await window._sb.auth.signInWithIdToken({
-            provider: 'kakao',
-            token: authObj.id_token,
-          });
-          if (error) {
-            console.error('Kakao signInWithIdToken error:', error);
-            setSocialToast('카카오 로그인 오류: ' + (error.message || '다시 시도해주세요'));
-            setTimeout(() => setSocialToast(null), 4000);
-          }
-          // 성공 시 onAuthStateChange의 SIGNED_IN이 처리
-        },
-        fail: (err) => {
-          console.error('Kakao login fail:', err);
-          if (err && err.error !== 'access_denied') {
-            setSocialToast('카카오 로그인에 실패했습니다');
-            setTimeout(() => setSocialToast(null), 3000);
-          }
-        },
+      // 리다이렉트 방식: authorize → ?code=... 로 복귀 → app.js가 Netlify Function으로 id_token 교환
+      window.Kakao.Auth.authorize({
+        redirectUri: window.location.origin + '/',
+        scope: 'openid,account_email',
+        state: 'kakao_login',
       });
       return;
     }
@@ -5962,31 +5941,10 @@ function SignupPage({ onNav }) {
         setTimeout(() => setSgnSocialToast(null), 3000);
         return;
       }
-      window.Kakao.Auth.login({
-        scope: 'profile_nickname,profile_image,account_email,openid',
-        success: async (authObj) => {
-          if (!authObj.id_token) {
-            setSgnSocialToast('카카오 OpenID 토큰을 받지 못했습니다. 설정을 확인해주세요.');
-            setTimeout(() => setSgnSocialToast(null), 4000);
-            return;
-          }
-          const { data, error } = await window._sb.auth.signInWithIdToken({
-            provider: 'kakao',
-            token: authObj.id_token,
-          });
-          if (error) {
-            console.error('Kakao signInWithIdToken error:', error);
-            setSgnSocialToast('카카오 로그인 오류: ' + (error.message || '다시 시도해주세요'));
-            setTimeout(() => setSgnSocialToast(null), 4000);
-          }
-        },
-        fail: (err) => {
-          console.error('Kakao login fail:', err);
-          if (err && err.error !== 'access_denied') {
-            setSgnSocialToast('카카오 로그인에 실패했습니다');
-            setTimeout(() => setSgnSocialToast(null), 3000);
-          }
-        },
+      window.Kakao.Auth.authorize({
+        redirectUri: window.location.origin + '/',
+        scope: 'openid,account_email',
+        state: 'kakao_login',
       });
       return;
     }
