@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매거진 - 공장매칭</title>
+<meta name="description" content="제조 발주에 필요한 모든 정보와 가이드. 산업별 추천, 발주 가이드, 트렌드 분석을 한 곳에서.">
+<meta property="og:title" content="공장매칭 매거진">
+<meta property="og:description" content="제조 발주에 필요한 모든 정보와 가이드">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://factorymatch.co.kr/magazine/">
+<link rel="canonical" href="https://factorymatch.co.kr/magazine/">
+<link rel="stylesheet" href="/magazine/assets/magazine.css">
+</head>
+<body>
+
+<header class="mg-header">
+  <div class="mg-header-inner">
+    <a href="/" class="mg-logo">
+      <img src="/logo.svg" alt="공장매칭" class="mg-logo-img" onerror="this.style.display='none'">
+      <span>공장매칭</span>
+    </a>
+    <nav class="mg-nav">
+      <a href="/">홈</a>
+      <a href="/#ai">AI 상담</a>
+      <a href="/#list">제조사 탐색</a>
+      <a href="/#grants">정부지원금</a>
+      <a href="/magazine/" class="active">매거진</a>
+    </nav>
+    <a href="/" class="mg-cta">견적 요청</a>
+  </div>
+</header>
+
+<section class="mg-title-section">
+  <h1 class="mg-title">공장매칭 매거진</h1>
+  <p class="mg-subtitle">제조 발주에 필요한 모든 정보, 가이드, 트렌드</p>
+</section>
+
+<div class="mg-filters" id="filters">
+  <span class="mg-chip active" data-cat="all">전체</span>
+  <span class="mg-chip" data-cat="recommend">산업별 추천</span>
+  <span class="mg-chip" data-cat="guide">발주 가이드</span>
+  <span class="mg-chip" data-cat="trend">트렌드</span>
+  <span class="mg-chip" data-cat="compare">비교·선택</span>
+  <span class="mg-chip" data-cat="case">케이스 스터디</span>
+  <span class="mg-chip" data-cat="checklist">체크리스트</span>
+</div>
+
+<main class="mg-grid" id="postGrid">
+  <div class="mg-empty" style="grid-column:1/-1">
+    글을 불러오는 중...
+  </div>
+</main>
+
+<footer class="mg-footer">
+  <div>
+    <a href="/">홈</a>
+    <a href="/#list">제조사 탐색</a>
+    <a href="/magazine/">매거진</a>
+  </div>
+  <div class="mg-credit">© 2026 공장매칭 (FactoryMatch) · 국내 217,054개 제조사 데이터 기반</div>
+</footer>
+
+<script>
+let allPosts = [];
+let currentCategory = 'all';
+
+const CATEGORY_LABELS = {
+  recommend: '산업별 추천',
+  guide: '발주 가이드',
+  trend: '트렌드',
+  compare: '비교·선택',
+  case: '케이스 스터디',
+  checklist: '체크리스트'
+};
+
+async function loadPosts() {
+  try {
+    const res = await fetch('/magazine/data/posts.json?v=' + Date.now());
+    const data = await res.json();
+    allPosts = (data.posts || []).sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+    renderPosts();
+  } catch (e) {
+    document.getElementById('postGrid').innerHTML = '<div class="mg-empty" style="grid-column:1/-1">아직 발행된 글이 없습니다. 곧 업데이트됩니다.</div>';
+  }
+}
+
+function renderPosts() {
+  const filtered = currentCategory === 'all' ? allPosts : allPosts.filter(p => p.category === currentCategory);
+  const grid = document.getElementById('postGrid');
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="mg-empty" style="grid-column:1/-1">해당 카테고리의 글이 아직 없습니다.</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(p => `
+    <a href="/magazine/posts/${p.slug}/" class="mg-card">
+      <div class="mg-thumb" style="background-image:url('${p.thumbnail_url}')">
+        ${p.count_label ? `<span class="mg-thumb-overlay">${p.count_label}</span>` : ''}
+      </div>
+      <div class="mg-card-body">
+        <span class="mg-card-tag">${CATEGORY_LABELS[p.category] || p.category}</span>
+        <h3 class="mg-card-title">${p.title}</h3>
+        <div class="mg-card-meta">
+          <span>${formatDate(p.published_at)}</span>
+          <span>👁 ${p.views || 0}</span>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+document.getElementById('filters').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('mg-chip')) return;
+  document.querySelectorAll('.mg-chip').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  currentCategory = e.target.dataset.cat;
+  renderPosts();
+});
+
+loadPosts();
+</script>
+
+</body>
+</html>

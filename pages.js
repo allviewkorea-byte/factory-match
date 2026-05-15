@@ -69,6 +69,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
     { id: 'list',   label: '제조사 탐색' },
     { id: 'rfq',    label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
     { id: 'grants', label: '정부지원금' },
+    { id: 'magazine', label: '매거진', external: '/magazine/' },
     // { id: 'chat',  label: '채팅' },  // 채팅 탭 — 추후 활성화
   ];
   const isCompact = density === 'compact';
@@ -88,7 +89,14 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
               <button
                 key={n.id}
                 className={`hdr-nav-item ${route === n.id ? 'is-active' : ''}`}
-                onClick={() => { window.logVisitor?.('tab_click', { tab: n.id }); onNav(n.id); }}
+                onClick={() => {
+                  window.logVisitor?.('tab_click', { tab: n.id });
+                  if (n.external) {
+                    window.location.href = n.external;
+                  } else {
+                    onNav(n.id);
+                  }
+                }}
               >
                 {n.label}
                 {n.badge && <span className="hdr-nav-badge">{n.badge}</span>}
