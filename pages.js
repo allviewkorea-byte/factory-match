@@ -5398,7 +5398,7 @@ function OnboardingPage({ onComplete, onNav }) {
         user_type: role,
         company_name: companyName.trim(),
         business_number: '',
-        status: 'active',
+        status: 'pending',
       });
       if (dbError) throw dbError;
       try { localStorage.setItem('fm-authed', '1'); } catch {}
