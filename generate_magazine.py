@@ -29,7 +29,6 @@ from pathlib import Path
 
 import requests
 import anthropic
-from supabase import create_client
 
 # === 설정 ===
 SCRIPT_DIR = Path(__file__).parent
@@ -45,7 +44,12 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 # Claude 클라이언트
 claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
-sb = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Supabase REST API 헤더
+SUPABASE_HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}"
+}
 
 # === 글 형식 정의 ===
 POST_FORMATS = [
@@ -165,28 +169,33 @@ def fetch_unsplash_photo(keyword):
     return None
 
 def fetch_factories(industry_key, region, count):
-    """Supabase에서 산업×지역 공장 큐레이션 (전화 + 사진은 추후, 일단 기본 정보로)"""
+    """Supabase REST API로 산업×지역 공장 큐레이션 (requests 직접 호출, supabase SDK 불필요)"""
     try:
         # industry_key → 검색 키워드 변환
         search_kw = next((ind["name"] for ind in INDUSTRIES if ind["key"] == industry_key), industry_key)
         
-        query = sb.table("factories").select("id, name, address, business_number, factory_type")
+        # PostgREST 형식 쿼리 빌드
+        url = f"{SUPABASE_URL}/rest/v1/factories"
+        params = {
+            "select": "id,name,address,business_number,factory_type",
+            "limit": str(count * 5),  # 여유 있게 가져옴
+        }
         # 지역 필터 (주소에 포함)
         if region:
-            query = query.ilike("address", f"%{region}%")
-        # 산업 필터 (factory_type 또는 ai_summary에 키워드 포함)
-        query = query.ilike("factory_type", f"%{search_kw}%")
-        query = query.limit(count * 3)  # 여유 있게
+            params["address"] = f"ilike.*{region}*"
+        # 산업 필터 (factory_type에 키워드 포함)
+        params["factory_type"] = f"ilike.*{search_kw}*"
         
-        res = query.execute()
-        rows = res.data or []
-        
-        # 다양성 (지역/규모 분산) - 일단 무작위 선택
-        random.shuffle(rows)
-        return rows[:count]
+        res = requests.get(url, params=params, headers=SUPABASE_HEADERS, timeout=15)
+        if res.status_code == 200:
+            rows = res.json() or []
+            random.shuffle(rows)
+            return rows[:count]
+        else:
+            print(f"  ⚠️ 공장 조회 응답 코드: {res.status_code}, {res.text[:200]}")
     except Exception as e:
         print(f"  ⚠️ 공장 조회 실패: {e}")
-        return []
+    return []
 
 def generate_post_content(post_meta):
     """Claude API로 글 본문 생성 - 사용자 검증된 톤"""
