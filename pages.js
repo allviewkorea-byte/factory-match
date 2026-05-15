@@ -5388,14 +5388,15 @@ function OnboardingPage({ onComplete, onNav }) {
     if (!companyName.trim()) { setError('회사명을 입력해주세요'); return; }
     if (!role) { setError('바이어 또는 제조사를 선택해주세요'); return; }
     setLoading(true);
+    setError('');
     try {
       const { data: { user } } = await window._sb.auth.getUser();
       if (!user) throw new Error('로그인 정보를 찾을 수 없습니다');
       const { error: dbError } = await window._sb.from('user_profiles').upsert({
         id: user.id,
-        email: user.email,
-        name: name.trim(),
+        contact_name: name.trim(),
         role: role,
+        user_type: role,
         company_name: companyName.trim(),
         status: 'active',
       });
@@ -5408,72 +5409,155 @@ function OnboardingPage({ onComplete, onNav }) {
     setLoading(false);
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    fontSize: 14,
+    borderRadius: 10,
+    border: '1.5px solid var(--line-2, #e5e7eb)',
+    background: '#fff',
+    transition: 'all 0.15s',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+  };
+
+  const roleBtn = (selected, accentColor) => ({
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+    padding: '20px 14px',
+    borderRadius: 14,
+    border: selected ? `2px solid ${accentColor}` : '2px solid #e5e7eb',
+    background: selected ? `${accentColor}0d` : '#fff',
+    cursor: 'pointer',
+    transition: 'all 0.18s',
+    position: 'relative',
+    fontFamily: 'inherit',
+    boxShadow: selected ? `0 4px 12px ${accentColor}26` : 'none',
+  });
+
   return (
     <div className="signup-shell">
-      <div className="signup-card" style={{maxWidth:440}}>
-        <AuthLogo size={36}/>
-        <h2 className="signup-title">거의 다 됐어요!</h2>
-        <p className="signup-sub">간단한 정보만 입력하면 바로 시작할 수 있어요</p>
+      <div className="signup-card" style={{maxWidth: 460, padding: '36px 32px'}}>
+        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 8}}>
+          <AuthLogo size={40}/>
+        </div>
+        <h2 className="signup-title" style={{textAlign: 'center', marginTop: 16, fontSize: 24, fontWeight: 800}}>거의 다 됐어요!</h2>
+        <p className="signup-sub" style={{textAlign: 'center', fontSize: 14, color: 'var(--ink-3, #6b7280)', marginTop: 8}}>
+          간단한 정보만 입력하면 바로 시작할 수 있어요
+        </p>
 
-        <div style={{display:'flex', flexDirection:'column', gap:14, marginTop:24}}>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28}}>
           {/* 이름 */}
           <div>
-            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:6}}>이름 *</label>
+            <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
+              이름 <span style={{color: '#ef4444'}}>*</span>
+            </label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="홍길동"
-              className="sgn-input"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
 
           {/* 회사명 */}
           <div>
-            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:6}}>회사명 *</label>
+            <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
+              회사명 <span style={{color: '#ef4444'}}>*</span>
+            </label>
             <input
               type="text"
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               placeholder="(주)회사명"
-              className="sgn-input"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
 
-          {/* 역할 선택 */}
+          {/* 역할 선택 - 큰 카드형 */}
           <div>
-            <label style={{fontSize:13, fontWeight:600, color:'var(--ink-2)', display:'block', marginBottom:8}}>어떤 목적으로 이용하시나요? *</label>
-            <div className="sgn-role-grid">
+            <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 10}}>
+              어떤 목적으로 이용하시나요? <span style={{color: '#ef4444'}}>*</span>
+            </label>
+            <div style={{display: 'flex', gap: 12}}>
               <button
-                className={"sgn-role-btn" + (role === 'buyer' ? ' is-active' : '')}
+                type="button"
                 onClick={() => setRole('buyer')}
+                style={roleBtn(role === 'buyer', '#3b82f6')}
               >
-                <span className="sgn-role-icon" style={{background:'#e8f4fd'}}>
-                  <Icon name="search" size={22} stroke={1.8} style={{color:'var(--brand)'}}/>
-                </span>
-                <span className="sgn-role-name">바이어</span>
-                <span className="sgn-role-desc">제조사를 찾고<br/>견적을 받고 싶어요</span>
+                {role === 'buyer' && (
+                  <span style={{position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700}}>✓</span>
+                )}
+                <div style={{width: 52, height: 52, borderRadius: 14, background: role === 'buyer' ? '#3b82f6' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s'}}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={role === 'buyer' ? '#fff' : '#3b82f6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m21 21-4.3-4.3"/>
+                  </svg>
+                </div>
+                <div style={{fontSize: 15, fontWeight: 700, color: 'var(--ink-1, #111827)', marginTop: 2}}>바이어</div>
+                <div style={{fontSize: 12, color: 'var(--ink-3, #6b7280)', textAlign: 'center', lineHeight: 1.4}}>
+                  제조사를 찾고<br/>견적을 받고 싶어요
+                </div>
               </button>
+
               <button
-                className={"sgn-role-btn" + (role === 'manufacturer' ? ' is-active' : '')}
+                type="button"
                 onClick={() => setRole('manufacturer')}
+                style={roleBtn(role === 'manufacturer', '#10b981')}
               >
-                <span className="sgn-role-icon" style={{background:'#e8fdf0'}}>
-                  <Icon name="bar_chart" size={22} stroke={1.8} style={{color:'var(--emerald)'}}/>
-                </span>
-                <span className="sgn-role-name">제조사</span>
-                <span className="sgn-role-desc">공장을 등록하고<br/>바이어를 받고 싶어요</span>
+                {role === 'manufacturer' && (
+                  <span style={{position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700}}>✓</span>
+                )}
+                <div style={{width: 52, height: 52, borderRadius: 14, background: role === 'manufacturer' ? '#10b981' : '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s'}}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={role === 'manufacturer' ? '#fff' : '#10b981'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+                    <path d="M17 18h1"/>
+                    <path d="M12 18h1"/>
+                    <path d="M7 18h1"/>
+                  </svg>
+                </div>
+                <div style={{fontSize: 15, fontWeight: 700, color: 'var(--ink-1, #111827)', marginTop: 2}}>제조사</div>
+                <div style={{fontSize: 12, color: 'var(--ink-3, #6b7280)', textAlign: 'center', lineHeight: 1.4}}>
+                  공장을 등록하고<br/>바이어를 받고 싶어요
+                </div>
               </button>
             </div>
           </div>
 
-          {error && <p style={{color:'var(--rose)', fontSize:13, textAlign:'center', margin:0}}>{error}</p>}
+          {error && (
+            <div style={{padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13, textAlign: 'center'}}>
+              {error}
+            </div>
+          )}
 
           <button
+            type="button"
             onClick={handleComplete}
             disabled={loading}
-            className="sgn-submit-btn"
-            style={{marginTop:4}}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              fontSize: 15,
+              fontWeight: 700,
+              borderRadius: 12,
+              border: 'none',
+              background: loading ? '#9ca3af' : 'var(--brand, #3b82f6)',
+              color: '#fff',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s',
+              marginTop: 8,
+              fontFamily: 'inherit',
+              boxShadow: loading ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.3)',
+            }}
           >
             {loading ? '처리 중...' : '시작하기 →'}
           </button>
