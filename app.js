@@ -338,8 +338,11 @@ function App() {
     setAuthed(true);
     nav('home');
   };
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await window._sb.auth.signOut(); } catch {}
     try {
+      // Supabase가 자체적으로 sb-* 키를 지우지만, 혹시 모를 잔재 청소
+      Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
       localStorage.removeItem('fm-authed');
       localStorage.removeItem('fm-profile');
       localStorage.removeItem('fm-admin-secret');
