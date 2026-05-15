@@ -5451,7 +5451,7 @@ function OnboardingPage({ onComplete, onNav }) {
       justifyContent: 'center',
       zIndex: 9999,
       padding: 16,
-      animation: 'fmFadeIn 0.2s ease',
+      animation: 'fmFadeIn 0.12s ease',
     }}>
       <div style={{
         background: '#fff',

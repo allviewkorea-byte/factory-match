@@ -105,6 +105,12 @@ function App() {
     catch { return null; }
   });
 
+  // OAuth 콜백 처리 중 로딩 오버레이용 - URL에 ?code= 있으면 즉시 로딩 표시
+  const [authProcessing, setAuthProcessing] = useState(() => {
+    try { return !!(new URLSearchParams(window.location.search).get('code')); }
+    catch { return false; }
+  });
+
   const [route, setRoute] = useState(_INITIAL.route);
   const [factoryId, setFactoryId] = useState(_INITIAL.factoryId);
 
@@ -153,14 +159,20 @@ function App() {
           } catch (e) {
             console.error('Kakao callback error:', e);
             alert('카카오 로그인 오류: ' + e.message);
+          } finally {
+            setAuthProcessing(false);
           }
         })();
       } else {
         // 그 외 OAuth (구글, 향후 네이버 등) - Supabase 표준 흐름
         window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-          if (error) { console.error('exchangeCodeForSession error:', error); return; }
+          if (error) { console.error('exchangeCodeForSession error:', error); }
+          setAuthProcessing(false);
         });
       }
+    } else {
+      // URL에 code 없으면 로딩 끔 (안전망)
+      setAuthProcessing(false);
     }
 
     const handleSession = async (session) => {
@@ -526,6 +538,27 @@ function App() {
       )}
 
       {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
+
+      {/* 카카오 OAuth 처리 중 로딩 오버레이 */}
+      {authProcessing && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.55)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+        }}>
+          <style>{`@keyframes fmKakaoSpin{to{transform:rotate(360deg)}}`}</style>
+          <div style={{background:'#fff',borderRadius:16,padding:'28px 36px',textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.3)'}}>
+            <div style={{width:36,height:36,border:'3px solid #e5e7eb',borderTopColor:'#3b82f6',borderRadius:'50%',animation:'fmKakaoSpin 0.8s linear infinite',margin:'0 auto 14px'}}/>
+            <div style={{fontSize:14,fontWeight:600,color:'#374151'}}>로그인 처리 중...</div>
+          </div>
+        </div>
+      )}
 
       <TweaksPanel title="Tweaks">
         <TweakSection title="밀도 (Density)">
