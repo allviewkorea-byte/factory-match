@@ -5966,7 +5966,7 @@ function WelcomePage({ data, onEnter }) {
     highlight: '더 많은 바이어와의 만남이',
     suffix: '시작됩니다.',
     desc: '회사 정보를 등록하고 AI 매칭을 통해\n양질의 견적 요청을 받아보세요.',
-    cta: '내 공장 관리하기',
+    cta: '시작하기',
     bullets: [
       { icon: 'users', label: '전국 바이어 노출', sub: '검증된 구매 의향 바이어' },
       { icon: 'bell',  label: '실시간 견적 알림', sub: '맞춤 요청 즉시 수신' },
@@ -5978,7 +5978,7 @@ function WelcomePage({ data, onEnter }) {
     highlight: '딱 맞는 공장을 찾는 일이',
     suffix: '쉬워집니다.',
     desc: '국내 217,054개 제조사 데이터를 기반으로\nAI가 최적의 파트너를 추천해드립니다.',
-    cta: 'AI 매칭 시작하기',
+    cta: '시작하기',
     bullets: [
       { icon: 'search', label: '217,054개 제조사', sub: '국내 최대 데이터베이스' },
       { icon: 'sparkle', label: 'AI 자동 매칭', sub: '공정·소재로 즉시 추천' },
@@ -6106,7 +6106,7 @@ function WelcomePage({ data, onEnter }) {
           </div>
         )}
 
-        {/* 핵심 가치 3개 - 큰 글씨, 한 줄 */}
+        {/* 핵심 가치 3개 - 글자 가운데 정렬 (아이콘 + 텍스트 + 같은 너비 spacer) */}
         <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22}}>
           {content.bullets.map((b, i) => (
             <div key={i} style={{
@@ -6130,9 +6130,10 @@ function WelcomePage({ data, onEnter }) {
               }}>
                 {renderIcon(b.icon)}
               </div>
-              <div style={{flex: 1, minWidth: 0, textAlign: 'left', fontSize: 15, fontWeight: 700, color: '#0f172a'}}>
+              <div style={{flex: 1, minWidth: 0, textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#0f172a'}}>
                 {b.label}
               </div>
+              <div style={{width: 36, height: 36, flexShrink: 0}}/>
             </div>
           ))}
         </div>
