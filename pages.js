@@ -5580,7 +5580,7 @@ function OnboardingPage({ onComplete, onNav }) {
               boxShadow: loading ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.3)',
             }}
           >
-            {loading ? '처리 중...' : '시작하기 →'}
+            {loading ? '처리 중...' : '시작하기'}
           </button>
         </div>
       </div>
@@ -6088,7 +6088,7 @@ function WelcomePage({ data, onEnter }) {
           {content.desc}
         </p>
 
-        {/* 회사 정보 카드 */}
+        {/* 회사 정보 카드 - 가운데 정렬 */}
         {data?.company_name && (
           <div style={{
             background: '#f8fafc',
@@ -6098,29 +6098,30 @@ function WelcomePage({ data, onEnter }) {
             marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
+            gap: 10,
           }}>
             <span style={{fontSize: 12, color: '#64748b', fontWeight: 500}}>회사명</span>
             <span style={{fontSize: 13, color: '#0f172a', fontWeight: 700}}>{data.company_name}</span>
           </div>
         )}
 
-        {/* 핵심 가치 3개 */}
+        {/* 핵심 가치 3개 - 큰 글씨, 한 줄 */}
         <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22}}>
           {content.bullets.map((b, i) => (
             <div key={i} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              padding: '10px 12px',
+              gap: 14,
+              padding: '14px 16px',
               background: '#fafbfc',
               borderRadius: 10,
               border: '1px solid #f1f5f9',
             }}>
               <div style={{
-                width: 32,
-                height: 32,
-                borderRadius: 9,
+                width: 36,
+                height: 36,
+                borderRadius: 10,
                 background: accentSoft,
                 display: 'flex',
                 alignItems: 'center',
@@ -6129,9 +6130,8 @@ function WelcomePage({ data, onEnter }) {
               }}>
                 {renderIcon(b.icon)}
               </div>
-              <div style={{flex: 1, minWidth: 0, textAlign: 'left'}}>
-                <div style={{fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 1}}>{b.label}</div>
-                <div style={{fontSize: 11, color: '#94a3b8'}}>{b.sub}</div>
+              <div style={{flex: 1, minWidth: 0, textAlign: 'left', fontSize: 15, fontWeight: 700, color: '#0f172a'}}>
+                {b.label}
               </div>
             </div>
           ))}
