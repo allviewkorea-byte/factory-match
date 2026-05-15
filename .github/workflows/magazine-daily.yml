@@ -28,11 +28,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install anthropic requests
       
-      - name: 매거진 글 1개 자동 생성
+      - name: 매거진 글 3개 자동 생성
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: |
+          python generate_magazine.py --daily
+          sleep 10
+          python generate_magazine.py --daily
+          sleep 10
           python generate_magazine.py --daily
       
       - name: Git 커밋 및 푸시
@@ -41,9 +45,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add magazine/ sitemap.xml 2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "📭 변경사항 없음 - 오늘의 글 생성 실패 또는 이미 발행됨"
+            echo "📭 변경사항 없음"
           else
-            git commit -m "feat: 매거진 일일 자동 발행 ($(date +'%Y-%m-%d'))"
+            git commit -m "feat: 매거진 자동 발행 3편 ($(date +'%Y-%m-%d'))"
             git push
-            echo "✅ 자동 발행 완료"
+            echo "✅ 3편 발행 완료"
           fi
