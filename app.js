@@ -144,8 +144,12 @@ function App() {
             if (error) {
               console.error('signInWithIdToken error:', error);
               alert('카카오 로그인 실패: ' + (error.message || '세션 생성 실패'));
+              return;
             }
-            // 성공 시 SIGNED_IN 이벤트가 자동 발화됨
+            // 성공: 세션을 직접 받아서 handleSession 호출 (SIGNED_IN 이벤트가 안 와도 동작)
+            if (data?.session?.user) {
+              await handleSession(data.session);
+            }
           } catch (e) {
             console.error('Kakao callback error:', e);
             alert('카카오 로그인 오류: ' + e.message);
@@ -190,6 +194,14 @@ function App() {
         setProfile(null);
       }
     });
+
+    // 페이지 로드 시 기존 세션 복원 (새로고침/재방문 대응)
+    window._sb.auth.getSession().then(({ data }) => {
+      if (data?.session?.user) {
+        try { localStorage.setItem('fm-authed', '1'); } catch {}
+        setAuthed(true);
+      }
+    }).catch(() => {});
 
     return () => subscription.unsubscribe();
   }, []);
