@@ -5395,7 +5395,6 @@ function OnboardingPage({ onComplete, onNav }) {
       const { error: dbError } = await window._sb.from('user_profiles').upsert({
         id: user.id,
         contact_name: name.trim(),
-        role: role,
         user_type: role,
         company_name: companyName.trim(),
         status: 'active',
