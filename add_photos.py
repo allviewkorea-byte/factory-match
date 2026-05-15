@@ -26,7 +26,7 @@ POSTS_DIR = MAGAZINE_DIR / "posts"
 DATA_FILE = MAGAZINE_DIR / "data" / "posts.json"
 
 # Unsplash 키 (환경변수 또는 fallback)
-UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY") or "Ez21T7kxW7Dqe5uS_dFfQ6rywt41r5H6fwpYLgaefH0"
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY") or "Ez21T7kxW7Dqe5uS_dFfQ6rywt4lr5H6fwpYLgaefH0"
 
 # 산업별 키워드 매핑
 INDUSTRY_KEYWORDS = {
