@@ -5439,13 +5439,34 @@ function OnboardingPage({ onComplete, onNav }) {
   });
 
   return (
-    <div className="signup-shell">
-      <div className="signup-card" style={{maxWidth: 460, padding: '36px 32px'}}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(15, 23, 42, 0.55)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: 16,
+      animation: 'fmFadeIn 0.2s ease',
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 20,
+        padding: '36px 32px',
+        maxWidth: 460,
+        width: '100%',
+        boxShadow: '0 25px 70px rgba(0, 0, 0, 0.35)',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+      }}>
         <div style={{display: 'flex', justifyContent: 'center', marginBottom: 8}}>
           <AuthLogo size={40}/>
         </div>
-        <h2 className="signup-title" style={{textAlign: 'center', marginTop: 16, fontSize: 24, fontWeight: 800}}>거의 다 됐어요!</h2>
-        <p className="signup-sub" style={{textAlign: 'center', fontSize: 14, color: 'var(--ink-3, #6b7280)', marginTop: 8}}>
+        <h2 style={{textAlign: 'center', marginTop: 16, marginBottom: 0, fontSize: 24, fontWeight: 800, color: 'var(--ink-1, #111827)'}}>거의 다 됐어요!</h2>
+        <p style={{textAlign: 'center', fontSize: 14, color: 'var(--ink-3, #6b7280)', marginTop: 8, marginBottom: 0}}>
           간단한 정보만 입력하면 바로 시작할 수 있어요
         </p>
 
