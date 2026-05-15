@@ -127,7 +127,7 @@ def weighted_choice(items, weight_key='weight'):
     return items[-1]
 
 def fetch_unsplash_photo(keyword):
-    """Unsplash에서 사진 1장 가져오기"""
+    """Unsplash에서 사진 1장 가져오기 + 다운로드 트래킹 (약관 6조 준수)"""
     if not UNSPLASH_ACCESS_KEY:
         return None
     try:
@@ -141,12 +141,23 @@ def fetch_unsplash_photo(keyword):
             data = res.json()
             if data.get("results"):
                 photo = random.choice(data["results"][:5])
+                # ★ Unsplash 약관 6조 - Download tracking: 사진을 영구 포함할 때 통지 필수
+                try:
+                    download_url = photo.get("links", {}).get("download_location")
+                    if download_url:
+                        requests.get(
+                            download_url,
+                            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+                            timeout=5
+                        )
+                except Exception:
+                    pass  # 트래킹 실패는 무시 (사진 사용 자체는 계속 진행)
                 return {
                     "url": photo["urls"]["regular"],
                     "thumb_url": photo["urls"]["small"],
                     "author_name": photo["user"]["name"],
-                    "author_url": photo["user"]["links"]["html"],
-                    "unsplash_url": photo["links"]["html"],
+                    "author_url": photo["user"]["links"]["html"] + "?utm_source=factorymatch&utm_medium=referral",
+                    "unsplash_url": "https://unsplash.com/?utm_source=factorymatch&utm_medium=referral",
                 }
     except Exception as e:
         print(f"  ⚠️ Unsplash 조회 실패: {e}")
@@ -394,7 +405,9 @@ def render_article_html(post, body_html, hero_photo):
     
     attribution = ""
     if hero_photo and hero_photo.get("author_name"):
-        attribution = f'<div style="font-size:11px;color:#94a3b8;text-align:right;padding:8px 24px;background:#f8fafc">사진: <a href="{hero_photo["author_url"]}" target="_blank" rel="noopener" style="color:#64748b">{hero_photo["author_name"]} on Unsplash</a></div>'
+        attribution = f'''<div style="font-size:12px;color:#94a3b8;text-align:right;padding:10px 24px;background:#f8fafc;border-bottom:1px solid #e5e7eb">
+  Photo by <a href="{hero_photo["author_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">{hero_photo["author_name"]}</a> on <a href="{hero_photo["unsplash_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">Unsplash</a>
+</div>'''
     
     # 해시태그 자동 생성
     hashtags = ["공장매칭", "제조업", "B2B"]
