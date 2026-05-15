@@ -5954,27 +5954,214 @@ function OnbStepNotify({ data, update }) {
 // 5) WELCOME (완료 → 메인 진입)
 // ═══════════════════════════════════════════════════════════
 function WelcomePage({ data, onEnter }) {
+  const isManufacturer = data?.role === 'manufacturer';
+  const accentColor = isManufacturer ? '#10b981' : '#3b82f6';
+  const accentSoft = isManufacturer ? '#ecfdf5' : '#eff6ff';
+  const displayName = (data?.name || data?.contact_name || '').trim() || (isManufacturer ? '대표' : '회원');
+
+  // 역할별 맞춤 콘텐츠
+  const content = isManufacturer ? {
+    badge: '제조사',
+    title: `${displayName}님,`,
+    highlight: '더 많은 바이어와의 만남이',
+    suffix: '시작됩니다.',
+    desc: '회사 정보를 등록하고 AI 매칭을 통해\n양질의 견적 요청을 받아보세요.',
+    cta: '내 공장 관리하기',
+    bullets: [
+      { icon: 'users', label: '전국 바이어 노출', sub: '검증된 구매 의향 바이어' },
+      { icon: 'bell',  label: '실시간 견적 알림', sub: '맞춤 요청 즉시 수신' },
+      { icon: 'check', label: '간편한 정보 관리', sub: '몇 분이면 완료' },
+    ],
+  } : {
+    badge: '바이어',
+    title: `${displayName}님,`,
+    highlight: '딱 맞는 공장을 찾는 일이',
+    suffix: '쉬워집니다.',
+    desc: '국내 217,054개 제조사 데이터를 기반으로\nAI가 최적의 파트너를 추천해드립니다.',
+    cta: 'AI 매칭 시작하기',
+    bullets: [
+      { icon: 'search', label: '217,054개 제조사', sub: '국내 최대 데이터베이스' },
+      { icon: 'sparkle', label: 'AI 자동 매칭', sub: '공정·소재로 즉시 추천' },
+      { icon: 'check', label: '무료 견적 요청', sub: '여러 공장 한 번에' },
+    ],
+  };
+
+  // 아이콘 SVG
+  const renderIcon = (name) => {
+    const props = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: accentColor, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    if (name === 'users') return React.createElement('svg', props, React.createElement('path',{d:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'}), React.createElement('circle',{cx:9,cy:7,r:4}), React.createElement('path',{d:'M22 21v-2a4 4 0 0 0-3-3.87'}), React.createElement('path',{d:'M16 3.13a4 4 0 0 1 0 7.75'}));
+    if (name === 'bell') return React.createElement('svg', props, React.createElement('path',{d:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'}), React.createElement('path',{d:'M10.3 21a1.94 1.94 0 0 0 3.4 0'}));
+    if (name === 'search') return React.createElement('svg', props, React.createElement('circle',{cx:11,cy:11,r:8}), React.createElement('path',{d:'m21 21-4.3-4.3'}));
+    if (name === 'sparkle') return React.createElement('svg', props, React.createElement('path',{d:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z'}));
+    return React.createElement('svg', props, React.createElement('path',{d:'M20 6L9 17l-5-5'})); // check
+  };
+
   return (
-    <div className="auth-shell welcome-shell">
-      <div className="auth-shell-bg"/>
-      <div className="welcome-inner">
-        <div className="welcome-card">
-          <div className="welcome-glyph">
-            <Icon name="check" size={28} stroke={2.4}/>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '40px 16px',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      fontFamily: 'inherit',
+    }}>
+      <style>{`@keyframes fmWelcomeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes fmWelcomeScale{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}`}</style>
+      <div style={{
+        background: '#fff',
+        borderRadius: 24,
+        maxWidth: 520,
+        width: '100%',
+        padding: '48px 40px',
+        boxShadow: '0 20px 60px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04)',
+        animation: 'fmWelcomeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}>
+        {/* 상단 체크 아이콘 */}
+        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 24}}>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: 20,
+            background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 8px 24px ${accentColor}33`,
+            animation: 'fmWelcomeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
           </div>
-          <h1 className="welcome-title">
-            {data?.company || '바이어'}님,<br/>
-            <span className="welcome-name">좋은 공장을 찾는 일</span><br/>
-            이제 더 빠르게 됩니다.
-          </h1>
-          <p className="welcome-sub">
-            국내 217,054개 제조사 데이터와 AI가<br/>
-            최적의 파트너를 연결해 드립니다.
-          </p>
-          <button className="btn-primary welcome-cta" onClick={onEnter}>
-            시작하기
-          </button>
         </div>
+
+        {/* 역할 뱃지 */}
+        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 16}}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '5px 12px',
+            background: accentSoft,
+            color: accentColor,
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 0.3,
+          }}>
+            <span style={{width: 6, height: 6, borderRadius: '50%', background: accentColor}}/>
+            {content.badge}
+          </span>
+        </div>
+
+        {/* 제목 */}
+        <h1 style={{
+          textAlign: 'center',
+          fontSize: 28,
+          fontWeight: 800,
+          color: '#0f172a',
+          margin: 0,
+          lineHeight: 1.35,
+          letterSpacing: '-0.5px',
+        }}>
+          {content.title}<br/>
+          <span style={{color: accentColor}}>{content.highlight}</span><br/>
+          {content.suffix}
+        </h1>
+
+        {/* 부제 */}
+        <p style={{
+          textAlign: 'center',
+          fontSize: 14,
+          color: '#64748b',
+          marginTop: 16,
+          marginBottom: 32,
+          lineHeight: 1.6,
+          whiteSpace: 'pre-line',
+        }}>
+          {content.desc}
+        </p>
+
+        {/* 회사 정보 카드 */}
+        {data?.company_name && (
+          <div style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '12px 16px',
+            marginBottom: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{fontSize: 13, color: '#64748b', fontWeight: 500}}>회사명</span>
+            <span style={{fontSize: 14, color: '#0f172a', fontWeight: 700}}>{data.company_name}</span>
+          </div>
+        )}
+
+        {/* 핵심 가치 3개 */}
+        <div style={{display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32}}>
+          {content.bullets.map((b, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '12px 14px',
+              background: '#fafbfc',
+              borderRadius: 12,
+              border: '1px solid #f1f5f9',
+            }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: accentSoft,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {renderIcon(b.icon)}
+              </div>
+              <div style={{flex: 1, minWidth: 0}}>
+                <div style={{fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 2}}>{b.label}</div>
+                <div style={{fontSize: 12, color: '#94a3b8'}}>{b.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <button
+          type="button"
+          onClick={onEnter}
+          style={{
+            width: '100%',
+            padding: '15px 20px',
+            fontSize: 15,
+            fontWeight: 700,
+            borderRadius: 12,
+            border: 'none',
+            background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
+            color: '#fff',
+            cursor: 'pointer',
+            transition: 'all 0.18s',
+            fontFamily: 'inherit',
+            boxShadow: `0 8px 20px ${accentColor}40`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          {content.cta}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/>
+            <path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
       </div>
     </div>
   );
