@@ -7195,7 +7195,6 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
       const { error } = await window._sb.from('user_profiles').update({
         contact_name: editForm.contact_name,
         contact_phone: editForm.contact_phone,
-        updated_at: new Date().toISOString(),
       }).eq('id', user.id);
       if (error) throw error;
       setDbProfile(prev => ({ ...prev, contact_name: editForm.contact_name, contact_phone: editForm.contact_phone }));
@@ -7669,7 +7668,7 @@ const AdminReportsTab = () => {
 
   const handleStatusChange = async (reportId, newStatus, adminNote = '') => {
     try {
-      const updates = { status: newStatus, updated_at: new Date().toISOString() };
+      const updates = { status: newStatus };
       if (newStatus === 'resolved' || newStatus === 'rejected') {
         updates.resolved_at = new Date().toISOString();
       }
@@ -7923,7 +7922,7 @@ const AdminSignupTab = () => {
     setActionLoading(true);
     try {
       const now = new Date().toISOString();
-      const updates = { status: 'approved', approved_at: now, updated_at: now };
+      const updates = { status: 'approved', approved_at: now };
       if (memo.trim()) updates.admin_memo = memo.trim();
       const { error: dbErr } = await window._sb.from('user_profiles').update(updates).eq('id', selected.id);
       if (dbErr) throw dbErr;
@@ -7968,7 +7967,7 @@ const AdminSignupTab = () => {
     try {
       const now = new Date().toISOString();
       const finalMemo = reason.trim() || memo.trim();
-      const updates = { status: 'rejected', updated_at: now };
+      const updates = { status: 'rejected' };
       if (finalMemo) updates.admin_memo = finalMemo;
       const { error: dbErr } = await window._sb.from('user_profiles').update(updates).eq('id', selected.id);
       if (dbErr) throw dbErr;
@@ -8010,7 +8009,7 @@ const AdminSignupTab = () => {
   const saveMemo = async () => {
     if (!selected) return;
     try {
-      await window._sb.from('user_profiles').update({ admin_memo: memo, updated_at: new Date().toISOString() }).eq('id', selected.id);
+      await window._sb.from('user_profiles').update({ admin_memo: memo }).eq('id', selected.id);
       setSignups(prev => prev.map(r => r.id === selected.id ? { ...r, admin_memo: memo } : r));
     } catch (err) { alert('메모 저장 실패: ' + (err.message || err)); }
   };
