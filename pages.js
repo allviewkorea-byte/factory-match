@@ -5998,58 +5998,64 @@ function WelcomePage({ data, onEnter }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(15, 23, 42, 0.55)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '40px 16px',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      zIndex: 9999,
+      padding: 16,
       fontFamily: 'inherit',
     }}>
-      <style>{`@keyframes fmWelcomeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes fmWelcomeScale{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}`}</style>
+      <style>{`@keyframes fmWelcomeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes fmWelcomeScale{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}`}</style>
       <div style={{
         background: '#fff',
-        borderRadius: 24,
-        maxWidth: 520,
+        borderRadius: 20,
+        maxWidth: 420,
         width: '100%',
-        padding: '48px 40px',
-        boxShadow: '0 20px 60px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04)',
-        animation: 'fmWelcomeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        padding: '32px 28px',
+        boxShadow: '0 25px 70px rgba(0, 0, 0, 0.35)',
+        animation: 'fmWelcomeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        maxHeight: '90vh',
+        overflowY: 'auto',
       }}>
         {/* 상단 체크 아이콘 */}
-        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 24}}>
+        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 16}}>
           <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: 20,
+            width: 52,
+            height: 52,
+            borderRadius: 16,
             background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: `0 8px 24px ${accentColor}33`,
-            animation: 'fmWelcomeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+            boxShadow: `0 6px 18px ${accentColor}33`,
+            animation: 'fmWelcomeScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both',
           }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5"/>
             </svg>
           </div>
         </div>
 
         {/* 역할 뱃지 */}
-        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 16}}>
+        <div style={{display: 'flex', justifyContent: 'center', marginBottom: 12}}>
           <span style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6,
-            padding: '5px 12px',
+            padding: '4px 11px',
             background: accentSoft,
             color: accentColor,
             borderRadius: 999,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 700,
             letterSpacing: 0.3,
           }}>
-            <span style={{width: 6, height: 6, borderRadius: '50%', background: accentColor}}/>
+            <span style={{width: 5, height: 5, borderRadius: '50%', background: accentColor}}/>
             {content.badge}
           </span>
         </div>
@@ -6057,12 +6063,12 @@ function WelcomePage({ data, onEnter }) {
         {/* 제목 */}
         <h1 style={{
           textAlign: 'center',
-          fontSize: 28,
+          fontSize: 22,
           fontWeight: 800,
           color: '#0f172a',
           margin: 0,
-          lineHeight: 1.35,
-          letterSpacing: '-0.5px',
+          lineHeight: 1.4,
+          letterSpacing: '-0.4px',
         }}>
           {content.title}<br/>
           <span style={{color: accentColor}}>{content.highlight}</span><br/>
@@ -6072,10 +6078,10 @@ function WelcomePage({ data, onEnter }) {
         {/* 부제 */}
         <p style={{
           textAlign: 'center',
-          fontSize: 14,
+          fontSize: 13,
           color: '#64748b',
-          marginTop: 16,
-          marginBottom: 32,
+          marginTop: 12,
+          marginBottom: 20,
           lineHeight: 1.6,
           whiteSpace: 'pre-line',
         }}>
@@ -6087,34 +6093,34 @@ function WelcomePage({ data, onEnter }) {
           <div style={{
             background: '#f8fafc',
             border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 16px',
-            marginBottom: 24,
+            borderRadius: 10,
+            padding: '10px 14px',
+            marginBottom: 16,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <span style={{fontSize: 13, color: '#64748b', fontWeight: 500}}>회사명</span>
-            <span style={{fontSize: 14, color: '#0f172a', fontWeight: 700}}>{data.company_name}</span>
+            <span style={{fontSize: 12, color: '#64748b', fontWeight: 500}}>회사명</span>
+            <span style={{fontSize: 13, color: '#0f172a', fontWeight: 700}}>{data.company_name}</span>
           </div>
         )}
 
         {/* 핵심 가치 3개 */}
-        <div style={{display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32}}>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22}}>
           {content.bullets.map((b, i) => (
             <div key={i} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
-              padding: '12px 14px',
+              gap: 12,
+              padding: '10px 12px',
               background: '#fafbfc',
-              borderRadius: 12,
+              borderRadius: 10,
               border: '1px solid #f1f5f9',
             }}>
               <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
+                width: 32,
+                height: 32,
+                borderRadius: 9,
                 background: accentSoft,
                 display: 'flex',
                 alignItems: 'center',
@@ -6123,9 +6129,9 @@ function WelcomePage({ data, onEnter }) {
               }}>
                 {renderIcon(b.icon)}
               </div>
-              <div style={{flex: 1, minWidth: 0}}>
-                <div style={{fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 2}}>{b.label}</div>
-                <div style={{fontSize: 12, color: '#94a3b8'}}>{b.sub}</div>
+              <div style={{flex: 1, minWidth: 0, textAlign: 'left'}}>
+                <div style={{fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 1}}>{b.label}</div>
+                <div style={{fontSize: 11, color: '#94a3b8'}}>{b.sub}</div>
               </div>
             </div>
           ))}
@@ -6137,17 +6143,17 @@ function WelcomePage({ data, onEnter }) {
           onClick={onEnter}
           style={{
             width: '100%',
-            padding: '15px 20px',
-            fontSize: 15,
+            padding: '13px 18px',
+            fontSize: 14,
             fontWeight: 700,
-            borderRadius: 12,
+            borderRadius: 11,
             border: 'none',
             background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}dd 100%)`,
             color: '#fff',
             cursor: 'pointer',
             transition: 'all 0.18s',
             fontFamily: 'inherit',
-            boxShadow: `0 8px 20px ${accentColor}40`,
+            boxShadow: `0 6px 16px ${accentColor}40`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -6157,7 +6163,7 @@ function WelcomePage({ data, onEnter }) {
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
           {content.cta}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14"/>
             <path d="m12 5 7 7-7 7"/>
           </svg>

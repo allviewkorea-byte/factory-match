@@ -44,7 +44,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 }/*EDITMODE-END*/;
 
 const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search', 'landing', 'grants'];
-const AUTH_ROUTES = ['login', 'signup', 'verify', 'welcome', 'forgot'];
+const AUTH_ROUTES = ['login', 'signup', 'verify', 'forgot'];
 
 // Parse route and factoryId from current URL once at startup
 function _parseInitialUrl() {
@@ -426,7 +426,6 @@ function App() {
         {route === 'forgot' && <ForgotPasswordPage onNav={nav}/>}
         {route === 'signup' && <SignupPage onNav={nav}/>}
         {route === 'verify' && <VerifyPage email={pendingEmail || 'user@company.com'} onNav={nav} onComplete={handleVerifyComplete}/>}
-        {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}
       </>
     );
   }
@@ -434,7 +433,7 @@ function App() {
   return (
     <>
       <Header route={route} onNav={nav} density={tweaks.density} onLogout={handleLogout} authed={authed} rfqCount={rfqIds.length} profile={profile}/>
-      {(route === 'landing' || route === 'onboarding' || (route === 'home' && !authed)) && <LandingPage onNav={nav} authed={authed}/>}
+      {(route === 'landing' || route === 'onboarding' || route === 'welcome' || (route === 'home' && !authed)) && <LandingPage onNav={nav} authed={authed}/>}
       {route === 'home' && authed && (
         <HomePage
           onNav={nav}
@@ -538,6 +537,7 @@ function App() {
       )}
 
       {route === 'onboarding' && <OnboardingPage onNav={nav} onComplete={handleOnboardingComplete}/>}
+      {route === 'welcome' && <WelcomePage data={profile} onEnter={handleEnterApp}/>}
 
       {/* 카카오 OAuth 처리 중 로딩 오버레이 */}
       {authProcessing && (
