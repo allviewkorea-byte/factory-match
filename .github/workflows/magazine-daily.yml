@@ -1,0 +1,49 @@
+name: 매거진 매일 자동 발행
+
+on:
+  schedule:
+    # 한국시간 매일 오전 10시 (UTC 01:00)
+    - cron: '0 1 * * *'
+  workflow_dispatch:  # 수동 실행도 허용 (GitHub UI에서 버튼으로 실행 가능)
+
+jobs:
+  generate-magazine-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # git push 권한
+    
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Python 3.11 셋업
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 패키지 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install anthropic supabase requests
+      
+      - name: 매거진 글 1개 자동 생성
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: |
+          python generate_magazine.py --daily
+      
+      - name: Git 커밋 및 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add magazine/ sitemap.xml 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "📭 변경사항 없음 - 오늘의 글 생성 실패 또는 이미 발행됨"
+          else
+            git commit -m "feat: 매거진 일일 자동 발행 ($(date +'%Y-%m-%d'))"
+            git push
+            echo "✅ 자동 발행 완료"
+          fi

@@ -18,6 +18,7 @@
 """
 
 import os
+import sys
 import json
 import re
 import random
@@ -664,6 +665,82 @@ def plan_initial_posts():
     
     return plan
 
+def plan_daily_post():
+    """매일 1개 무작위 글 계획 (기존 발행된 slug 제외)"""
+    # 기존 발행 글의 slug 확인
+    try:
+        data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
+        existing_slugs = {p["slug"] for p in data.get("posts", [])}
+    except Exception:
+        existing_slugs = set()
+    
+    # 모든 가능한 글 후보 풀 구성
+    candidates = []
+    
+    # ① 산업별 추천 (산업 8개 × 지역 15개 × 형식 3개 = 360개)
+    for ind in INDUSTRIES:
+        for region in REGIONS:
+            for count in [3, 5, 7]:
+                title = f"{region} {ind['name']} 업체 추천 {count}선"
+                candidates.append({
+                    "type": "recommend",
+                    "count": count,
+                    "industry": ind["key"],
+                    "region": region,
+                    "title": title,
+                    "subtitle": f"{region} 지역 {ind['name']} 업체 검증 {count}곳",
+                    "kw_unsplash": ind["kw_unsplash"]
+                })
+    
+    # ② 정보성 가이드
+    for topic in GUIDE_TOPICS:
+        candidates.append({
+            "type": "guide", "count": 0,
+            "title": topic["title"],
+            "subtitle": topic["title"],
+            "industry": topic.get("industry"),
+            "kw_unsplash": topic["kw"]
+        })
+    
+    # ③ 비교 분석
+    for topic in COMPARE_TOPICS:
+        candidates.append({
+            "type": "compare", "count": 0,
+            "title": topic["title"],
+            "subtitle": topic["title"],
+            "kw_unsplash": topic["kw"]
+        })
+    
+    # ④ 트렌드
+    for topic in TREND_TOPICS:
+        candidates.append({
+            "type": "trend", "count": 0,
+            "title": topic["title"],
+            "subtitle": topic["title"],
+            "kw_unsplash": topic["kw"]
+        })
+    
+    # ⑤ 체크리스트
+    for topic in CHECKLIST_TOPICS:
+        candidates.append({
+            "type": "checklist", "count": 0,
+            "title": topic["title"],
+            "subtitle": topic["title"],
+            "kw_unsplash": topic["kw"]
+        })
+    
+    # 기존 슬러그 제외
+    fresh = [c for c in candidates if slugify(c["title"]) not in existing_slugs]
+    
+    if not fresh:
+        print("⚠️ 모든 후보가 이미 발행됨. 추가 토픽 풀 확장 필요.")
+        return None
+    
+    # 무작위 선택
+    chosen = random.choice(fresh)
+    print(f"📌 오늘의 글: {chosen['title']} ({chosen['type']})")
+    return chosen
+
 def main():
     print("=" * 60)
     print("🚀 공장매칭 매거진 자동 생성 시작")
@@ -675,21 +752,39 @@ def main():
     if not UNSPLASH_ACCESS_KEY:
         print("⚠️ UNSPLASH_ACCESS_KEY 미설정 - 사진 없이 진행합니다.")
     
-    plan = plan_initial_posts()
-    print(f"\n📋 계획: {len(plan)}개 글 생성\n")
+    # 모드 결정: 인자 또는 환경변수
+    mode = "initial"  # 기본값: 첫 15개 일괄 생성
+    if len(sys.argv) > 1 and sys.argv[1] in ("--daily", "-d"):
+        mode = "daily"
+    elif os.environ.get("MAGAZINE_MODE") == "daily":
+        mode = "daily"
     
-    for i, post_meta in enumerate(plan, 1):
-        print(f"\n[{i}/{len(plan)}]")
-        try:
-            generate_post(post_meta)
-            time.sleep(2)  # API rate limit
-        except Exception as e:
-            print(f"  ❌ 실패: {e}")
-            continue
-    
-    print("\n" + "=" * 60)
-    print(f"✅ 완료! {DATA_FILE.parent} 확인")
-    print("=" * 60)
+    if mode == "daily":
+        # 매일 모드: 1개만 생성
+        print("\n🌅 매일 자동 생성 모드 (1개)\n")
+        post_meta = plan_daily_post()
+        if post_meta:
+            try:
+                generate_post(post_meta)
+                print("\n✅ 오늘의 글 발행 완료")
+            except Exception as e:
+                print(f"❌ 실패: {e}")
+                sys.exit(1)
+    else:
+        # 초기 일괄 모드: 15개 생성
+        plan = plan_initial_posts()
+        print(f"\n📋 초기 생성 계획: {len(plan)}개 글\n")
+        for i, post_meta in enumerate(plan, 1):
+            print(f"\n[{i}/{len(plan)}]")
+            try:
+                generate_post(post_meta)
+                time.sleep(2)
+            except Exception as e:
+                print(f"  ❌ 실패: {e}")
+                continue
+        print("\n" + "=" * 60)
+        print(f"✅ 초기 발행 완료! {DATA_FILE.parent} 확인")
+        print("=" * 60)
 
 if __name__ == "__main__":
     main()
