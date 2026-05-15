@@ -5397,6 +5397,7 @@ function OnboardingPage({ onComplete, onNav }) {
         contact_name: name.trim(),
         user_type: role,
         company_name: companyName.trim(),
+        business_number: '',
         status: 'active',
       });
       if (dbError) throw dbError;
