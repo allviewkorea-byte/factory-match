@@ -50,21 +50,28 @@ CATEGORY_KEYWORDS = {
 }
 
 
-def fetch_unsplash_photo(keyword):
-    """Unsplash에서 사진 1장 가져오기"""
+def fetch_unsplash_photo(keyword, used_urls=None):
+    """Unsplash에서 사진 1장 가져오기 (중복 회피)"""
     if not UNSPLASH_ACCESS_KEY:
         return None
+    used_urls = used_urls or set()
     try:
         res = requests.get(
             "https://api.unsplash.com/search/photos",
-            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            params={"query": keyword, "per_page": 30, "orientation": "landscape"},
             headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
             timeout=10
         )
         if res.status_code == 200:
             data = res.json()
-            if data.get("results"):
-                photo = random.choice(data["results"][:5])
+            results = data.get("results", [])
+            if results:
+                # 사용 안 된 사진 필터링
+                available = [p for p in results if p["urls"]["regular"] not in used_urls]
+                # 모두 사용 중이면 (드물지만) 그냥 전체에서 선택
+                pool = available if available else results
+                # 상위 15개 중 무작위 선택 (다양성 ↑)
+                photo = random.choice(pool[:15])
                 # Download tracking (약관 6조)
                 try:
                     download_url = photo.get("links", {}).get("download_location")
@@ -90,47 +97,46 @@ def fetch_unsplash_photo(keyword):
 
 
 def update_html_hero(post_slug, photo):
-    """개별 글 HTML 파일에 히어로 이미지 + attribution 삽입"""
+    """개별 글 HTML 파일에 히어로 이미지 + attribution 삽입/교체"""
     html_path = POSTS_DIR / post_slug / "index.html"
     if not html_path.exists():
         return False
     
     html = html_path.read_text(encoding='utf-8')
     
-    # 1. 히어로 영역 background-image 적용
-    # 기존 형태 1: 빈 배경 + linear-gradient
-    pattern1 = r'<div class="mg-article-hero" style="background:linear-gradient\([^)]+\)"></div>'
     new_hero = f'<div class="mg-article-hero" style="background-image:url(\'{photo["url"]}\');background-size:cover;background-position:center"></div>'
-    if re.search(pattern1, html):
-        html = re.sub(pattern1, new_hero, html)
-    else:
-        # 기존 형태 2: background-image:url('')
-        pattern2 = r'<div class="mg-article-hero" style="background-image:url\(\'[^\']*\'\)[^"]*"></div>'
-        if re.search(pattern2, html):
-            html = re.sub(pattern2, new_hero, html)
     
-    # 2. OG image 메타태그 업데이트
+    # 1. 히어로 영역 background 적용 — 모든 형태 매칭
+    # 기존 어떤 형태든 (gradient/이미지 있음/없음) 다 교체
+    pattern = r'<div class="mg-article-hero"[^>]*></div>'
+    if re.search(pattern, html):
+        html = re.sub(pattern, new_hero, html, count=1)
+    
+    # 2. OG image 메타태그 업데이트 (빈 값이든 기존 URL이든 교체)
     html = re.sub(
-        r'<meta property="og:image" content="">',
+        r'<meta property="og:image" content="[^"]*">',
         f'<meta property="og:image" content="{photo["url"]}">',
         html
     )
     
     # 3. JSON-LD의 image도 업데이트
     html = re.sub(
-        r'"image": ""',
+        r'"image": "[^"]*"',
         f'"image": "{photo["url"]}"',
         html
     )
     
-    # 4. 히어로 아래에 attribution 추가 (이미 있으면 안 함)
-    if "Photo by" not in html:
-        attribution = f'<div style="font-size:12px;color:#94a3b8;text-align:right;padding:10px 24px;background:#f8fafc;border-bottom:1px solid #e5e7eb">Photo by <a href="{photo["author_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">{photo["author_name"]}</a> on <a href="https://unsplash.com/?utm_source=factorymatch&utm_medium=referral" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">Unsplash</a></div>'
-        
-        html = html.replace(
-            new_hero,
-            new_hero + '\n  ' + attribution
-        )
+    # 4. 기존 attribution 제거 후 새로 추가 (교체 가능하도록)
+    # 기존 "Photo by ..." 블록 제거
+    html = re.sub(
+        r'<div style="[^"]*">Photo by <a [^>]*>[^<]*</a> on <a [^>]*>Unsplash</a></div>\s*',
+        '',
+        html
+    )
+    
+    # 새 attribution 추가
+    attribution = f'<div style="font-size:12px;color:#94a3b8;text-align:right;padding:10px 24px;background:#f8fafc;border-bottom:1px solid #e5e7eb">Photo by <a href="{photo["author_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">{photo["author_name"]}</a> on <a href="https://unsplash.com/?utm_source=factorymatch&utm_medium=referral" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">Unsplash</a></div>'
+    html = html.replace(new_hero, new_hero + '\n  ' + attribution)
     
     html_path.write_text(html, encoding='utf-8')
     return True
@@ -138,12 +144,17 @@ def update_html_hero(post_slug, photo):
 
 def main():
     print("=" * 60)
-    print("📷 매거진 글에 Unsplash 사진 추가")
+    print("📷 매거진 글에 Unsplash 사진 추가 (중복 회피)")
     print("=" * 60)
     
     if not UNSPLASH_ACCESS_KEY:
         print("❌ UNSPLASH_ACCESS_KEY가 설정되지 않았습니다.")
         sys.exit(1)
+    
+    # --force / -f 옵션: 이미 사진 있는 글도 새 사진으로 교체
+    force_mode = "--force" in sys.argv or "-f" in sys.argv
+    if force_mode:
+        print("🔄 강제 모드: 모든 글의 사진을 새로 가져옵니다 (중복 회피)")
     
     data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
     posts = data.get("posts", [])
@@ -152,15 +163,23 @@ def main():
         print("⚠️ posts.json에 글이 없습니다.")
         return
     
-    print(f"\n📋 총 {len(posts)}개 글 확인\n")
+    print(f"\n📋 총 {len(posts)}개 글\n")
+    
+    # 이미 사용된 사진 URL 추적 (중복 회피)
+    used_urls = set()
+    if not force_mode:
+        # 기존에 할당된 사진은 추적해서 중복 안 되게
+        for p in posts:
+            if p.get("hero_image_url"):
+                used_urls.add(p["hero_image_url"])
     
     updated = 0
     skipped = 0
     failed = 0
     
     for i, post in enumerate(posts, 1):
-        # 이미 사진이 있으면 건너뜀
-        if post.get("thumbnail_url"):
+        # force 모드 아니면, 이미 사진 있는 글은 건너뜀
+        if not force_mode and post.get("thumbnail_url"):
             print(f"[{i}/{len(posts)}] ⏩ 건너뜀 (이미 있음): {post['title'][:40]}")
             skipped += 1
             continue
@@ -173,12 +192,15 @@ def main():
         keyword = INDUSTRY_KEYWORDS.get(industry) or CATEGORY_KEYWORDS.get(category) or "manufacturing factory"
         print(f"  🔍 검색: {keyword}")
         
-        # 사진 가져오기
-        photo = fetch_unsplash_photo(keyword)
+        # 사진 가져오기 (used_urls 전달하여 중복 회피)
+        photo = fetch_unsplash_photo(keyword, used_urls=used_urls)
         if not photo:
             print(f"  ❌ 실패")
             failed += 1
             continue
+        
+        # 사용된 URL 기록
+        used_urls.add(photo["url"])
         
         # posts.json 업데이트
         post["thumbnail_url"] = photo["thumb_url"]
@@ -186,7 +208,7 @@ def main():
         
         # 개별 글 HTML 파일 업데이트
         if update_html_hero(post["slug"], photo):
-            print(f"  ✅ 완료")
+            print(f"  ✅ 완료 ({photo['author_name']})")
             updated += 1
         else:
             print(f"  ⚠️ HTML 파일 없음 (posts.json만 업데이트)")
@@ -202,6 +224,7 @@ def main():
     print(f"   - 업데이트: {updated}개")
     print(f"   - 건너뜀: {skipped}개")
     print(f"   - 실패: {failed}개")
+    print(f"   - 사용한 고유 사진: {len(used_urls)}개")
     print("=" * 60)
 
 
