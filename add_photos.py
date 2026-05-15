@@ -50,15 +50,15 @@ CATEGORY_KEYWORDS = {
 }
 
 
-def fetch_unsplash_photo(keyword, used_urls=None):
-    """Unsplash에서 사진 1장 가져오기 (중복 회피)"""
+def fetch_unsplash_photo(keyword, used_urls=None, page=1):
+    """Unsplash에서 사진 1장 가져오기 (중복 회피 + 페이지 무작위)"""
     if not UNSPLASH_ACCESS_KEY:
         return None
     used_urls = used_urls or set()
     try:
         res = requests.get(
             "https://api.unsplash.com/search/photos",
-            params={"query": keyword, "per_page": 30, "orientation": "landscape"},
+            params={"query": keyword, "per_page": 30, "page": page, "orientation": "landscape"},
             headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
             timeout=10
         )
@@ -66,13 +66,9 @@ def fetch_unsplash_photo(keyword, used_urls=None):
             data = res.json()
             results = data.get("results", [])
             if results:
-                # 사용 안 된 사진 필터링
                 available = [p for p in results if p["urls"]["regular"] not in used_urls]
-                # 모두 사용 중이면 (드물지만) 그냥 전체에서 선택
                 pool = available if available else results
-                # 상위 15개 중 무작위 선택 (다양성 ↑)
                 photo = random.choice(pool[:15])
-                # Download tracking (약관 6조)
                 try:
                     download_url = photo.get("links", {}).get("download_location")
                     if download_url:
@@ -167,8 +163,10 @@ def main():
     
     # 이미 사용된 사진 URL 추적 (중복 회피)
     used_urls = set()
+    # 같은 키워드 사용 횟수 추적 (페이지 인덱싱)
+    keyword_count = {}
+    
     if not force_mode:
-        # 기존에 할당된 사진은 추적해서 중복 안 되게
         for p in posts:
             if p.get("hero_image_url"):
                 used_urls.add(p["hero_image_url"])
@@ -178,7 +176,6 @@ def main():
     failed = 0
     
     for i, post in enumerate(posts, 1):
-        # force 모드 아니면, 이미 사진 있는 글은 건너뜀
         if not force_mode and post.get("thumbnail_url"):
             print(f"[{i}/{len(posts)}] ⏩ 건너뜀 (이미 있음): {post['title'][:40]}")
             skipped += 1
@@ -186,20 +183,22 @@ def main():
         
         print(f"[{i}/{len(posts)}] 📝 {post['title']}")
         
-        # 키워드 결정 (산업 우선, 없으면 카테고리)
         industry = post.get("industry_key")
         category = post.get("category")
         keyword = INDUSTRY_KEYWORDS.get(industry) or CATEGORY_KEYWORDS.get(category) or "manufacturing factory"
-        print(f"  🔍 검색: {keyword}")
         
-        # 사진 가져오기 (used_urls 전달하여 중복 회피)
-        photo = fetch_unsplash_photo(keyword, used_urls=used_urls)
+        # 같은 키워드 N번째 글이면 N번째 페이지에서 검색 (다른 사진 풀 보장)
+        keyword_count[keyword] = keyword_count.get(keyword, 0) + 1
+        page = keyword_count[keyword]
+        
+        print(f"  🔍 검색: {keyword} (페이지 {page})")
+        
+        photo = fetch_unsplash_photo(keyword, used_urls=used_urls, page=page)
         if not photo:
             print(f"  ❌ 실패")
             failed += 1
             continue
         
-        # 사용된 URL 기록
         used_urls.add(photo["url"])
         
         # posts.json 업데이트
