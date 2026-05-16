@@ -192,7 +192,7 @@ function App() {
               console.error('[Naver] setSession 예외:', sessErr);
             }
             console.log('[Naver] reload 시작');
-            window.location.replace(window.location.origin + '/');
+            window.location.reload(true);
           } catch (e) {
             console.error('Naver callback error:', e);
             alert('네이버 로그인 오류: ' + e.message);
