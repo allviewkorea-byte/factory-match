@@ -163,10 +163,12 @@ function App() {
             setAuthProcessing(false);
           }
         })();
-      } else if (state && state.startsWith('naver_login')) {
-        // 네이버 OAuth: Netlify Function으로 access_token 교환 → Supabase 세션
+      } else if (sessionStorage.getItem('_naver_state') || (state && state.startsWith('naver_login'))) {
+        // 네이버 OAuth: sessionStorage 또는 state로 판단
+        sessionStorage.removeItem('_naver_state');
         (async () => {
           try {
+            console.log('[Naver] 콜백 시작 - code:', code && code.substring(0,10), 'state:', state);
             const res = await fetch('/.netlify/functions/naver-token', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
