@@ -182,17 +182,21 @@ function App() {
               return;
             }
             // Supabase 세션 직접 설정
+            console.log('[Naver] setSession 시도 - access_token 앞 20자:', tok.access_token && tok.access_token.substring(0,20));
             const { data, error } = await window._sb.auth.setSession({
               access_token: tok.access_token,
               refresh_token: tok.refresh_token,
             });
+            console.log('[Naver] setSession 결과 - error:', error, 'user:', data?.session?.user?.email);
             if (error) {
               console.error('setSession error:', error);
-              alert('네이버 로그인 실패: ' + error.message);
+              alert('네이버 세션오류: ' + error.message);
               return;
             }
             if (data?.session?.user) {
               await handleSession(data.session);
+            } else {
+              alert('네이버 로그인 실패: 세션 없음 - data: ' + JSON.stringify(data).substring(0,100));
             }
           } catch (e) {
             console.error('Naver callback error:', e);
