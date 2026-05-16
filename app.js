@@ -177,14 +177,11 @@ function App() {
             const tok = await res.json();
             console.log('[Naver] 응답 수신, 토큰 여부:', !!tok.access_token);
             if (tok.access_token) {
-              try {
-                await window._sb.auth.setSession({ access_token: tok.access_token, refresh_token: tok.refresh_token });
-                console.log('[Naver] setSession 완료');
-              } catch(sessErr) {
-                console.error('[Naver] setSession 예외:', sessErr);
-              }
-            } else {
-              console.error('[Naver] access_token 없음:', JSON.stringify(tok).substring(0,200));
+              // setSession이 Web Locks로 인해 pending될 수 있으므로 2초 timeout 적용
+              await Promise.race([
+                window._sb.auth.setSession({ access_token: tok.access_token, refresh_token: tok.refresh_token }),
+                new Promise(resolve => setTimeout(resolve, 2000))
+              ]).catch(e => console.error('[Naver] setSession err:', e));
             }
             console.log('[Naver] reload 실행');
             window.location.reload(true);
