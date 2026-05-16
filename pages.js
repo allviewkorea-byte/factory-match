@@ -5112,9 +5112,17 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   const [socialToast, setSocialToast] = useAuthState(null);
 
   const handleSocial = (provider) => {
-    if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
-      setSocialToast('네이버 로그인 서비스를 준비 중입니다');
-      setTimeout(() => setSocialToast(null), 3000);
+    if (provider === 'naver') {
+      const clientId = window._NAVER_CLIENT_ID;
+      if (!clientId) {
+        setSocialToast('네이버 로그인 서비스를 준비 중입니다');
+        setTimeout(() => setSocialToast(null), 3000);
+        return;
+      }
+      const state = 'naver_login_' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('_naver_state', state);
+      const redirectUri = encodeURIComponent(window.location.origin + '/');
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
       return;
     }
     if (provider === 'kakao') {
@@ -6237,9 +6245,17 @@ function SignupPage({ onNav }) {
   const [sgnSocialToast, setSgnSocialToast] = useStateP(null);
 
   const handleSgnSocial = (provider) => {
-    if (provider === 'naver' && !window._NAVER_CLIENT_ID) {
-      setSgnSocialToast('네이버 로그인 서비스를 준비 중입니다');
-      setTimeout(() => setSgnSocialToast(null), 3000);
+    if (provider === 'naver') {
+      const clientId = window._NAVER_CLIENT_ID;
+      if (!clientId) {
+        setSgnSocialToast('네이버 로그인 서비스를 준비 중입니다');
+        setTimeout(() => setSgnSocialToast(null), 3000);
+        return;
+      }
+      const state = 'naver_login_' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('_naver_state', state);
+      const redirectUri = encodeURIComponent(window.location.origin + '/');
+      window.location.href = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
       return;
     }
     if (provider === 'kakao') {

@@ -163,6 +163,41 @@ function App() {
             setAuthProcessing(false);
           }
         })();
+      } else if (state && state.startsWith('naver_login')) {
+        // 네이버 OAuth: Netlify Function으로 access_token 교환 → Supabase 세션
+        (async () => {
+          try {
+            const res = await fetch('/.netlify/functions/naver-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, state }),
+            });
+            const tok = await res.json();
+            if (!res.ok || !tok.access_token) {
+              console.error('Naver token exchange failed:', tok);
+              alert('네이버 로그인 실패: ' + (tok.error || '토큰 교환 실패'));
+              return;
+            }
+            // Supabase 세션 직접 설정
+            const { data, error } = await window._sb.auth.setSession({
+              access_token: tok.access_token,
+              refresh_token: tok.refresh_token,
+            });
+            if (error) {
+              console.error('setSession error:', error);
+              alert('네이버 로그인 실패: ' + error.message);
+              return;
+            }
+            if (data?.session?.user) {
+              await handleSession(data.session);
+            }
+          } catch (e) {
+            console.error('Naver callback error:', e);
+            alert('네이버 로그인 오류: ' + e.message);
+          } finally {
+            setAuthProcessing(false);
+          }
+        })();
       } else {
         // 그 외 OAuth (구글, 향후 네이버 등) - Supabase 표준 흐름
         window._sb.auth.exchangeCodeForSession(code).then(({ data, error }) => {
