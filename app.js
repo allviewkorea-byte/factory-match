@@ -175,6 +175,7 @@ function App() {
               body: JSON.stringify({ code, state }),
             });
             const tok = await res.json();
+            console.log('[Naver] 응답:', JSON.stringify(tok).substring(0, 300));
             if (!res.ok || !tok.access_token) {
               console.error('Naver token exchange failed:', tok);
               alert('네이버 로그인 실패: ' + (tok.error || '토큰 교환 실패'));
