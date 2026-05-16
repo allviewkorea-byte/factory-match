@@ -227,7 +227,7 @@ function App() {
     };
 
     const { data: { subscription } } = window._sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         await handleSession(session);
       } else if (event === 'SIGNED_OUT') {
         try { localStorage.removeItem('fm-authed'); localStorage.removeItem('fm-profile'); } catch {}
