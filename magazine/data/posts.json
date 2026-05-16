@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-05-15T14:03:25.090143+00:00",
+  "updated_at": "2026-05-16T04:27:10.258696+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -210,6 +210,48 @@
       "thumbnail_url": "https://images.unsplash.com/photo-1748347084012-075796185d56?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHw4fHxmYWN0b3J5JTIwcXVhbGl0eSUyMGluc3BlY3Rpb258ZW58MHwwfHx8MTc3ODg1NjEyN3ww&ixlib=rb-4.1.0&q=80&w=400",
       "hero_image_url": "https://images.unsplash.com/photo-1748347084012-075796185d56?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHw4fHxmYWN0b3J5JTIwcXVhbGl0eSUyMGluc3BlY3Rpb258ZW58MHwwfHx8MTc3ODg1NjEyN3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "published_at": "2026-05-15T14:03:25.090143+00:00",
+      "views": 0
+    },
+    {
+      "slug": "경기-도장-표면처리-업체-추천-5선",
+      "title": "경기 도장 / 표면처리 업체 추천 5선",
+      "subtitle": "경기 지역 도장 / 표면처리 업체 검증 5곳",
+      "category": "recommend",
+      "industry_key": "coating",
+      "industry_name": "도장 / 표면처리",
+      "region": "경기",
+      "count_label": "5선",
+      "thumbnail_url": "https://images.unsplash.com/photo-1772209415876-76ea6cbc2f0c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHwxfHxpbmR1c3RyaWFsJTIwY29hdGluZyUyMGZhY3Rvcnl8ZW58MHwwfHx8MTc3ODkwNTQyOXww&ixlib=rb-4.1.0&q=80&w=400",
+      "hero_image_url": "https://images.unsplash.com/photo-1772209415876-76ea6cbc2f0c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHwxfHxpbmR1c3RyaWFsJTIwY29hdGluZyUyMGZhY3Rvcnl8ZW58MHwwfHx8MTc3ODkwNTQyOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "published_at": "2026-05-16T04:24:42.453686+00:00",
+      "views": 0
+    },
+    {
+      "slug": "경남-cnc-가공-업체-추천-7선",
+      "title": "경남 CNC 가공 업체 추천 7선",
+      "subtitle": "경남 지역 CNC 가공 업체 검증 7곳",
+      "category": "recommend",
+      "industry_key": "cnc",
+      "industry_name": "CNC 가공",
+      "region": "경남",
+      "count_label": "7선",
+      "thumbnail_url": "https://images.unsplash.com/photo-1738162837335-3745e5d16c09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHwxfHxjbmMlMjBtYWNoaW5pbmclMjBmYWN0b3J5fGVufDB8MHx8fDE3Nzg5MDU0OTN8MA&ixlib=rb-4.1.0&q=80&w=400",
+      "hero_image_url": "https://images.unsplash.com/photo-1738162837335-3745e5d16c09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHwxfHxjbmMlMjBtYWNoaW5pbmclMjBmYWN0b3J5fGVufDB8MHx8fDE3Nzg5MDU0OTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "published_at": "2026-05-16T04:25:56.779577+00:00",
+      "views": 0
+    },
+    {
+      "slug": "경남-용접-제관-업체-추천-5선",
+      "title": "경남 용접 / 제관 업체 추천 5선",
+      "subtitle": "경남 지역 용접 / 제관 업체 검증 5곳",
+      "category": "recommend",
+      "industry_key": "welding",
+      "industry_name": "용접 / 제관",
+      "region": "경남",
+      "count_label": "5선",
+      "thumbnail_url": "https://images.unsplash.com/photo-1615990860014-99e51245218c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHw1fHx3ZWxkaW5nJTIwZmFjdG9yeXxlbnwwfDB8fHwxNzc4OTA1NTY3fDA&ixlib=rb-4.1.0&q=80&w=400",
+      "hero_image_url": "https://images.unsplash.com/photo-1615990860014-99e51245218c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHw1fHx3ZWxkaW5nJTIwZmFjdG9yeXxlbnwwfDB8fHwxNzc4OTA1NTY3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "published_at": "2026-05-16T04:27:10.258696+00:00",
       "views": 0
     }
   ]
