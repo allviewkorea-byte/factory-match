@@ -5424,7 +5424,8 @@ function OnboardingPage({ onComplete, onNav }) {
     setLoading(true);
     setError('');
     try {
-      const { data: { user } } = await window._sb.auth.getUser();
+      const { data: { session } } = await window._sb.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('로그인 정보를 찾을 수 없습니다');
       const { error: dbError } = await window._sb.from('user_profiles').upsert({
         id: user.id,
