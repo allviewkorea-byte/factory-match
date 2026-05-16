@@ -182,16 +182,16 @@ function App() {
               return;
             }
             // Supabase 세션 직접 설정
-            const { error } = await window._sb.auth.setSession({
-              access_token: tok.access_token,
-              refresh_token: tok.refresh_token,
-            });
-            if (error) {
-              console.error('setSession error:', error);
-              alert('네이버 세션오류: ' + error.message);
-              return;
+            // setSession 시도 후 무조건 reload (성공/실패 관계없이)
+            try {
+              await window._sb.auth.setSession({
+                access_token: tok.access_token,
+                refresh_token: tok.refresh_token,
+              });
+            } catch(sessErr) {
+              console.error('[Naver] setSession 예외:', sessErr);
             }
-            // setSession 성공 → reload로 온보딩/홈 진입 (가장 안정적)
+            console.log('[Naver] reload 시작');
             window.location.replace(window.location.origin + '/');
           } catch (e) {
             console.error('Naver callback error:', e);
