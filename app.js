@@ -191,13 +191,8 @@ function App() {
               alert('네이버 세션오류: ' + error.message);
               return;
             }
-            // setSession 후 getUser()로 재확인 (data.session.user가 null인 경우 대응)
-            const { data: { user } } = await window._sb.auth.getUser();
-            if (user) {
-              await handleSession({ user, access_token: tok.access_token, refresh_token: tok.refresh_token });
-            } else {
-              window.location.reload();
-            }
+            // setSession 성공 → reload로 온보딩/홈 진입 (가장 안정적)
+            window.location.replace(window.location.origin + '/');
           } catch (e) {
             console.error('Naver callback error:', e);
             alert('네이버 로그인 오류: ' + e.message);
