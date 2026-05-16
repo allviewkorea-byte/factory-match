@@ -1188,15 +1188,20 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
   const [consulting, setConsulting] = useStateP(null);
   const [matchedFactoryDetails, setMatchedFactoryDetails] = useStateP([]);
   const [factoryCount, setFactoryCount] = useStateP(null);
+  const [websiteCount, setWebsiteCount] = useStateP(null);
 
   // AI 상담 탭에서 넘어올 때 body overflow 잠금 해제
   React.useEffect(() => { document.body.style.overflow = ''; }, []);
 
-  // Fetch live factory count from Supabase on mount
+  // Fetch live factory count & website count from Supabase on mount
   useEffectP(() => {
     if (!window._sb) return;
     window._sb.from('factories').select('id', { count: 'estimated', head: true })
       .then(({ count }) => { if (count != null) setFactoryCount(count); })
+      .catch(() => {});
+    window._sb.from('factories').select('id', { count: 'estimated', head: true })
+      .not('website', 'is', null)
+      .then(({ count }) => { if (count != null) setWebsiteCount(count); })
       .catch(() => {});
   }, []);
 
@@ -1307,7 +1312,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
 
         {!hasResults && !loading && (
           <div className="home-stats-bar">
-            전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>34,655개</strong> 웹사이트 보유
+            전국 <strong>{factoryCount != null ? factoryCount.toLocaleString() + '개' : '217,054개'}</strong> 공장 DB &nbsp;·&nbsp; <strong>{websiteCount != null ? websiteCount.toLocaleString() + '개' : '34,655개'}</strong> 웹사이트 보유
           </div>
         )}
         {!hasResults && !loading && (
