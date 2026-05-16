@@ -5112,6 +5112,7 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
   const [socialToast, setSocialToast] = useAuthState(null);
 
   const handleSocial = (provider) => {
+    try { localStorage.setItem('fm-last-provider', provider); } catch {}
     if (provider === 'naver') {
       const clientId = window._NAVER_CLIENT_ID;
       if (!clientId) {
@@ -5157,7 +5158,24 @@ function AuthFormPage({ mode, onNav, onSubmit }) {
         <h2 className="signup-title">공장매칭 시작하기</h2>
         <p className="signup-sub">소셜 계정으로 로그인하세요</p>
 
-        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:24}}>
+        {(() => {
+          try {
+            const last = localStorage.getItem('fm-last-provider');
+            if (last) {
+              const label = last === 'naver' ? '네이버' : '카카오';
+              const color = last === 'naver' ? '#03C75A' : '#FEE500';
+              const textColor = last === 'naver' ? '#fff' : '#3C1E1E';
+              return (
+                <div style={{marginTop:16, padding:'8px 14px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, fontSize:12, color:'#166534', textAlign:'center'}}>
+                  ✓ 이전에 <strong style={{color: last === 'naver' ? '#03C75A' : '#b45309'}}>{label}</strong>로 로그인했습니다
+                </div>
+              );
+            }
+          } catch {}
+          return null;
+        })()}
+
+        <div style={{display:'flex', flexDirection:'column', gap:12, marginTop:16}}>
           <button
             onClick={() => handleSocial('kakao')}
             style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'14px 20px', borderRadius:10, border:'none', background:'#FEE500', color:'#3C1E1E', fontWeight:700, fontSize:15, cursor:'pointer', fontFamily:'inherit'}}

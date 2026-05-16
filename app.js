@@ -180,7 +180,7 @@ function App() {
               // setSession이 Web Locks로 인해 pending될 수 있으므로 2초 timeout 적용
               await Promise.race([
                 window._sb.auth.setSession({ access_token: tok.access_token, refresh_token: tok.refresh_token }),
-                new Promise(resolve => setTimeout(resolve, 2000))
+                new Promise(resolve => setTimeout(resolve, 500))
               ]).catch(e => console.error('[Naver] setSession err:', e));
             }
             console.log('[Naver] reload 실행');
