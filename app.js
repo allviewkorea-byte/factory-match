@@ -175,23 +175,18 @@ function App() {
               body: JSON.stringify({ code, state }),
             });
             const tok = await res.json();
-            console.log('[Naver] 응답:', JSON.stringify(tok).substring(0, 300));
-            if (!res.ok || !tok.access_token) {
-              console.error('Naver token exchange failed:', tok);
-              alert('네이버 로그인 실패: ' + (tok.error || '토큰 교환 실패'));
-              return;
+            console.log('[Naver] 응답 수신, 토큰 여부:', !!tok.access_token);
+            if (tok.access_token) {
+              try {
+                await window._sb.auth.setSession({ access_token: tok.access_token, refresh_token: tok.refresh_token });
+                console.log('[Naver] setSession 완료');
+              } catch(sessErr) {
+                console.error('[Naver] setSession 예외:', sessErr);
+              }
+            } else {
+              console.error('[Naver] access_token 없음:', JSON.stringify(tok).substring(0,200));
             }
-            // Supabase 세션 직접 설정
-            // setSession 시도 후 무조건 reload (성공/실패 관계없이)
-            try {
-              await window._sb.auth.setSession({
-                access_token: tok.access_token,
-                refresh_token: tok.refresh_token,
-              });
-            } catch(sessErr) {
-              console.error('[Naver] setSession 예외:', sessErr);
-            }
-            console.log('[Naver] reload 시작');
+            console.log('[Naver] reload 실행');
             window.location.reload(true);
           } catch (e) {
             console.error('Naver callback error:', e);
