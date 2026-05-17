@@ -1,16 +1,16 @@
 """
-공장매칭 매거진 자동 생성 스크립트 (SEO 키워드 최적화 버전)
+공장매칭 매거진 자동 생성 스크립트 (SEO 키워드 최적화 버전 — 정보성 글 전용)
 - Claude API로 본문 생성 (SEO 키워드 최적화 + 전문성 + 친근한 톤)
 - Unsplash API로 사진 가져오기
-- Supabase에서 산업×지역 데이터 + 공장 큐레이션 (추천 글일 경우)
 - 정적 HTML 페이지 생성 → /magazine/posts/[slug]/index.html
 - posts.json 자동 업데이트
 - sitemap.xml 자동 업데이트 (lastmod + priority 포함)
+- 글 타입: 가이드 / 비교 / 체크리스트 / 트렌드 / 케이스스터디 (추천 글 제외)
 
 실행:
   cd C:\\Users\\micro\\factory-match
   git pull origin main
-  py generate_magazine.py          # 초기 15개 일괄 생성
+  py generate_magazine.py          # 초기 10개 일괄 생성
   py generate_magazine.py --daily  # 매일 3개 생성 (GitHub Actions)
 
 필수 환경변수:
@@ -52,16 +52,13 @@ SUPABASE_HEADERS = {
     "Authorization": f"Bearer {SUPABASE_KEY}"
 }
 
-# === 글 형식 정의 ===
+# === 글 형식 정의 (정보성만) ===
 POST_FORMATS = [
-    {"type": "recommend", "count": 3,  "weight": 20},
-    {"type": "recommend", "count": 5,  "weight": 10},
-    {"type": "recommend", "count": 7,  "weight": 5},
-    {"type": "guide",     "count": 0,  "weight": 25},
-    {"type": "compare",   "count": 0,  "weight": 15},
-    {"type": "trend",     "count": 0,  "weight": 10},
-    {"type": "checklist", "count": 0,  "weight": 8},
-    {"type": "case",      "count": 0,  "weight": 7},
+    {"type": "guide",     "count": 0,  "weight": 35},
+    {"type": "compare",   "count": 0,  "weight": 25},
+    {"type": "checklist", "count": 0,  "weight": 20},
+    {"type": "trend",     "count": 0,  "weight": 12},
+    {"type": "case",      "count": 0,  "weight": 8},
 ]
 
 # 산업 카테고리 (KICOX 기반) — SEO 키워드 필드 추가
@@ -200,11 +197,7 @@ SEO_KEYWORD_TOPICS = [
      "title": "식품제조 업체 찾는 법: OEM·위탁 생산 의뢰 전 꼭 알아야 할 5가지",
      "meta_desc": "식품제조 업체에 OEM·위탁 생산을 의뢰할 때 꼭 확인해야 할 HACCP 인증, MOQ, 소분 포장, 유통기한 설정 방법을 정리했습니다.",
      "kw_unsplash": "food manufacturing factory"},
-    {"type": "recommend", "kw": "식품제조 공장 추천", "count": 5,
-     "industry": "food", "region": "경기",
-     "title": "경기도 식품제조 공장 추천 5선: 위탁 생산 의뢰 가이드",
-     "meta_desc": "경기도 식품제조 공장 5곳을 소개합니다. HACCP 인증, 소량 OEM 가능 업체 위주로 선정했습니다.",
-     "kw_unsplash": "food manufacturing factory"},
+
     {"type": "compare", "kw": "식품제조 OEM ODM 차이",
      "title": "식품제조 OEM vs ODM: 자체 레시피·위탁 생산 방식 완벽 비교",
      "meta_desc": "식품제조 OEM(주문자 생산)과 ODM(제조사 개발)의 차이, 비용 구조, 라벨링 권리를 비교합니다.",
@@ -296,11 +289,7 @@ SEO_KEYWORD_TOPICS = [
      "title": "식품제조 업체 찾는 법: OEM·위탁 생산 의뢰 전 꼭 알아야 할 5가지",
      "meta_desc": "식품제조 업체에 OEM·위탁 생산을 의뢰할 때 꼭 확인해야 할 HACCP 인증, MOQ, 소분 포장, 유통기한 설정 방법을 정리했습니다.",
      "kw_unsplash": "food manufacturing factory"},
-    {"type": "recommend", "kw": "식품제조 공장 추천", "count": 5,
-     "industry": "food", "region": "경기",
-     "title": "경기도 식품제조 공장 추천 5선: 위탁 생산 의뢰 가이드",
-     "meta_desc": "경기도 식품제조 공장 5곳을 소개합니다. HACCP 인증, 소량 OEM 가능 업체 위주로 선정했습니다.",
-     "kw_unsplash": "food manufacturing factory"},
+
     {"type": "compare", "kw": "식품제조 OEM ODM 차이",
      "title": "식품제조 OEM vs ODM: 자체 레시피·위탁 생산 방식 완벽 비교",
      "meta_desc": "식품제조 OEM(주문자 생산)과 ODM(제조사 개발)의 차이, 비용 구조, 라벨링 권리를 비교합니다.",
@@ -960,36 +949,14 @@ def generate_post(post_meta):
 # 글 계획 함수
 # ─────────────────────────────────────────────
 def plan_initial_posts():
-    """첫 발행 글 15개 계획 (추천 5 + 가이드 4 + 비교 2 + 트렌드 2 + 체크리스트 2)"""
+    """첫 발행 글 10개 계획 (정보성 글만: 가이드·비교·트렌드·체크리스트)"""
     plan = []
-
-    # 추천 5개
-    recommend_seeds = [
-        ("cnc",      "서울",  3),
-        ("injection","경기",  5),
-        ("mold",     "인천",  3),
-        ("sewing",   "부산",  7),
-        ("press",    "대구",  5),
-    ]
-    for ind_key, region, count in recommend_seeds:
-        ind = next(i for i in INDUSTRIES if i["key"] == ind_key)
-        plan.append({
-            "type":        "recommend",
-            "count":       count,
-            "industry":    ind_key,
-            "region":      region,
-            "title":       make_recommend_title(region, ind, count),
-            "meta_desc":   make_recommend_meta(region, ind, count),
-            "kw":          f"{region} {ind['name']} 공장 추천",
-            "kw_unsplash": ind["kw_unsplash"],
-        })
-
-    # SEO 토픽에서 나머지 채우기 (가이드 4 + 비교 2 + 트렌드 2 + 체크리스트 2)
     by_type = {}
     for t in SEO_KEYWORD_TOPICS:
-        by_type.setdefault(t["type"], []).append(t)
+        if t["type"] != "recommend":
+            by_type.setdefault(t["type"], []).append(t)
 
-    for tp, n in [("guide", 4), ("compare", 2), ("trend", 2), ("checklist", 2)]:
+    for tp, n in [("guide", 4), ("compare", 3), ("checklist", 2), ("trend", 2)]:
         for topic in by_type.get(tp, [])[:n]:
             plan.append({
                 "type":        tp,
@@ -998,13 +965,12 @@ def plan_initial_posts():
                 "meta_desc":   topic.get("meta_desc", topic["title"]),
                 "kw":          topic["kw"],
                 "industry":    topic.get("industry"),
-                "kw_unsplash": topic.get("kw_unsplash", "factory"),
+                "kw_unsplash": topic.get("kw_unsplash", "factory manufacturing"),
             })
-
     return plan
 
 def plan_daily_posts(n=3):
-    """매일 n개 글 계획 — SEO 키워드 풀 + 산업×지역 매트릭스"""
+    """매일 n개 글 계획 — 정보성 SEO 토픽만 (가이드·비교·트렌드·체크리스트·케이스)"""
     try:
         data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
         existing_slugs = {p["slug"] for p in data.get("posts", [])}
@@ -1013,24 +979,10 @@ def plan_daily_posts(n=3):
 
     candidates = []
 
-    # ① 산업별 추천 (8 × 15 × 3 = 360개)
-    for ind in INDUSTRIES:
-        for region in REGIONS:
-            for count in [3, 5, 7]:
-                title = make_recommend_title(region, ind, count)
-                candidates.append({
-                    "type":        "recommend",
-                    "count":       count,
-                    "industry":    ind["key"],
-                    "region":      region,
-                    "title":       title,
-                    "meta_desc":   make_recommend_meta(region, ind, count),
-                    "kw":          f"{region} {ind['name']} 공장 추천",
-                    "kw_unsplash": ind["kw_unsplash"],
-                })
-
-    # ② SEO 키워드 토픽 (가이드 / 비교 / 트렌드 / 체크리스트)
+    # SEO 키워드 토픽 — recommend 제외
     for topic in SEO_KEYWORD_TOPICS:
+        if topic["type"] == "recommend":
+            continue
         candidates.append({
             "type":        topic["type"],
             "count":       0,
@@ -1038,7 +990,7 @@ def plan_daily_posts(n=3):
             "meta_desc":   topic.get("meta_desc", topic["title"]),
             "kw":          topic["kw"],
             "industry":    topic.get("industry"),
-            "kw_unsplash": topic.get("kw_unsplash", "factory"),
+            "kw_unsplash": topic.get("kw_unsplash", "factory manufacturing"),
         })
 
     # 발행된 slug 제외
