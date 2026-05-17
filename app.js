@@ -25,6 +25,21 @@ window.logActivity = async (action, targetId, targetType, meta) => {
   } catch {}
 };
 
+// 비회원 방문자 행동 로그 → visitor_logs 테이블
+window.logVisitor = async (action, meta) => {
+  try {
+    if (!window._sb) return;
+    const { data: { user } } = await window._sb.auth.getUser();
+    if (user) return; // 로그인 유저는 기록 안 함
+    await window._sb.from('visitor_logs').insert({
+      session_id: _sessionId,
+      event_type: action,
+      event_data: meta || null,
+      created_at: new Date().toISOString(),
+    });
+  } catch {}
+};
+
 // 비밀 관리자 접근 URL: ?k=030209
 (function() {
   try {
