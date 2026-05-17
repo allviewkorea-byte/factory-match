@@ -1,16 +1,17 @@
 """
-공장매칭 매거진 자동 생성 스크립트
-- Claude API로 본문 생성 (전문성 + 친근한 톤)
+공장매칭 매거진 자동 생성 스크립트 (SEO 키워드 최적화 버전)
+- Claude API로 본문 생성 (SEO 키워드 최적화 + 전문성 + 친근한 톤)
 - Unsplash API로 사진 가져오기
 - Supabase에서 산업×지역 데이터 + 공장 큐레이션 (추천 글일 경우)
 - 정적 HTML 페이지 생성 → /magazine/posts/[slug]/index.html
 - posts.json 자동 업데이트
-- sitemap.xml 자동 업데이트
+- sitemap.xml 자동 업데이트 (lastmod + priority 포함)
 
 실행:
   cd C:\\Users\\micro\\factory-match
   git pull origin main
-  py generate_magazine.py
+  py generate_magazine.py          # 초기 15개 일괄 생성
+  py generate_magazine.py --daily  # 매일 3개 생성 (GitHub Actions)
 
 필수 환경변수:
   ANTHROPIC_API_KEY = sk-ant-...
@@ -53,66 +54,164 @@ SUPABASE_HEADERS = {
 
 # === 글 형식 정의 ===
 POST_FORMATS = [
-    # 산업별 추천 (산업×지역 매트릭스)
-    {"type": "recommend", "count": 3, "weight": 20},
-    {"type": "recommend", "count": 5, "weight": 10},
-    {"type": "recommend", "count": 7, "weight": 5},
-    # 정보성 가이드
-    {"type": "guide", "count": 0, "weight": 25},
-    # 비교 분석
-    {"type": "compare", "count": 0, "weight": 15},
-    # 트렌드
-    {"type": "trend", "count": 0, "weight": 10},
-    # 체크리스트
-    {"type": "checklist", "count": 0, "weight": 8},
-    # 케이스 스터디
-    {"type": "case", "count": 0, "weight": 7},
+    {"type": "recommend", "count": 3,  "weight": 20},
+    {"type": "recommend", "count": 5,  "weight": 10},
+    {"type": "recommend", "count": 7,  "weight": 5},
+    {"type": "guide",     "count": 0,  "weight": 25},
+    {"type": "compare",   "count": 0,  "weight": 15},
+    {"type": "trend",     "count": 0,  "weight": 10},
+    {"type": "checklist", "count": 0,  "weight": 8},
+    {"type": "case",      "count": 0,  "weight": 7},
 ]
 
-# 산업 카테고리 (KICOX 기반)
+# 산업 카테고리 (KICOX 기반) — SEO 키워드 필드 추가
 INDUSTRIES = [
-    {"key": "cnc",      "name": "CNC 가공",     "kw_unsplash": "cnc machining factory", "color": "#1d4ed8"},
-    {"key": "injection","name": "사출 성형",    "kw_unsplash": "injection molding factory", "color": "#10b981"},
-    {"key": "press",    "name": "프레스",       "kw_unsplash": "metal press factory", "color": "#f59e0b"},
-    {"key": "mold",     "name": "금형 제작",    "kw_unsplash": "mold manufacturing factory", "color": "#7c3aed"},
-    {"key": "sewing",   "name": "봉제 공장",    "kw_unsplash": "garment sewing factory", "color": "#ec4899"},
-    {"key": "coating",  "name": "도장 / 표면처리", "kw_unsplash": "industrial coating factory", "color": "#06b6d4"},
-    {"key": "casting",  "name": "주조 공장",    "kw_unsplash": "metal casting foundry", "color": "#dc2626"},
-    {"key": "welding",  "name": "용접 / 제관",  "kw_unsplash": "welding factory", "color": "#0891b2"},
+    {
+        "key": "cnc", "name": "CNC 가공",
+        "kw_unsplash": "cnc machining factory", "color": "#1d4ed8",
+        "seo_keywords": ["CNC 가공 업체", "CNC 밀링 선반", "정밀 가공 공장", "알루미늄 가공 업체"],
+    },
+    {
+        "key": "injection", "name": "사출 성형",
+        "kw_unsplash": "injection molding factory", "color": "#10b981",
+        "seo_keywords": ["사출 성형 공장", "플라스틱 사출 업체", "사출 금형 제작", "소량 사출 생산"],
+    },
+    {
+        "key": "press", "name": "프레스",
+        "kw_unsplash": "metal press factory", "color": "#f59e0b",
+        "seo_keywords": ["프레스 가공 업체", "금속 프레스 공장", "판금 프레스", "스탬핑 가공"],
+    },
+    {
+        "key": "mold", "name": "금형 제작",
+        "kw_unsplash": "mold manufacturing factory", "color": "#7c3aed",
+        "seo_keywords": ["금형 제작 업체", "사출 금형 공장", "금형비 견적", "플라스틱 금형"],
+    },
+    {
+        "key": "sewing", "name": "봉제 공장",
+        "kw_unsplash": "garment sewing factory", "color": "#ec4899",
+        "seo_keywords": ["봉제 공장 추천", "의류 위탁 생산", "소량 봉제 업체", "OEM 봉제"],
+    },
+    {
+        "key": "coating", "name": "도장 / 표면처리",
+        "kw_unsplash": "industrial coating factory", "color": "#06b6d4",
+        "seo_keywords": ["분체 도장 업체", "액체 도장 공장", "표면 처리 견적", "아노다이징 업체"],
+    },
+    {
+        "key": "casting", "name": "주조 공장",
+        "kw_unsplash": "metal casting foundry", "color": "#dc2626",
+        "seo_keywords": ["주조 공장 추천", "알루미늄 다이캐스팅", "주물 업체 견적", "압력 주조"],
+    },
+    {
+        "key": "welding", "name": "용접 / 제관",
+        "kw_unsplash": "welding factory", "color": "#0891b2",
+        "seo_keywords": ["용접 공장 추천", "제관 업체 견적", "철구조물 용접", "TIG MIG 용접"],
+    },
 ]
 
 REGIONS = ["서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산", "경남", "경북", "충남", "충북", "전남", "전북", "강원"]
 
-# 정보성 가이드 주제
-GUIDE_TOPICS = [
-    {"title": "사출 발주 처음이면 꼭 알아야 할 5가지 핵심 정보", "industry": "injection", "kw": "사출 성형"},
-    {"title": "CNC 가공 견적 받는 법: 도면부터 단가까지", "industry": "cnc", "kw": "CNC 가공"},
-    {"title": "금형비 줄이는 5가지 실전 팁", "industry": "mold", "kw": "금형 제작"},
-    {"title": "프레스 가공 발주 전 체크해야 할 7가지", "industry": "press", "kw": "프레스 가공"},
-    {"title": "봉제 공장 발주의 정석: MOQ부터 검품까지", "industry": "sewing", "kw": "봉제 발주"},
-    {"title": "제품 도장 의뢰 가이드: 분체도장 vs 액체도장", "industry": "coating", "kw": "분체도장"},
+# ─────────────────────────────────────────────
+# SEO 키워드 풀 (검색량 높은 한국 제조업 longtail)
+# ─────────────────────────────────────────────
+SEO_KEYWORD_TOPICS = [
+    # 발주 가이드 — 검색 의도: How
+    {"type": "guide", "kw": "사출 성형 발주 방법",          "industry": "injection",
+     "title": "사출 성형 발주 방법 완벽 가이드: 도면부터 납품까지",
+     "meta_desc": "사출 성형 공장에 처음 발주하는 분을 위한 단계별 가이드. 도면 준비, 금형비, MOQ, 납기까지 핵심 정보를 정리했습니다.",
+     "kw_unsplash": "injection molding factory"},
+    {"type": "guide", "kw": "CNC 가공 견적 방법",           "industry": "cnc",
+     "title": "CNC 가공 견적 받는 법: 단가 계산부터 업체 선정까지",
+     "meta_desc": "CNC 가공 견적을 처음 받아보는 분을 위한 가이드. 단가 구성, 도면 제출 방법, 업체 비교 기준을 정리했습니다.",
+     "kw_unsplash": "cnc machining factory"},
+    {"type": "guide", "kw": "금형비 절감 방법",             "industry": "mold",
+     "title": "금형비 절감하는 5가지 실전 방법: 설계 단계부터 시작하라",
+     "meta_desc": "금형비 절감을 위한 DFM 설계, 공용 금형 활용, 단계별 투자 전략 등 실전 팁을 정리했습니다.",
+     "kw_unsplash": "mold manufacturing"},
+    {"type": "guide", "kw": "봉제 공장 발주",               "industry": "sewing",
+     "title": "봉제 공장 발주 가이드: MOQ·샘플·검품 핵심 체크포인트",
+     "meta_desc": "의류·패션 스타트업을 위한 봉제 공장 발주 가이드. MOQ 협상, 샘플 제작, 검품 기준까지 실전 정보.",
+     "kw_unsplash": "garment sewing factory"},
+    {"type": "guide", "kw": "분체도장 업체 선정",           "industry": "coating",
+     "title": "분체도장 업체 선정 가이드: 비용·품질·납기 체크리스트",
+     "meta_desc": "분체도장 업체를 선정할 때 꼭 확인해야 할 비용 구조, 표면 처리 기준, 납기 협의 방법을 정리했습니다.",
+     "kw_unsplash": "industrial coating"},
+    {"type": "guide", "kw": "프레스 가공 발주",             "industry": "press",
+     "title": "프레스 가공 발주 전 꼭 알아야 할 7가지",
+     "meta_desc": "프레스 가공 발주 시 소재 선택, 공차 기준, 금형비 협의까지 7가지 핵심 사항을 정리했습니다.",
+     "kw_unsplash": "metal press factory"},
+
+    # 비교 분석 — 검색 의도: 비교/선택
+    {"type": "compare", "kw": "OEM ODM 차이",
+     "title": "OEM vs ODM 차이점 완벽 정리: 제조 위탁 방식 선택 가이드",
+     "meta_desc": "OEM과 ODM의 차이점, 비용 구조, 납기, 지식재산권 이슈를 비교 분석합니다. 어떤 방식이 맞을지 결정하는 데 도움이 됩니다.",
+     "kw_unsplash": "manufacturing production"},
+    {"type": "compare", "kw": "시제품 제작 방법 비교",
+     "title": "시제품 제작 방법 비교: 3D프린팅 vs CNC vs 사출 — 어떤 걸 골라야 할까",
+     "meta_desc": "시제품 제작 방법별 비용·납기·정밀도를 비교합니다. 3D프린팅, CNC 가공, 소량 사출 중 어떤 방법이 적합한지 알아보세요.",
+     "kw_unsplash": "prototype manufacturing"},
+    {"type": "compare", "kw": "국내 vs 중국 공장 비교",
+     "title": "국내 공장 vs 중국 공장: 비용·품질·납기·리스크 비교 분석",
+     "meta_desc": "국내 제조 vs 중국 위탁 생산의 실제 비용 차이, 품질 관리, 납기 리스크를 비교합니다. 어떤 선택이 맞을지 판단 기준을 정리했습니다.",
+     "kw_unsplash": "factory manufacturing comparison"},
+    {"type": "compare", "kw": "분체도장 액체도장 차이",
+     "title": "분체도장 vs 액체도장: 특성·비용·적용 사례 완벽 비교",
+     "meta_desc": "분체도장과 액체도장의 내구성, 색상 구현력, 단가, 적합 소재를 비교합니다. 제품에 맞는 도장 방법 선택 가이드.",
+     "kw_unsplash": "industrial coating spray"},
+    {"type": "compare", "kw": "알루미늄 다이캐스팅 vs 사출",
+     "title": "알루미늄 다이캐스팅 vs 플라스틱 사출: 소재 선택 비교 가이드",
+     "meta_desc": "알루미늄 다이캐스팅과 플라스틱 사출 성형의 강도·무게·단가·금형비를 비교합니다. 제품 소재 선택에 도움이 되는 가이드.",
+     "kw_unsplash": "aluminum casting injection"},
+
+    # 트렌드 — 검색 의도: 최신 정보
+    {"type": "trend", "kw": "2026 제조업 트렌드",
+     "title": "2026년 한국 제조업 트렌드 5가지: 스마트팩토리·친환경·리쇼어링",
+     "meta_desc": "2026년 한국 제조업의 핵심 트렌드를 분석합니다. 스마트팩토리, 친환경 소재, 리쇼어링, AI 품질 검사 최신 현황.",
+     "kw_unsplash": "smart factory automation"},
+    {"type": "trend", "kw": "친환경 사출 소재",
+     "title": "친환경 사출 소재 트렌드: PLA·바이오 ABS·재활용 플라스틱 현황",
+     "meta_desc": "친환경 사출 성형 소재의 최신 트렌드를 정리합니다. PLA, 바이오 ABS, 재활용 플라스틱 각 소재의 특성과 적용 사례.",
+     "kw_unsplash": "eco plastic injection molding"},
+    {"type": "trend", "kw": "스마트팩토리 도입",
+     "title": "스마트팩토리 도입 현황: 중소 제조업체가 알아야 할 핵심 정보",
+     "meta_desc": "한국 중소 제조업의 스마트팩토리 도입 현황과 실제 사례. 정부 지원금, 도입 비용, 기대 효과를 정리했습니다.",
+     "kw_unsplash": "smart factory robot"},
+
+    # 체크리스트 — 검색 의도: 실수 방지
+    {"type": "checklist", "kw": "공장 견적서 보는 법",
+     "title": "공장 견적서 제대로 보는 법: 숨은 비용 찾는 5가지 체크포인트",
+     "meta_desc": "공장 견적서에서 놓치기 쉬운 금형비, 포장비, 불량률 조항 등 숨은 비용을 찾는 방법을 정리했습니다.",
+     "kw_unsplash": "business document factory"},
+    {"type": "checklist", "kw": "스타트업 제조 발주 실수",
+     "title": "스타트업이 제조 발주에서 자주 하는 실수 7가지 — 발주 전 꼭 읽어보세요",
+     "meta_desc": "제조 경험이 없는 스타트업이 발주 과정에서 자주 저지르는 실수 7가지와 예방법을 정리했습니다.",
+     "kw_unsplash": "startup manufacturing mistake"},
+    {"type": "checklist", "kw": "발주서 작성 방법",
+     "title": "발주서 작성 완벽 가이드: 공장 클레임 없이 진행하는 필수 항목",
+     "meta_desc": "제조 발주서 작성 시 빠뜨리면 안 되는 항목들을 정리했습니다. 사양, 납기, 검품 기준, 클레임 조항까지.",
+     "kw_unsplash": "factory order document"},
+    {"type": "checklist", "kw": "공장 방문 체크리스트",
+     "title": "공장 방문 전 준비해야 할 체크리스트: 발주 결정 전 확인 포인트",
+     "meta_desc": "제조 공장 방문 시 놓치기 쉬운 설비 수준, 인증 현황, 생산 능력 확인 방법을 정리했습니다.",
+     "kw_unsplash": "factory visit inspection"},
 ]
 
-COMPARE_TOPICS = [
-    {"title": "OEM과 ODM 차이점 완벽 가이드", "kw": "OEM ODM"},
-    {"title": "시제품 제작 방식 비교: 3D프린팅 vs CNC vs 사출", "kw": "시제품 제작"},
-    {"title": "한국 vs 중국 제조: 비용·품질·납기 비교", "kw": "한국 중국 제조 비교"},
-    {"title": "분체도장 vs 액체도장: 어떤 게 우리 제품에 맞을까", "kw": "분체도장 액체도장"},
-]
+# 추천 글 전용 SEO 타이틀 템플릿 (지역 × 산업 × 카운트)
+def make_recommend_title(region, ind, count):
+    """SEO 최적화된 추천 글 타이틀 생성"""
+    variants = [
+        f"{region} {ind['name']} 공장 추천 {count}선: 견적 바로 요청 가능한 업체",
+        f"{region} {ind['name']} 업체 추천 {count}곳: 검증된 제조사 리스트",
+        f"{region} {ind['name']} 발주 가이드 + 추천 업체 {count}선",
+    ]
+    return random.choice(variants)
 
-TREND_TOPICS = [
-    {"title": "2026년 자동차 부품 제조 트렌드 5가지", "kw": "자동차 부품 제조"},
-    {"title": "친환경 소재 사출의 부상: PLA·재활용 ABS·바이오 플라스틱", "kw": "친환경 사출"},
-    {"title": "스마트팩토리 도입 현황: 한국 중소제조업의 변화", "kw": "스마트팩토리"},
-]
+def make_recommend_meta(region, ind, count):
+    kw = random.choice(ind["seo_keywords"])
+    return f"{region} 지역 {ind['name']} 공장 {count}곳을 소개합니다. {kw} 관련 발주 전 꼭 확인해야 할 정보와 함께 정리했습니다."
 
-CHECKLIST_TOPICS = [
-    {"title": "공장 견적서 보는 법: 숨은 단가 찾는 5가지 체크포인트", "kw": "견적서 작성"},
-    {"title": "처음 발주하는 스타트업이 자주 하는 실수 7가지", "kw": "제조 발주 실수"},
-    {"title": "발주서 작성 완벽 가이드: 빠짐없이 챙겨야 할 항목", "kw": "발주서 작성"},
-]
-
-# === 유틸 함수 ===
+# ─────────────────────────────────────────────
+# 유틸 함수
+# ─────────────────────────────────────────────
 def slugify(text):
     """한글 포함 텍스트를 URL-safe slug로 변환"""
     text = text.lower()
@@ -121,7 +220,6 @@ def slugify(text):
     return text[:80]
 
 def weighted_choice(items, weight_key='weight'):
-    """가중치 기반 무작위 선택"""
     total = sum(item[weight_key] for item in items)
     r = random.uniform(0, total)
     cumulative = 0
@@ -138,15 +236,14 @@ def fetch_unsplash_photo(keyword):
     try:
         res = requests.get(
             "https://api.unsplash.com/search/photos",
-            params={"query": keyword, "per_page": 10, "orientation": "landscape"},
+            params={"query": keyword, "per_page": 30, "orientation": "landscape"},
             headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
             timeout=10
         )
         if res.status_code == 200:
             data = res.json()
             if data.get("results"):
-                photo = random.choice(data["results"][:5])
-                # ★ Unsplash 약관 6조 - Download tracking: 사진을 영구 포함할 때 통지 필수
+                photo = random.choice(data["results"][:15])
                 try:
                     download_url = photo.get("links", {}).get("download_location")
                     if download_url:
@@ -156,7 +253,7 @@ def fetch_unsplash_photo(keyword):
                             timeout=5
                         )
                 except Exception:
-                    pass  # 트래킹 실패는 무시 (사진 사용 자체는 계속 진행)
+                    pass
                 return {
                     "url": photo["urls"]["regular"],
                     "thumb_url": photo["urls"]["small"],
@@ -169,23 +266,18 @@ def fetch_unsplash_photo(keyword):
     return None
 
 def fetch_factories(industry_key, region, count):
-    """Supabase REST API로 산업×지역 공장 큐레이션 (requests 직접 호출, supabase SDK 불필요)"""
+    """Supabase REST API로 산업×지역 공장 큐레이션"""
     try:
-        # industry_key → 검색 키워드 변환
         search_kw = next((ind["name"] for ind in INDUSTRIES if ind["key"] == industry_key), industry_key)
-        
-        # PostgREST 형식 쿼리 빌드
         url = f"{SUPABASE_URL}/rest/v1/factories"
         params = {
             "select": "id,name,address,business_number,factory_type",
-            "limit": str(count * 5),  # 여유 있게 가져옴
+            "limit": str(count * 5),
         }
-        # 지역 필터 (주소에 포함)
         if region:
             params["address"] = f"ilike.*{region}*"
-        # 산업 필터 (factory_type에 키워드 포함)
         params["factory_type"] = f"ilike.*{search_kw}*"
-        
+
         res = requests.get(url, params=params, headers=SUPABASE_HEADERS, timeout=15)
         if res.status_code == 200:
             rows = res.json() or []
@@ -197,48 +289,61 @@ def fetch_factories(industry_key, region, count):
         print(f"  ⚠️ 공장 조회 실패: {e}")
     return []
 
+# ─────────────────────────────────────────────
+# Claude API — SEO 최적화 본문 생성
+# ─────────────────────────────────────────────
 def generate_post_content(post_meta):
-    """Claude API로 글 본문 생성 - 사용자 검증된 톤"""
+    """Claude API로 글 본문 생성 — SEO 키워드 최적화 + 검증된 톤"""
     if not claude:
         raise RuntimeError("ANTHROPIC_API_KEY 환경변수 필요")
-    
+
     post_type = post_meta["type"]
-    title = post_meta["title"]
-    
-    # 추천 글의 경우 공장 정보 포함
+    title     = post_meta["title"]
+    target_kw = post_meta.get("kw", title)          # 타겟 SEO 키워드
+
+    # 추천 글 공장 정보
     factories_info = ""
     if post_type == "recommend" and post_meta.get("factories"):
         factories_info = "\n\n[참고: 추천 업체 정보]\n"
         for i, f in enumerate(post_meta["factories"], 1):
             factories_info += f"{i}. {f.get('name','')} - {f.get('address','')} - {f.get('factory_type','')}\n"
-    
-    # 톤 가이드라인 - 사용자가 검증한 톤
-    system_prompt = """당신은 공장매칭 매거진 편집팀입니다. 한국 제조업 B2B 바이어를 대상으로 글을 씁니다.
+
+    system_prompt = f"""당신은 공장매칭 매거진 편집팀입니다. 한국 제조업 B2B 바이어를 대상으로 글을 씁니다.
+
+**SEO 최적화 지침 (필수):**
+- 타겟 키워드: "{target_kw}"
+- H1(제목)에 타겟 키워드 포함 (이미 제목에 있으므로 H2부터)
+- H2(##) 2-3개에 타겟 키워드 또는 연관 키워드 자연스럽게 포함
+- 첫 문단(150자 이내)에 타겟 키워드 1회 포함
+- 자연 키워드 밀도 1-2% (키워드 남발 금지)
+- 관련 검색어(LSI)를 본문에 자연스럽게 분산 배치
 
 **톤 가이드라인 (필수 준수):**
-- 인사말 ("안녕하세요" 등) 없이 바로 본론 시작
+- 인사말("안녕하세요" 등) 없이 바로 본론 시작
 - 친근하되 가볍지 않은 톤 ("~합니다", "~이에요" 적절히 혼용)
 - 정확한 수치/용어 사용 (예: ±0.005mm, MOQ 500개, A6061 등급 등)
 - 실용적이고 구체적인 정보 (애매한 표현 금지)
 - 마크다운 형식 (## 섹션, **굵게**, - 리스트 등)
-- "처음 발주하시는 분이라면..." 정도의 친근한 도입 OK
 - 분량: 약 2000-2500자
 - 광고성 문구 금지, 정보성 가치 중심
-- "공장매칭"이라는 사이트 이름 본문에 1-2번만 자연스럽게 언급 (과도하면 안 됨)
+- "공장매칭"이라는 사이트 이름 본문에 1-2번만 자연스럽게 언급
 """
-    
+
     if post_type == "recommend":
+        ind_obj = next((i for i in INDUSTRIES if i["key"] == post_meta.get("industry")), {})
+        seo_kws = ", ".join(ind_obj.get("seo_keywords", [])[:3])
         user_prompt = f"""다음 제목으로 글을 작성해주세요: "{title}"
 
 이 글은 {post_meta.get('count', 3)}개 업체를 추천하는 글입니다.
+연관 SEO 키워드(자연스럽게 녹여주세요): {seo_kws}
 
 **구조:**
-1. 인트로 (3-4문장, 누구를 위한 글인지 명확히)
-2. ## 1. [산업명/지역] 특징 — 클러스터 분석, 강점, 수치
-3. ## 2. 발주 전 알아둘 핵심 정보 5가지 (각 80-150자, 구체적)
-4. ## 3. 추천 업체 {post_meta.get('count', 3)}선 — 아래 "[FACTORIES_PLACEHOLDER]" 표시만 두세요 (실제 카드는 시스템이 자동 삽입)
-5. ## 4. 자주 묻는 질문 (4-5개 Q&A)
-6. ## 정리 (간단히 핵심 5가지 요약)
+1. 인트로 (3-4문장, 타겟 키워드 포함, 누구를 위한 글인지 명확히)
+2. ## {post_meta.get('region','')} {ind_obj.get('name','')} 시장 현황 — 클러스터 특징, 강점, 수치 (키워드 포함 H2)
+3. ## {ind_obj.get('name','')} 업체 선정 시 핵심 체크포인트 5가지 (각 80-150자, 구체적)
+4. ## 추천 업체 {post_meta.get('count', 3)}선 — 아래 "[FACTORIES_PLACEHOLDER]" 표시만 두세요 (실제 카드는 시스템이 자동 삽입)
+5. ## 자주 묻는 질문 (FAQ) — Q/A 형식 4-5개 (검색 쿼리 형태의 Q 작성)
+6. ## 정리 — 핵심 5가지 요약 (타겟 키워드 1회 포함)
 
 {factories_info}
 """
@@ -246,14 +351,14 @@ def generate_post_content(post_meta):
         user_prompt = f"""다음 제목으로 정보성 가이드 글을 작성해주세요: "{title}"
 
 **구조:**
-1. 인트로 (3-4문장, 누구를 위한 글인지)
-2. ## 1. [핵심 정보 1] — 250-400자, 구체적 수치 포함
-3. ## 2. [핵심 정보 2] — 250-400자
-4. ## 3. [핵심 정보 3] — 250-400자
-5. ## 4. [핵심 정보 4] — 250-400자
-6. ## 5. [핵심 정보 5] — 250-400자
-7. ## 정리 (5가지 핵심 요약)
-8. ## 자주 묻는 질문 (3-4개 Q&A)
+1. 인트로 (3-4문장, 타겟 키워드 포함, 누구를 위한 글인지)
+2. ## [핵심 정보 1] — 250-400자, 구체적 수치 포함 (연관 키워드 H2에 포함)
+3. ## [핵심 정보 2] — 250-400자
+4. ## [핵심 정보 3] — 250-400자
+5. ## [핵심 정보 4] — 250-400자
+6. ## [핵심 정보 5] — 250-400자
+7. ## 자주 묻는 질문 (FAQ) — Q/A 형식 4개 (실제 검색 쿼리 스타일로 Q 작성)
+8. ## 정리 — 핵심 5가지 요약
 
 업체 추천은 포함하지 마세요. 순수 정보성 가이드입니다.
 """
@@ -261,13 +366,13 @@ def generate_post_content(post_meta):
         user_prompt = f"""다음 제목으로 비교 분석 글을 작성해주세요: "{title}"
 
 **구조:**
-1. 인트로 (왜 이 비교가 중요한지)
-2. ## [옵션 A] 소개 — 특징, 장점, 단가
+1. 인트로 (왜 이 비교가 중요한지, 타겟 키워드 포함)
+2. ## [옵션 A] 소개 — 특징, 장점, 단가 (키워드 H2)
 3. ## [옵션 B] 소개 — 특징, 장점, 단가
-4. ## 항목별 비교 — 비용, 품질, 납기, 적합 상황 등 (표 또는 리스트)
+4. ## 항목별 비교 — 비용, 품질, 납기, 적합 상황 (표 또는 리스트)
 5. ## 어떤 상황에 어떤 선택이 맞을까 — 시나리오 3-5개
-6. ## 정리 + 결론
-7. ## 자주 묻는 질문 (3-4개)
+6. ## 자주 묻는 질문 (FAQ) — Q/A 형식 4개 (실제 검색 쿼리 스타일)
+7. ## 정리 + 결론
 
 객관적이고 균형 잡힌 시각으로 작성하세요.
 """
@@ -275,14 +380,15 @@ def generate_post_content(post_meta):
         user_prompt = f"""다음 제목으로 트렌드 분석 글을 작성해주세요: "{title}"
 
 **구조:**
-1. 인트로 (왜 지금 이 트렌드인지)
-2. ## 1. [트렌드 1] — 배경, 영향, 사례
-3. ## 2. [트렌드 2] — 배경, 영향, 사례
-4. ## 3. [트렌드 3] — 배경, 영향, 사례
-5. ## 4. [트렌드 4] — 배경, 영향, 사례
-6. ## 5. [트렌드 5] — 배경, 영향, 사례 (선택)
+1. 인트로 (왜 지금 이 트렌드인지, 타겟 키워드 포함)
+2. ## 트렌드 1: [제목] — 배경, 영향, 사례 (키워드 H2)
+3. ## 트렌드 2: [제목]
+4. ## 트렌드 3: [제목]
+5. ## 트렌드 4: [제목]
+6. ## 트렌드 5: [제목] (선택)
 7. ## 한국 제조사가 준비해야 할 것 — 실용 조언
-8. ## 정리
+8. ## 자주 묻는 질문 (FAQ) — Q/A 4개
+9. ## 정리
 
 전문가의 인사이트 톤으로 작성하세요.
 """
@@ -290,48 +396,47 @@ def generate_post_content(post_meta):
         user_prompt = f"""다음 제목으로 체크리스트 형 글을 작성해주세요: "{title}"
 
 **구조:**
-1. 인트로 (왜 이 체크리스트가 필요한지)
-2. ## ✅ 1. [체크 항목 1] — 200-300자, 왜 중요한지 + 어떻게 체크하는지
-3. ## ✅ 2. [체크 항목 2] — 200-300자
-... (5-7개 체크 항목)
-3. ## 정리 — 핵심 5가지 요약
-4. ## 자주 묻는 질문 (3-4개)
+1. 인트로 (왜 이 체크리스트가 필요한지, 타겟 키워드 포함)
+2. ## ✅ 체크포인트 1: [제목] — 200-300자, 왜 중요한지 + 어떻게 체크하는지 (키워드 포함 H2)
+... (5-7개 체크 항목 — 각 ## ✅ 로 시작)
+3. ## 자주 묻는 질문 (FAQ) — Q/A 4개 (실제 검색 쿼리 스타일)
+4. ## 정리 — 핵심 5가지 요약
 
-실용성에 초점.
+실용성에 초점. 각 체크포인트는 구체적인 수치나 기준 포함.
 """
     else:
         user_prompt = f"""다음 제목으로 글을 작성해주세요: "{title}"
 
-전문성 있고 구조적인 글로 작성. 2000-2500자."""
-    
+전문성 있고 SEO 친화적인 구조로 작성. 타겟 키워드 "{target_kw}" 자연스럽게 포함. 2000-2500자."""
+
     response = claude.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-20250514",
         max_tokens=4000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}]
     )
     return response.content[0].text
 
+# ─────────────────────────────────────────────
+# HTML 렌더링
+# ─────────────────────────────────────────────
 def render_factories_html(factories):
-    """추천 업체 카드 HTML 생성 (사진은 컬러 그라데이션 + 이니셜)"""
+    """추천 업체 카드 HTML 생성"""
     if not factories:
         return ""
     html = '<div class="mg-rec-section">'
     for i, f in enumerate(factories, 1):
         name = f.get("name", "회사명")
         initial = name[0] if name else "공"
-        address_short = (f.get("address", "") or "").split()[0:2]
-        address_short = " ".join(address_short) if address_short else ""
+        address_short = " ".join((f.get("address", "") or "").split()[0:2])
         factory_type = f.get("factory_type", "")
-        # 가공방식 태그 (factory_type 쪼개기)
         tags = [t.strip() for t in re.split(r'[,/、·]', factory_type) if t.strip()][:3]
         tags_html = "".join([f'<span class="mg-rec-tag">{t}</span>' for t in tags])
-        
-        # 컬러 배경 (회사명 해시 기반 일관성)
+
         h = int(hashlib.md5(name.encode()).hexdigest()[:6], 16)
         hue = h % 360
         bg = f"hsl({hue}, 60%, 85%)"
-        
+
         html += f'''
         <a href="/?factory={f.get("id","")}" class="mg-rec-card">
           <div class="mg-rec-num">{i}</div>
@@ -347,21 +452,16 @@ def render_factories_html(factories):
     return html
 
 def markdown_to_html(md, factories_html=""):
-    """간단한 마크다운 → HTML 변환"""
+    """마크다운 → HTML 변환"""
     html = md
-    
-    # 추천 업체 자리에 카드 삽입
+
     if factories_html:
         html = re.sub(r'\[FACTORIES_PLACEHOLDER\]', factories_html, html)
-    
-    # 헤딩
+
     html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
     html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
-    
-    # 굵게
     html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
-    
-    # 리스트
+
     lines = html.split('\n')
     out = []
     in_ul = False
@@ -379,15 +479,14 @@ def markdown_to_html(md, factories_html=""):
     if in_ul:
         out.append('</ul>')
     html = '\n'.join(out)
-    
-    # FAQ 박스 (Q. 로 시작하는 줄)
+
+    # FAQ 박스
     html = re.sub(
         r'\*\*Q\. (.+?)\*\*\n(.+?)(?=\n\n|\n\*\*Q\.|\Z)',
         r'<div class="mg-faq-item"><div class="mg-faq-q">Q. \1</div><div class="mg-faq-a">\2</div></div>',
         html, flags=re.DOTALL
     )
-    
-    # 단락 (빈 줄 기준)
+
     paragraphs = re.split(r'\n\n+', html)
     out = []
     for p in paragraphs:
@@ -400,61 +499,108 @@ def markdown_to_html(md, factories_html=""):
             out.append(f'<p>{p}</p>')
     return '\n'.join(out)
 
-def render_article_html(post, body_html, hero_photo):
-    """개별 글 HTML 페이지 생성"""
+def build_faq_schema(body_md):
+    """FAQ Schema.org 구조화 데이터 생성 (Q. 패턴 추출)"""
+    faqs = re.findall(r'\*\*Q\. (.+?)\*\*\n(.+?)(?=\n\n|\n\*\*Q\.|\Z)', body_md, re.DOTALL)
+    if not faqs:
+        return ""
+    items = []
+    for q, a in faqs[:5]:
+        a_clean = re.sub(r'\*\*|\*', '', a.strip())[:300]
+        items.append(f'''    {{
+      "@type": "Question",
+      "name": "{q.strip()}",
+      "acceptedAnswer": {{"@type": "Answer", "text": "{a_clean}"}}
+    }}''')
+    schema = f'''<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+{",\n".join(items)}
+  ]
+}}
+</script>'''
+    return schema
+
+def render_article_html(post, body_html, body_md, hero_photo):
+    """개별 글 HTML 페이지 생성 — SEO 메타태그 강화"""
     cat_label = {
         "recommend": "산업별 추천",
-        "guide": "발주 가이드",
-        "trend": "트렌드",
-        "compare": "비교·선택",
-        "case": "케이스 스터디",
+        "guide":     "발주 가이드",
+        "trend":     "트렌드",
+        "compare":   "비교·선택",
+        "case":      "케이스 스터디",
         "checklist": "체크리스트",
     }.get(post["category"], "매거진")
-    
+
     hero_bg = f"background-image:url('{hero_photo['url']}')" if hero_photo else "background:linear-gradient(135deg,#1d4ed8,#3b82f6)"
-    
+
     attribution = ""
     if hero_photo and hero_photo.get("author_name"):
         attribution = f'''<div style="font-size:12px;color:#94a3b8;text-align:right;padding:10px 24px;background:#f8fafc;border-bottom:1px solid #e5e7eb">
   Photo by <a href="{hero_photo["author_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">{hero_photo["author_name"]}</a> on <a href="{hero_photo["unsplash_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">Unsplash</a>
 </div>'''
-    
-    # 해시태그 자동 생성
-    hashtags = ["공장매칭", "제조업", "B2B"]
+
+    # 해시태그
+    hashtags = ["공장매칭", "제조업", "B2B", "공장찾기"]
     if post.get("industry_name"):
         hashtags.append(post["industry_name"].replace(" ", ""))
     if post.get("region"):
         hashtags.append(post["region"] + "공장")
+    if post.get("kw"):
+        kw_tag = re.sub(r'\s+', '', post["kw"])
+        if kw_tag not in hashtags:
+            hashtags.append(kw_tag)
     hashtags_html = "".join([f'<span class="mg-tag">#{t}</span>' for t in hashtags])
-    
+
+    # FAQ 구조화 데이터
+    faq_schema = build_faq_schema(body_md)
+
+    # 메타 description (SEO 키워드 포함)
+    meta_desc = post.get("meta_desc") or post.get("subtitle") or post["title"]
+
+    # 캐노니컬 URL
+    canonical = f"https://factorymatch.co.kr/magazine/posts/{post['slug']}/"
+
     return f'''<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{post["title"]} - 공장매칭 매거진</title>
-<meta name="description" content="{post["subtitle"]}">
+<meta name="description" content="{meta_desc}">
+<meta name="keywords" content="{post.get('kw','')}, 공장매칭, 제조업 B2B, 공장 추천, 제조사 찾기">
+<meta name="robots" content="index, follow">
 <meta property="og:title" content="{post["title"]}">
-<meta property="og:description" content="{post["subtitle"]}">
+<meta property="og:description" content="{meta_desc}">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://factorymatch.co.kr/magazine/posts/{post["slug"]}/">
+<meta property="og:url" content="{canonical}">
 <meta property="og:image" content="{hero_photo['url'] if hero_photo else ''}">
+<meta property="og:site_name" content="공장매칭 매거진">
 <meta property="article:published_time" content="{post["published_at"]}">
 <meta property="article:section" content="{cat_label}">
-<link rel="canonical" href="https://factorymatch.co.kr/magazine/posts/{post["slug"]}/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{post["title"]}">
+<meta name="twitter:description" content="{meta_desc}">
+<meta name="twitter:image" content="{hero_photo['url'] if hero_photo else ''}">
+<link rel="canonical" href="{canonical}">
 <link rel="stylesheet" href="/magazine/assets/magazine.css">
 <script type="application/ld+json">
 {{
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": "{post['title']}",
-  "description": "{post['subtitle']}",
+  "description": "{meta_desc}",
   "image": "{hero_photo['url'] if hero_photo else ''}",
   "datePublished": "{post['published_at']}",
-  "author": {{ "@type": "Organization", "name": "공장매칭" }},
-  "publisher": {{ "@type": "Organization", "name": "공장매칭", "url": "https://factorymatch.co.kr" }}
+  "dateModified": "{post['published_at']}",
+  "author": {{"@type": "Organization", "name": "공장매칭"}},
+  "publisher": {{"@type": "Organization", "name": "공장매칭", "url": "https://factorymatch.co.kr"}},
+  "mainEntityOfPage": {{"@type": "WebPage", "@id": "{canonical}"}}
 }}
 </script>
+{faq_schema}
 </head>
 <body>
 
@@ -477,24 +623,24 @@ def render_article_html(post, body_html, hero_photo):
   <a href="/magazine/">매거진</a> › <a href="/magazine/?cat={post['category']}">{cat_label}</a> › {post['title']}
 </div>
 
-<article class="mg-article">
+<article class="mg-article" itemscope itemtype="https://schema.org/Article">
   <div class="mg-article-hero" style="{hero_bg}"></div>
   {attribution}
   <div class="mg-article-header">
     <span class="mg-article-cat">{cat_label}</span>
-    <h1 class="mg-article-title">{post["title"]}</h1>
-    <p class="mg-article-subtitle">{post["subtitle"]}</p>
+    <h1 class="mg-article-title" itemprop="headline">{post["title"]}</h1>
+    <p class="mg-article-subtitle" itemprop="description">{meta_desc}</p>
     <div class="mg-article-meta">
       <span>📅 {post["published_at"][:10]}</span>
       <span>👁 {post.get("views", 0)}</span>
       <span>⏱ 5분 읽기</span>
     </div>
   </div>
-  
-  <div class="mg-article-body">
+
+  <div class="mg-article-body" itemprop="articleBody">
     {body_html}
   </div>
-  
+
   <div class="mg-tags">
     {hashtags_html}
   </div>
@@ -514,279 +660,232 @@ def render_article_html(post, body_html, hero_photo):
 '''
 
 def update_sitemap(posts):
-    """sitemap.xml에 매거진 글 URL 추가"""
-    urls = []
-    urls.append("https://factorymatch.co.kr/")
-    urls.append("https://factorymatch.co.kr/magazine/")
+    """sitemap.xml 업데이트 — lastmod + priority 포함"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    entries = [
+        {"url": "https://factorymatch.co.kr/",           "priority": "1.0", "changefreq": "daily"},
+        {"url": "https://factorymatch.co.kr/magazine/",  "priority": "0.9", "changefreq": "daily"},
+    ]
     for p in posts:
-        urls.append(f"https://factorymatch.co.kr/magazine/posts/{p['slug']}/")
-    
+        entries.append({
+            "url":        f"https://factorymatch.co.kr/magazine/posts/{p['slug']}/",
+            "priority":   "0.7",
+            "changefreq": "weekly",
+            "lastmod":    p.get("published_at", today)[:10],
+        })
+
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
     sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for url in urls:
-        sitemap += f'  <url><loc>{url}</loc><changefreq>weekly</changefreq></url>\n'
+    for e in entries:
+        sitemap += f'  <url>\n'
+        sitemap += f'    <loc>{e["url"]}</loc>\n'
+        if "lastmod" in e:
+            sitemap += f'    <lastmod>{e["lastmod"]}</lastmod>\n'
+        sitemap += f'    <changefreq>{e["changefreq"]}</changefreq>\n'
+        sitemap += f'    <priority>{e["priority"]}</priority>\n'
+        sitemap += f'  </url>\n'
     sitemap += '</urlset>\n'
-    
+
     SITEMAP_FILE.write_text(sitemap, encoding='utf-8')
 
+# ─────────────────────────────────────────────
+# 글 생성 메인 함수
+# ─────────────────────────────────────────────
 def generate_post(post_meta):
     """글 1개 생성 → HTML 파일 + posts.json 업데이트"""
     print(f"\n📝 생성: {post_meta['title']}")
-    
-    # 1. Unsplash 사진
+
     print("  📷 Unsplash 사진 조회...")
     photo = fetch_unsplash_photo(post_meta.get("kw_unsplash", "factory"))
-    
-    # 2. 추천 글이면 공장 조회
+
     factories = []
     if post_meta["type"] == "recommend":
         print("  🏭 공장 큐레이션...")
         factories = fetch_factories(post_meta["industry"], post_meta.get("region", ""), post_meta["count"])
         post_meta["factories"] = factories
-    
-    # 3. Claude API로 본문 생성
-    print("  🤖 Claude API 본문 생성...")
+
+    print("  🤖 Claude API 본문 생성 (SEO 최적화)...")
     md_content = generate_post_content(post_meta)
-    
-    # 4. 마크다운 → HTML
+
     factories_html = render_factories_html(factories)
     body_html = markdown_to_html(md_content, factories_html)
-    
-    # 5. 메타데이터
-    slug = slugify(post_meta["title"])
-    now = datetime.now(timezone.utc).isoformat()
-    count_label = None
-    if post_meta["type"] == "recommend":
-        count_label = f"{post_meta['count']}선"
-    
+
+    slug     = slugify(post_meta["title"])
+    now      = datetime.now(timezone.utc).isoformat()
+    count_label = f"{post_meta['count']}선" if post_meta["type"] == "recommend" else None
+
     post = {
-        "slug": slug,
-        "title": post_meta["title"],
-        "subtitle": post_meta.get("subtitle", post_meta["title"]),
-        "category": post_meta["type"],
-        "industry_key": post_meta.get("industry"),
+        "slug":          slug,
+        "title":         post_meta["title"],
+        "subtitle":      post_meta.get("meta_desc") or post_meta.get("subtitle") or post_meta["title"],
+        "meta_desc":     post_meta.get("meta_desc") or post_meta.get("subtitle") or post_meta["title"],
+        "kw":            post_meta.get("kw", ""),
+        "category":      post_meta["type"],
+        "industry_key":  post_meta.get("industry"),
         "industry_name": next((i["name"] for i in INDUSTRIES if i["key"] == post_meta.get("industry")), ""),
-        "region": post_meta.get("region", ""),
-        "count_label": count_label,
+        "region":        post_meta.get("region", ""),
+        "count_label":   count_label,
         "thumbnail_url": photo["thumb_url"] if photo else "",
-        "hero_image_url": photo["url"] if photo else "",
-        "published_at": now,
-        "views": 0,
+        "hero_image_url":photo["url"] if photo else "",
+        "published_at":  now,
+        "views":         0,
     }
-    
-    # 6. HTML 파일 저장
-    article_html = render_article_html(post, body_html, photo)
+
+    article_html = render_article_html(post, body_html, md_content, photo)
     post_dir = POSTS_DIR / slug
     post_dir.mkdir(parents=True, exist_ok=True)
     (post_dir / "index.html").write_text(article_html, encoding='utf-8')
-    
-    # 7. posts.json 업데이트
+
     data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
-    # 중복 체크 (slug 같으면 교체)
     data["posts"] = [p for p in data["posts"] if p["slug"] != slug]
     data["posts"].append(post)
     data["updated_at"] = now
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-    
-    # 8. sitemap.xml 업데이트
+
     update_sitemap(data["posts"])
-    
+
     print(f"  ✅ 완료: /magazine/posts/{slug}/")
     return post
 
+# ─────────────────────────────────────────────
+# 글 계획 함수
+# ─────────────────────────────────────────────
 def plan_initial_posts():
-    """첫 발행 글 12-15개 계획"""
+    """첫 발행 글 15개 계획 (추천 5 + 가이드 4 + 비교 2 + 트렌드 2 + 체크리스트 2)"""
     plan = []
-    
-    # 산업별 추천 5개 (다양한 산업×지역)
-    plan.append({
-        "type": "recommend", "count": 3,
-        "industry": "cnc", "region": "서울",
-        "title": "서울 CNC 가공 업체 추천 3선: 정밀가공 발주 가이드",
-        "subtitle": "서울 지역 CNC 가공 업체 중 평점·사진·연락처 확인된 3곳",
-        "kw_unsplash": "cnc machining factory"
-    })
-    plan.append({
-        "type": "recommend", "count": 5,
-        "industry": "injection", "region": "경기",
-        "title": "경기도 사출 성형 공장 추천 5선: 플라스틱 발주 완벽 가이드",
-        "subtitle": "경기 지역 사출 성형 공장 검증 5곳",
-        "kw_unsplash": "injection molding factory"
-    })
-    plan.append({
-        "type": "recommend", "count": 3,
-        "industry": "mold", "region": "인천",
-        "title": "인천 금형 제작 업체 추천 3선",
-        "subtitle": "인천 산업단지의 금형 제작 전문 업체",
-        "kw_unsplash": "mold manufacturing"
-    })
-    plan.append({
-        "type": "recommend", "count": 7,
-        "industry": "sewing", "region": "부산",
-        "title": "부산 봉제 공장 추천 7선: 의류·패션 발주 가이드",
-        "subtitle": "부산 지역 봉제 공장 검증 7곳",
-        "kw_unsplash": "garment sewing factory"
-    })
-    plan.append({
-        "type": "recommend", "count": 5,
-        "industry": "press", "region": "대구",
-        "title": "대구 프레스 가공 업체 추천 5선",
-        "subtitle": "대구 산업단지의 프레스 가공 전문 업체",
-        "kw_unsplash": "metal press factory"
-    })
-    
-    # 정보성 가이드 4개
-    for topic in GUIDE_TOPICS[:4]:
+
+    # 추천 5개
+    recommend_seeds = [
+        ("cnc",      "서울",  3),
+        ("injection","경기",  5),
+        ("mold",     "인천",  3),
+        ("sewing",   "부산",  7),
+        ("press",    "대구",  5),
+    ]
+    for ind_key, region, count in recommend_seeds:
+        ind = next(i for i in INDUSTRIES if i["key"] == ind_key)
         plan.append({
-            "type": "guide", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "industry": topic.get("industry"),
-            "kw_unsplash": topic["kw"]
+            "type":        "recommend",
+            "count":       count,
+            "industry":    ind_key,
+            "region":      region,
+            "title":       make_recommend_title(region, ind, count),
+            "meta_desc":   make_recommend_meta(region, ind, count),
+            "kw":          f"{region} {ind['name']} 공장 추천",
+            "kw_unsplash": ind["kw_unsplash"],
         })
-    
-    # 비교 분석 2개
-    for topic in COMPARE_TOPICS[:2]:
-        plan.append({
-            "type": "compare", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
-    # 트렌드 2개
-    for topic in TREND_TOPICS[:2]:
-        plan.append({
-            "type": "trend", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
-    # 체크리스트 2개
-    for topic in CHECKLIST_TOPICS[:2]:
-        plan.append({
-            "type": "checklist", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
+
+    # SEO 토픽에서 나머지 채우기 (가이드 4 + 비교 2 + 트렌드 2 + 체크리스트 2)
+    by_type = {}
+    for t in SEO_KEYWORD_TOPICS:
+        by_type.setdefault(t["type"], []).append(t)
+
+    for tp, n in [("guide", 4), ("compare", 2), ("trend", 2), ("checklist", 2)]:
+        for topic in by_type.get(tp, [])[:n]:
+            plan.append({
+                "type":        tp,
+                "count":       0,
+                "title":       topic["title"],
+                "meta_desc":   topic.get("meta_desc", topic["title"]),
+                "kw":          topic["kw"],
+                "industry":    topic.get("industry"),
+                "kw_unsplash": topic.get("kw_unsplash", "factory"),
+            })
+
     return plan
 
-def plan_daily_post():
-    """매일 1개 무작위 글 계획 (기존 발행된 slug 제외)"""
-    # 기존 발행 글의 slug 확인
+def plan_daily_posts(n=3):
+    """매일 n개 글 계획 — SEO 키워드 풀 + 산업×지역 매트릭스"""
     try:
         data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
         existing_slugs = {p["slug"] for p in data.get("posts", [])}
     except Exception:
         existing_slugs = set()
-    
-    # 모든 가능한 글 후보 풀 구성
+
     candidates = []
-    
-    # ① 산업별 추천 (산업 8개 × 지역 15개 × 형식 3개 = 360개)
+
+    # ① 산업별 추천 (8 × 15 × 3 = 360개)
     for ind in INDUSTRIES:
         for region in REGIONS:
             for count in [3, 5, 7]:
-                title = f"{region} {ind['name']} 업체 추천 {count}선"
+                title = make_recommend_title(region, ind, count)
                 candidates.append({
-                    "type": "recommend",
-                    "count": count,
-                    "industry": ind["key"],
-                    "region": region,
-                    "title": title,
-                    "subtitle": f"{region} 지역 {ind['name']} 업체 검증 {count}곳",
-                    "kw_unsplash": ind["kw_unsplash"]
+                    "type":        "recommend",
+                    "count":       count,
+                    "industry":    ind["key"],
+                    "region":      region,
+                    "title":       title,
+                    "meta_desc":   make_recommend_meta(region, ind, count),
+                    "kw":          f"{region} {ind['name']} 공장 추천",
+                    "kw_unsplash": ind["kw_unsplash"],
                 })
-    
-    # ② 정보성 가이드
-    for topic in GUIDE_TOPICS:
+
+    # ② SEO 키워드 토픽 (가이드 / 비교 / 트렌드 / 체크리스트)
+    for topic in SEO_KEYWORD_TOPICS:
         candidates.append({
-            "type": "guide", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "industry": topic.get("industry"),
-            "kw_unsplash": topic["kw"]
+            "type":        topic["type"],
+            "count":       0,
+            "title":       topic["title"],
+            "meta_desc":   topic.get("meta_desc", topic["title"]),
+            "kw":          topic["kw"],
+            "industry":    topic.get("industry"),
+            "kw_unsplash": topic.get("kw_unsplash", "factory"),
         })
-    
-    # ③ 비교 분석
-    for topic in COMPARE_TOPICS:
-        candidates.append({
-            "type": "compare", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
-    # ④ 트렌드
-    for topic in TREND_TOPICS:
-        candidates.append({
-            "type": "trend", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
-    # ⑤ 체크리스트
-    for topic in CHECKLIST_TOPICS:
-        candidates.append({
-            "type": "checklist", "count": 0,
-            "title": topic["title"],
-            "subtitle": topic["title"],
-            "kw_unsplash": topic["kw"]
-        })
-    
-    # 기존 슬러그 제외
+
+    # 발행된 slug 제외
     fresh = [c for c in candidates if slugify(c["title"]) not in existing_slugs]
-    
+
     if not fresh:
-        print("⚠️ 모든 후보가 이미 발행됨. 추가 토픽 풀 확장 필요.")
-        return None
-    
-    # 무작위 선택
-    chosen = random.choice(fresh)
-    print(f"📌 오늘의 글: {chosen['title']} ({chosen['type']})")
+        print("⚠️ 모든 후보가 이미 발행됨. 토픽 풀 확장 필요.")
+        return []
+
+    chosen = random.sample(fresh, min(n, len(fresh)))
+    for c in chosen:
+        print(f"📌 오늘의 글: {c['title']} [{c['type']}] | 키워드: {c.get('kw','')}")
     return chosen
 
+# ─────────────────────────────────────────────
+# 메인
+# ─────────────────────────────────────────────
 def main():
     print("=" * 60)
-    print("🚀 공장매칭 매거진 자동 생성 시작")
+    print("🚀 공장매칭 매거진 자동 생성 시작 (SEO 키워드 최적화 버전)")
     print("=" * 60)
-    
+
     if not ANTHROPIC_API_KEY:
         print("❌ ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
         return
     if not UNSPLASH_ACCESS_KEY:
         print("⚠️ UNSPLASH_ACCESS_KEY 미설정 - 사진 없이 진행합니다.")
-    
-    # 모드 결정: 인자 또는 환경변수
-    mode = "initial"  # 기본값: 첫 15개 일괄 생성
+
+    mode = "initial"
     if len(sys.argv) > 1 and sys.argv[1] in ("--daily", "-d"):
         mode = "daily"
     elif os.environ.get("MAGAZINE_MODE") == "daily":
         mode = "daily"
-    
+
     if mode == "daily":
-        # 매일 모드: 1개만 생성
-        print("\n🌅 매일 자동 생성 모드 (1개)\n")
-        post_meta = plan_daily_post()
-        if post_meta:
+        print("\n🌅 매일 자동 생성 모드 (3편/일)\n")
+        posts_meta = plan_daily_posts(n=3)
+        success = 0
+        for pm in posts_meta:
             try:
-                generate_post(post_meta)
-                print("\n✅ 오늘의 글 발행 완료")
+                generate_post(pm)
+                success += 1
+                time.sleep(3)
             except Exception as e:
-                print(f"❌ 실패: {e}")
-                sys.exit(1)
+                print(f"  ❌ 실패: {e}")
+        print(f"\n✅ 오늘 발행 완료: {success}/{len(posts_meta)}편")
+        if success == 0:
+            sys.exit(1)
     else:
-        # 초기 일괄 모드: 15개 생성
         plan = plan_initial_posts()
         print(f"\n📋 초기 생성 계획: {len(plan)}개 글\n")
-        for i, post_meta in enumerate(plan, 1):
+        for i, pm in enumerate(plan, 1):
             print(f"\n[{i}/{len(plan)}]")
             try:
-                generate_post(post_meta)
+                generate_post(pm)
                 time.sleep(2)
             except Exception as e:
                 print(f"  ❌ 실패: {e}")
