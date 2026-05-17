@@ -69,7 +69,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
     { id: 'list',   label: '제조사 탐색' },
     { id: 'rfq',    label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
     { id: 'grants', label: '정부지원금' },
-    { id: 'magazine', label: '매거진' },
+    { id: 'magazine', label: '매거진', external: '/magazine/' },
     // { id: 'chat',  label: '채팅' },  // 채팅 탭 — 추후 활성화
   ];
   const isCompact = density === 'compact';
@@ -11813,74 +11813,6 @@ const SiteFooter = ({ onNav }) => (
 );
 
 Object.assign(window, { TermsPage, PrivacyPage, ReportPage, SiteFooter });
-
-// MagazinePage — 매거진 인덱스 (SPA 내부 라우트)
-// ──────────────────────────────────────────────────────────
-const MAGAZINE_CATEGORY_LABELS = {
-  recommend: '산업별 추천', guide: '발주 가이드', trend: '트렌드',
-  compare: '비교·선택', case: '케이스 스터디', checklist: '체크리스트',
-};
-
-const MagazinePage = () => {
-  const [posts, setPosts] = React.useState([]);
-  const [category, setCategory] = React.useState('all');
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    fetch('/magazine/data/posts.json')
-      .then(r => r.json())
-      .then(d => { setPosts((d.posts || []).slice().reverse()); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const cats = ['all', ...Object.keys(MAGAZINE_CATEGORY_LABELS)];
-  const filtered = category === 'all' ? posts : posts.filter(p => p.category === category);
-
-  const fmtDate = iso => {
-    const d = new Date(iso);
-    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-  };
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <div style={{ padding: '48px 24px 32px', textAlign: 'center', background: '#fff', borderBottom: '1px solid #e5e7eb' }}>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 10px', color: '#0f172a' }}>공장매칭 매거진</h1>
-        <p style={{ fontSize: 15, color: '#6b7280', margin: 0 }}>제조 발주에 필요한 모든 정보, 가이드, 트렌드</p>
-      </div>
-
-      <div style={{ padding: '24px 24px 12px', maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {cats.map(c => (
-          <button key={c} onClick={() => setCategory(c)} style={{
-            padding: '8px 18px', borderRadius: 999, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
-            background: category === c ? '#1d4ed8' : '#fff',
-            color: category === c ? '#fff' : '#374151',
-            boxShadow: category === c ? 'none' : '0 0 0 1px #e5e7eb',
-          }}>
-            {c === 'all' ? '전체' : MAGAZINE_CATEGORY_LABELS[c]}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '16px 24px 60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
-        {loading && <p style={{ color: '#9ca3af', gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>불러오는 중...</p>}
-        {!loading && filtered.length === 0 && <p style={{ color: '#9ca3af', gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>해당 카테고리의 글이 아직 없습니다.</p>}
-        {filtered.map(p => (
-          <a key={p.slug} href={`/magazine/posts/${p.slug}/`} style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', display: 'block', textDecoration: 'none', color: 'inherit', transition: 'box-shadow 0.15s' }}>
-            <div style={{ height: 180, backgroundImage: `url('${p.thumbnail_url}')`, backgroundSize: 'cover', backgroundPosition: 'center', background: p.thumbnail_url ? undefined : '#e5e7eb' }}/>
-            <div style={{ padding: '16px 18px 20px' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', background: '#eff6ff', padding: '3px 8px', borderRadius: 4 }}>
-                {MAGAZINE_CATEGORY_LABELS[p.category] || p.category}
-              </span>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: '10px 0 8px', lineHeight: 1.5, color: '#111827', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.title}</h3>
-              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>{fmtDate(p.published_at)}</p>
-            </div>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-};
-Object.assign(window, { MagazinePage });
 
 
 // tweaks-panel.jsx
