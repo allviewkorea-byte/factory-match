@@ -12321,7 +12321,7 @@ const CommunityPage = ({ onNav, authed }) => {
   );
 
   return (
-    <div style={{ maxWidth:900, margin:'0 auto', padding:'24px 20px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px 80px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:800, margin:0 }}>제조 의뢰 게시판</h1>
