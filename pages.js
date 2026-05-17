@@ -12145,14 +12145,16 @@ const CommunityPage = ({ onNav, authed }) => {
     if (!window.confirm('게시물을 삭제할까요?')) return;
     await window._sb.from('community_posts').delete().eq('id', post.id);
     setActivePost(null);
-    loadPosts();
+    setPage(0);
+    loadPosts(true);
   };
 
   const toggleStatus = async (post) => {
     const next = post.status === 'open' ? 'closed' : 'open';
     await window._sb.from('community_posts').update({ status: next }).eq('id', post.id);
     setActivePost({ ...post, status: next });
-    loadPosts();
+    setPage(0);
+    loadPosts(true);
   };
 
   const saveEdit = async () => {
@@ -12168,15 +12170,39 @@ const CommunityPage = ({ onNav, authed }) => {
     loadReplies(activePost.id);
   };
 
-  const loadPosts = async () => {
+  const [page, setPage] = React.useState(0);
+  const [hasMore, setHasMore] = React.useState(true);
+  const PAGE_SIZE = 10;
+
+  const loadPosts = async (reset = false) => {
     setLoading(true);
+    const from = reset ? 0 : page * PAGE_SIZE;
     const { data } = await window._sb.from('community_posts')
-      .select('*').order('created_at', { ascending: false }).limit(50);
-    setPosts(data || []);
+      .select('*').order('created_at', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    const newPosts = data || [];
+    setPosts(prev => reset ? newPosts : [...prev, ...newPosts]);
+    setHasMore(newPosts.length === PAGE_SIZE);
+    if (!reset) setPage(p => p + 1);
     setLoading(false);
   };
 
-  React.useEffect(() => { loadPosts(); }, []);
+  const loadMore = () => {
+    setPage(p => {
+      const next = p + 1;
+      window._sb.from('community_posts')
+        .select('*').order('created_at', { ascending: false })
+        .range(next * PAGE_SIZE, next * PAGE_SIZE + PAGE_SIZE - 1)
+        .then(({ data }) => {
+          const newPosts = data || [];
+          setPosts(prev => [...prev, ...newPosts]);
+          setHasMore(newPosts.length === PAGE_SIZE);
+        });
+      return next;
+    });
+  };
+
+  React.useEffect(() => { loadPosts(true); }, []);
 
   const loadReplies = async (postId) => {
     const { data } = await window._sb.from('community_replies')
@@ -12201,7 +12227,8 @@ const CommunityPage = ({ onNav, authed }) => {
     setForm({ title:'', content:'', process:'', quantity:'', deadline:'', budget:'', region:'' });
     setShowForm(false);
     setSubmitting(false);
-    loadPosts();
+    setPage(0);
+    loadPosts(true);
   };
 
   const submitReply = async () => {
@@ -12363,6 +12390,20 @@ const CommunityPage = ({ onNav, authed }) => {
           </div>
         ))}
       </div>
+
+      {hasMore && (
+        <div style={{ textAlign:'center', marginTop:20 }}>
+          <button onClick={loadMore} disabled={loading} style={{
+            padding:'12px 32px', background:'#fff', border:'1px solid #e5e7eb',
+            borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:500, color:'#374151',
+          }}>
+            {loading ? '불러오는 중...' : '더보기'}
+          </button>
+        </div>
+      )}
+      {!hasMore && posts.length > 0 && (
+        <p style={{ textAlign:'center', marginTop:20, fontSize:12, color:'#9ca3af' }}>모든 게시물을 불러왔습니다.</p>
+      )}
     </div>
   );
 };
