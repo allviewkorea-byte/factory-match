@@ -755,14 +755,17 @@ def render_article_html(post, body_html, body_md, hero_photo):
   <div class="mg-header-inner">
     <a href="/" class="mg-logo">
       <img src="/logo.svg" alt="공장매칭" class="mg-logo-img" onerror="this.style.display='none'">
-      <span>공장매칭</span>
+      <img src="/logo-text.png" alt="공장매칭 FactoryMatch" class="mg-logo-text" onerror="this.style.display='none'">
     </a>
     <nav class="mg-nav">
       <a href="/">홈</a>
+      <a href="/#ai">AI 상담</a>
       <a href="/#list">제조사 탐색</a>
+      <a href="/">견적 요청</a>
+      <a href="/#grants">정부지원금</a>
       <a href="/magazine/" class="active">매거진</a>
     </nav>
-    <a href="/" class="mg-cta">견적 요청</a>
+    <a href="/" class="mg-cta">로그인 및 가입하기</a>
   </div>
 </header>
 
@@ -779,7 +782,6 @@ def render_article_html(post, body_html, body_md, hero_photo):
     <p class="mg-article-subtitle" itemprop="description">{meta_desc}</p>
     <div class="mg-article-meta">
       <span>📅 {post["published_at"][:10]}</span>
-      <span>👁 {post.get("views", 0)}</span>
       <span>⏱ 5분 읽기</span>
     </div>
   </div>

@@ -18,16 +18,17 @@
   <div class="mg-header-inner">
     <a href="/" class="mg-logo">
       <img src="/logo.svg" alt="공장매칭" class="mg-logo-img" onerror="this.style.display='none'">
-      <span>공장매칭</span>
+      <img src="/logo-text.png" alt="공장매칭 FactoryMatch" class="mg-logo-text" onerror="this.style.display='none'">
     </a>
     <nav class="mg-nav">
       <a href="/">홈</a>
       <a href="/#ai">AI 상담</a>
       <a href="/#list">제조사 탐색</a>
+      <a href="/">견적 요청</a>
       <a href="/#grants">정부지원금</a>
       <a href="/magazine/" class="active">매거진</a>
     </nav>
-    <a href="/" class="mg-cta">견적 요청</a>
+    <a href="/" class="mg-cta">로그인 및 가입하기</a>
   </div>
 </header>
 
@@ -94,15 +95,12 @@ function renderPosts() {
   }
   grid.innerHTML = filtered.map(p => `
     <a href="/magazine/posts/${p.slug}/" class="mg-card">
-      <div class="mg-thumb" style="background-image:url('${p.thumbnail_url}')">
-        ${p.count_label ? `<span class="mg-thumb-overlay">${p.count_label}</span>` : ''}
-      </div>
+      <div class="mg-thumb" style="background-image:url('${p.thumbnail_url}')"></div>
       <div class="mg-card-body">
         <span class="mg-card-tag">${CATEGORY_LABELS[p.category] || p.category}</span>
         <h3 class="mg-card-title">${p.title}</h3>
         <div class="mg-card-meta">
           <span>${formatDate(p.published_at)}</span>
-          <span>👁 ${p.views || 0}</span>
         </div>
       </div>
     </a>

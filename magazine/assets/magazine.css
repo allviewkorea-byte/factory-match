@@ -36,6 +36,7 @@ a { color: inherit; text-decoration: none; }
   color: #1d4ed8;
 }
 .mg-logo-img { width: 36px; height: 36px; }
+.mg-logo-text { height: 20px; width: auto; }
 .mg-nav { display: flex; gap: 24px; }
 .mg-nav a {
   font-size: 14px;
