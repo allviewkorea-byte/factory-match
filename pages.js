@@ -1270,8 +1270,6 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
     <div className="page page-home">
       <ParticleCanvas />
       <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
-        {!hasResults && <div className="home-hero-photo home-hero-photo-left"/>}
-        {!hasResults && <div className="home-hero-photo home-hero-photo-right"/>}
         {!hasResults && <h1 className="home-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="home-headline-accent">제조공장</span></h1>}
         {!hasResults && <p className="home-subline">{HOME_SUBLINE}</p>}
 
