@@ -23,3 +23,4 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 - `README.md` — this file
 - `chats/` — conversation transcripts (read these!)
 - `project/` — the `공장매칭` project files (HTML prototypes, assets, components)
+<!-- Claude 커밋 테스트 2026-05-17 00:13:25 KST -->
