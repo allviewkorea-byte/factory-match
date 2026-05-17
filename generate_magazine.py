@@ -239,6 +239,102 @@ SEO_KEYWORD_TOPICS = [
      "title": "금속가공 발주 전 꼭 확인해야 할 체크리스트 6가지",
      "meta_desc": "금속가공 발주 시 도면 규격, 소재 지정, 공차 기준, 표면처리 요구사항, 샘플 검수 기준을 사전에 정리하는 방법.",
      "kw_unsplash": "metal parts manufacturing"},
+
+    # ── 엑셀 연관키워드 분석 신규 발굴 ───────────────────────────
+    # 한국봉제공장 (월 1,300) — 미커버
+    {"type": "guide", "kw": "한국 봉제공장 찾는 법",
+     "title": "한국 봉제공장 찾는 법: 국내 의류 위탁 생산 완벽 가이드",
+     "meta_desc": "한국 봉제공장에 의류 위탁 생산을 의뢰할 때 꼭 확인해야 할 MOQ, 샘플비, 납기, 품질 기준을 정리했습니다.",
+     "kw_unsplash": "korea garment sewing factory"},
+    {"type": "compare", "kw": "한국봉제공장 vs 중국공장",
+     "title": "한국 봉제공장 vs 중국 공장: 비용·품질·납기 비교 가이드",
+     "meta_desc": "한국 봉제공장과 중국 의류 공장의 실제 단가 차이, 품질 수준, 납기, 샘플 커뮤니케이션을 비교합니다.",
+     "kw_unsplash": "garment factory comparison"},
+
+    # 레이저가공 (월 970) — 미커버
+    {"type": "guide", "kw": "레이저가공 업체 선정 방법",
+     "title": "레이저 가공 업체 선정 방법: 재질별 단가·공차·납기 가이드",
+     "meta_desc": "레이저 가공 업체 선정 시 확인해야 할 소재별(SUS·알루미늄·아크릴) 단가 구조, 공차 기준, 납기 협의 방법을 정리했습니다.",
+     "kw_unsplash": "laser cutting factory metal"},
+    {"type": "checklist", "kw": "레이저가공 발주 체크리스트",
+     "title": "레이저 가공 발주 전 꼭 챙겨야 할 체크리스트 5가지",
+     "meta_desc": "레이저 가공 발주 시 도면 DXF 파일 준비, 소재 두께 지정, 후처리 요구사항, 수량별 단가 확인 방법을 정리했습니다.",
+     "kw_unsplash": "laser cutting precision"},
+
+    # 중국OEM (월 960) — 미커버 (기존엔 국내vs중국 비교만 있음)
+    {"type": "guide", "kw": "중국 OEM 공장 찾는 법",
+     "title": "중국 OEM 공장 찾는 법: 알리바바부터 직접 발굴까지 완벽 가이드",
+     "meta_desc": "중국 OEM 공장을 찾는 방법, 샘플 주문 프로세스, 품질 검수, 결제 조건, 리스크 관리 방법을 정리했습니다.",
+     "kw_unsplash": "china oem factory manufacturing"},
+    {"type": "compare", "kw": "중국OEM vs 국내공장 실제 비용 비교",
+     "title": "중국 OEM vs 국내 공장: 실제 비용·리스크·납기 완벽 비교",
+     "meta_desc": "중국 OEM과 국내 공장의 실제 단가 차이, 물류비, 품질 불량률, 납기 리스크를 항목별로 비교합니다.",
+     "kw_unsplash": "china korea manufacturing comparison"},
+
+    # 화장품공장 (월 360) — 미커버, 고부가가치 바이어
+    {"type": "guide", "kw": "화장품 공장 OEM 의뢰 방법",
+     "title": "화장품 공장 OEM 의뢰 방법: 식약처 인증부터 소량 생산까지",
+     "meta_desc": "화장품 공장에 OEM을 의뢰할 때 꼭 확인해야 할 식약처 등록, GMP 인증, 최소 수량, 성분 기준을 정리했습니다.",
+     "kw_unsplash": "cosmetics manufacturing factory"},
+    {"type": "checklist", "kw": "화장품 OEM 공장 선정 체크리스트",
+     "title": "화장품 OEM 공장 선정 전 꼭 확인해야 할 체크리스트 7가지",
+     "meta_desc": "화장품 OEM 공장 선정 시 식약처 등록 여부, GMP 인증, 성분 데이터베이스, 책임판매업 지원 여부 확인 방법.",
+     "kw_unsplash": "cosmetics production quality"},
+
+    # 사출성형 / 사출금형 longtail (월 380 / 690) — 사출 직접 타겟 강화
+    {"type": "guide", "kw": "사출성형 공정 이해 가이드",
+     "title": "사출성형 공정 완벽 이해: 수지 선택부터 금형 설계까지",
+     "meta_desc": "사출성형 공정의 원리, 수지별 특성(PP·ABS·PC·나일론), 금형 설계 기준, 불량 유형과 원인을 정리했습니다.",
+     "kw_unsplash": "injection molding process plastic"},
+    {"type": "guide", "kw": "사출금형 제작 비용과 기간",
+     "title": "사출금형 제작 비용과 기간: 견적 받기 전 꼭 알아야 할 것들",
+     "meta_desc": "사출금형 제작 비용 구성, 캐비티 수에 따른 단가 차이, 스틸 종류(P20·H13·S136), 제작 기간 기준을 정리했습니다.",
+     "kw_unsplash": "injection mold tooling steel"},
+
+    # 식품제조 (월 2,040) — 바이어 의도 명확
+    {"type": "guide", "kw": "식품제조 업체 찾는 법",
+     "title": "식품제조 업체 찾는 법: OEM·위탁 생산 의뢰 전 꼭 알아야 할 5가지",
+     "meta_desc": "식품제조 업체에 OEM·위탁 생산을 의뢰할 때 꼭 확인해야 할 HACCP 인증, MOQ, 소분 포장, 유통기한 설정 방법을 정리했습니다.",
+     "kw_unsplash": "food manufacturing factory"},
+    {"type": "recommend", "kw": "식품제조 공장 추천", "count": 5,
+     "industry": "food", "region": "경기",
+     "title": "경기도 식품제조 공장 추천 5선: 위탁 생산 의뢰 가이드",
+     "meta_desc": "경기도 식품제조 공장 5곳을 소개합니다. HACCP 인증, 소량 OEM 가능 업체 위주로 선정했습니다.",
+     "kw_unsplash": "food manufacturing factory"},
+    {"type": "compare", "kw": "식품제조 OEM ODM 차이",
+     "title": "식품제조 OEM vs ODM: 자체 레시피·위탁 생산 방식 완벽 비교",
+     "meta_desc": "식품제조 OEM(주문자 생산)과 ODM(제조사 개발)의 차이, 비용 구조, 라벨링 권리를 비교합니다.",
+     "kw_unsplash": "food production oem"},
+
+    # 임가공 (월 1,440) — 바이어 의도 명확
+    {"type": "guide", "kw": "임가공 업체 견적 받는 법",
+     "title": "임가공 업체 견적 받는 법: 단가 구조와 발주 조건 완벽 가이드",
+     "meta_desc": "임가공 업체에 견적을 요청할 때 꼭 확인해야 할 가공비 구조, MOQ, 재료 지급 방식, 납기 협의 방법을 정리했습니다.",
+     "kw_unsplash": "contract manufacturing factory"},
+    {"type": "checklist", "kw": "임가공 계약 체크리스트",
+     "title": "임가공 계약 전 꼭 확인해야 할 체크리스트 7가지",
+     "meta_desc": "임가공 계약 시 불량률 기준, 재료 손실률, 지식재산권 귀속, 하도급 금지 조항 등 핵심 항목을 정리했습니다.",
+     "kw_unsplash": "manufacturing contract agreement"},
+
+    # 굿즈소량제작 (월 530) — 스타트업·1인 브랜드 바이어
+    {"type": "guide", "kw": "굿즈소량제작 업체 찾는 법",
+     "title": "굿즈 소량 제작 업체 찾는 법: 최소 수량·비용·납기 완벽 가이드",
+     "meta_desc": "굿즈 소량 제작 업체 선정 시 최소 발주 수량(MOQ), 인쇄 방식, 샘플 비용, 납기 기준을 정리했습니다. 스타트업·크리에이터 필독.",
+     "kw_unsplash": "custom goods small batch production"},
+    {"type": "compare", "kw": "굿즈소량제작 인쇄 방식 비교",
+     "title": "굿즈 소량 제작 인쇄 방식 비교: 실크스크린·DTG·승화전사 어떤 걸 골라야 할까",
+     "meta_desc": "굿즈 소량 제작 시 실크스크린, DTG 디지털 직접 인쇄, 승화전사 방식을 비용·최소수량·색상 구현력 기준으로 비교합니다.",
+     "kw_unsplash": "custom printing goods merchandise"},
+
+    # 금속가공 (월 430) — B2B 바이어 의도 명확
+    {"type": "guide", "kw": "금속가공 업체 선정 방법",
+     "title": "금속가공 업체 선정 방법: 공차·소재·단가 기준 완벽 가이드",
+     "meta_desc": "금속가공 업체 선정 시 확인해야 할 가공 공차 기준, 소재별 가격 차이, 표면처리 옵션, 납기 협의 방법을 정리했습니다.",
+     "kw_unsplash": "metal machining factory"},
+    {"type": "checklist", "kw": "금속가공 발주 체크리스트",
+     "title": "금속가공 발주 전 꼭 확인해야 할 체크리스트 6가지",
+     "meta_desc": "금속가공 발주 시 도면 규격, 소재 지정, 공차 기준, 표면처리 요구사항, 샘플 검수 기준을 사전에 정리하는 방법.",
+     "kw_unsplash": "metal parts manufacturing"},
 ]
 
 # 추천 글 전용 SEO 타이틀 템플릿 (지역 × 산업 × 카운트)
@@ -689,6 +785,12 @@ def render_article_html(post, body_html, body_md, hero_photo):
 
   <div class="mg-tags">
     {hashtags_html}
+  </div>
+
+  <div class="mg-cta-box" style="margin:2rem 0;padding:2rem;background:#eff6ff;border-radius:12px;text-align:center;border:1px solid #bfdbfe">
+    <p style="font-size:16px;font-weight:700;color:#1e40af;margin:0 0 8px">{post.get("industry_name") or "제조"} 공장, 지금 바로 견적 요청해보세요</p>
+    <p style="font-size:13px;color:#3b82f6;margin:0 0 16px">공장매칭에 등록된 217,054개 제조사 중 딱 맞는 곳을 찾아드립니다</p>
+    <a href="/?utm_source=magazine&utm_medium=cta&utm_campaign={post['slug']}" style="display:inline-block;background:#1d4ed8;color:#fff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px;text-decoration:none">무료 견적 요청하기 →</a>
   </div>
 </article>
 
