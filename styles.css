@@ -5788,34 +5788,30 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 
-.home-hero-img {
+.home-hero-bg-left,
+.home-hero-bg-right {
   position: absolute;
   top: 0;
-  height: 100%;
-  width: 28%;
-  object-fit: cover;
+  bottom: 0;
+  width: 30%;
+  background-size: cover;
+  background-position: center;
   z-index: 0;
   pointer-events: none;
 }
-.home-hero-img-left {
+.home-hero-bg-left {
   left: 0;
-  -webkit-mask-image: linear-gradient(to right, black 0%, black 40%, transparent 100%);
-  mask-image: linear-gradient(to right, black 0%, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+  mask-image: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
 }
-.home-hero-img-right {
+.home-hero-bg-right {
   right: 0;
-  -webkit-mask-image: linear-gradient(to left, black 0%, black 40%, transparent 100%);
-  mask-image: linear-gradient(to left, black 0%, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+  mask-image: linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
 }
-
-/* 히어로 콘텐츠가 사진 위에 오도록 */
-.home-hero > *:not(.home-hero-img) {
-  position: relative;
-  z-index: 2;
-}
-
 @media (max-width: 960px) {
-  .home-hero-img { display: none; }
+  .home-hero-bg-left,
+  .home-hero-bg-right { display: none; }
 }
 
 .home-headline {
