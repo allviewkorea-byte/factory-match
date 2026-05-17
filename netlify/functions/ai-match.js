@@ -378,32 +378,37 @@ exports.handler = async (event) => {
   }
 
   const st = result.searchTerms || {};
+  const STOPWORDS = new Set(['찾아','찾아요','만들','만들어','주세요','있나요','알려줘','추천','업체','공장','제조','제작','가능한','어디','해줄','해주세요','소량','대량','개','개월','주','곳','데','곳이','해요']);
+
+  const queryKeywords = query
+    .split(/[\s,·]+/)
+    .filter(w => w.length >= 2 && !STOPWORDS.has(w));
+
   const searchKeywords = [
     ...(st.keywords || []),
     ...(st.materials || []),
-    ...query.split(/[\s,·]+/).filter(w => w.length >= 2),
+    ...queryKeywords,
   ];
 
   const factories = await fetchFactoriesByKeywords([...new Set(searchKeywords)]).catch(() => []);
 
   if (factories.length > 0) {
-    const actualMax = factories
-      .map(f => scoreFactory(f, st))
-      .reduce((a, b) => Math.max(a, b), 1);
-
     const scored = factories
       .map(f => ({ id: f.id, _score: scoreFactory(f, st) }))
-      .filter(f => f._score > 0)
+      .filter(f => f._score >= 40)  // 최소 점수 기준 — 관련 없는 공장 제외
       .sort((a, b) => b._score - a._score)
-      .slice(0, 6)
-      .map(f => ({
-        id: f.id,
-        matchPct: actualMax > 0
-          ? Math.min(98, Math.max(38, Math.round((f._score / actualMax) * 100)))
-          : 60,
-      }));
+      .slice(0, 6);
 
-    result.matchedFactories = scored;
+    if (scored.length > 0) {
+      const topScore = scored[0]._score;
+      result.matchedFactories = scored.map(f => ({
+        id: f.id,
+        // topScore 대비 비율이지만 최소 40% 보장, 최대 96%로 제한
+        matchPct: Math.min(96, Math.max(40, Math.round((f._score / topScore) * 96))),
+      }));
+    } else {
+      result.matchedFactories = [];
+    }
   } else {
     result.matchedFactories = [];
   }
