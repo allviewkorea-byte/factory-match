@@ -12363,30 +12363,41 @@ const CommunityPage = ({ onNav, authed }) => {
           <p style={{ fontSize:13 }}>첫 번째로 제조 의뢰를 올려보세요!</p>
         </div>
       )}
-      <div style={{ display:'grid', gap:12 }}>
-        {posts.map(p => (
-          <div key={p.id} onClick={() => openPost(p)} style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:12, padding:'18px 20px', cursor:'pointer', transition:'box-shadow 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <span style={{ fontSize:11, background: p.status==='open' ? '#dcfce7' : '#f3f4f6', color: p.status==='open' ? '#16a34a' : '#9ca3af', padding:'2px 7px', borderRadius:4, fontWeight:600, marginRight:8 }}>
+      {/* 게시판 테이블 헤더 */}
+      <div style={{ display:'grid', gridTemplateColumns:'50px 1fr 90px 80px 60px', gap:0, padding:'10px 16px', background:'#f9fafb', border:'1px solid #e5e7eb', borderRadius:'10px 10px 0 0', fontSize:12, fontWeight:600, color:'#6b7280' }}>
+        <span style={{ textAlign:'center' }}>번호</span>
+        <span>제목</span>
+        <span style={{ textAlign:'center' }}>작성자</span>
+        <span style={{ textAlign:'center' }}>게시일</span>
+        <span style={{ textAlign:'center' }}>조회</span>
+      </div>
+
+      <div style={{ border:'1px solid #e5e7eb', borderTop:'none', borderRadius:'0 0 10px 10px', overflow:'hidden' }}>
+        {posts.map((p, idx) => (
+          <div key={p.id} onClick={() => openPost(p)}
+            style={{ display:'grid', gridTemplateColumns:'50px 1fr 90px 80px 60px', gap:0, padding:'14px 16px', borderBottom:'1px solid #f3f4f6', cursor:'pointer', background:'#fff', transition:'background 0.1s', alignItems:'center' }}
+            onMouseEnter={e => e.currentTarget.style.background='#f8faff'}
+            onMouseLeave={e => e.currentTarget.style.background='#fff'}>
+            <span style={{ textAlign:'center', fontSize:12, color:'#9ca3af' }}>{idx + 1}</span>
+            <div style={{ minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                <span style={{ fontSize:11, padding:'2px 6px', borderRadius:4, fontWeight:600, whiteSpace:'nowrap',
+                  background: p.status==='open' ? '#dcfce7' : '#f3f4f6',
+                  color: p.status==='open' ? '#16a34a' : '#9ca3af' }}>
                   {p.status === 'open' ? '모집중' : '마감'}
                 </span>
-                <span style={{ fontSize:15, fontWeight:600, color:'#111827' }}>{p.title}</span>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
-                  {p.process && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>⚙️ {p.process}</span>}
-                  {p.quantity && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📦 {p.quantity}</span>}
-                  {p.region && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📍 {p.region}</span>}
-                  {p.deadline && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📅 {p.deadline}</span>}
-                </div>
+                <span style={{ fontSize:14, fontWeight:600, color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.title}</span>
               </div>
-              <div style={{ textAlign:'right', fontSize:11, color:'#9ca3af', flexShrink:0 }}>
-                <div>{p.author_name}</div>
-                <div>{fmtDate(p.created_at)}</div>
-                <div style={{ marginTop:4 }}>👁 {p.views||0}</div>
+              <div style={{ display:'flex', gap:5, marginTop:5, flexWrap:'wrap' }}>
+                {p.process  && <span style={{ fontSize:11, background:'#f3f4f6', padding:'2px 6px', borderRadius:4, color:'#6b7280' }}>⚙️ {p.process}</span>}
+                {p.quantity && <span style={{ fontSize:11, background:'#f3f4f6', padding:'2px 6px', borderRadius:4, color:'#6b7280' }}>📦 {p.quantity}</span>}
+                {p.region   && <span style={{ fontSize:11, background:'#f3f4f6', padding:'2px 6px', borderRadius:4, color:'#6b7280' }}>📍 {p.region}</span>}
+                {p.deadline && <span style={{ fontSize:11, background:'#f3f4f6', padding:'2px 6px', borderRadius:4, color:'#6b7280' }}>📅 {p.deadline}</span>}
               </div>
             </div>
+            <span style={{ textAlign:'center', fontSize:12, color:'#374151', fontWeight:500 }}>{p.author_name}</span>
+            <span style={{ textAlign:'center', fontSize:12, color:'#9ca3af' }}>{fmtDate(p.created_at)}</span>
+            <span style={{ textAlign:'center', fontSize:12, color:'#9ca3af' }}>👁 {p.views||0}</span>
           </div>
         ))}
       </div>
