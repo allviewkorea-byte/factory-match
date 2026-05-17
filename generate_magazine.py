@@ -324,6 +324,48 @@ SEO_KEYWORD_TOPICS = [
      "title": "금속가공 발주 전 꼭 확인해야 할 체크리스트 6가지",
      "meta_desc": "금속가공 발주 시 도면 규격, 소재 지정, 공차 기준, 표면처리 요구사항, 샘플 검수 기준을 사전에 정리하는 방법.",
      "kw_unsplash": "metal parts manufacturing"},
+
+    # ── 케이스 스터디 ─────────────────────────────────────────
+    {"type": "case", "kw": "스타트업 OEM 공장 찾기 사례",
+     "title": "스타트업이 첫 OEM 공장 찾는 데 걸린 3개월: 실전 후기",
+     "meta_desc": "아이디어만 있던 스타트업이 OEM 공장을 찾고 첫 양산까지 가는 과정을 담았습니다. 시행착오와 실전 노하우를 공유합니다.",
+     "kw_unsplash": "startup manufacturing factory"},
+    {"type": "case", "kw": "플라스틱 사출 금형비 절감 사례",
+     "title": "금형비 40% 줄인 실전 사례: 설계 단계부터 바꾼 것들",
+     "meta_desc": "플라스틱 사출 제품 개발 과정에서 DFM 설계 변경으로 금형비를 40% 절감한 실제 사례를 정리했습니다.",
+     "kw_unsplash": "plastic injection mold design"},
+    {"type": "case", "kw": "의류 ODM 소량 생산 성공 사례",
+     "title": "100장 소량 생산으로 시작한 의류 브랜드: 봉제 공장 찾기부터 납품까지",
+     "meta_desc": "의류 스타트업이 소량 봉제 공장을 찾고 첫 컬렉션을 출시하기까지의 과정을 단계별로 정리했습니다.",
+     "kw_unsplash": "small batch garment production"},
+    {"type": "case", "kw": "CNC 가공 협력사 변경 사례",
+     "title": "CNC 협력사 바꾸고 납기 2주 단축한 실전 사례",
+     "meta_desc": "납기 지연과 품질 문제로 CNC 가공 협력사를 교체한 실제 경험담. 업체 평가 기준과 전환 과정을 공유합니다.",
+     "kw_unsplash": "cnc machining precision parts"},
+    {"type": "case", "kw": "식품 OEM 공장 선정 사례",
+     "title": "건강기능식품 OEM 공장 선정 과정: HACCP 검증부터 계약까지",
+     "meta_desc": "건강기능식품 브랜드가 OEM 공장을 선정하면서 HACCP 인증 확인, 샘플 테스트, 계약 협상까지 거친 실제 과정을 정리했습니다.",
+     "kw_unsplash": "health food supplement manufacturing"},
+    {"type": "case", "kw": "굿즈 소량 제작 첫 발주 후기",
+     "title": "굿즈 300개 첫 발주 후기: 업체 찾기부터 수령까지 겪은 일들",
+     "meta_desc": "크리에이터가 굿즈를 처음 만들면서 겪은 업체 선정, 샘플 확인, 최소 수량 협상, 인쇄 품질 문제 해결 과정을 공유합니다.",
+     "kw_unsplash": "custom merchandise small batch"},
+    {"type": "case", "kw": "중국 OEM에서 국내 공장으로 전환 사례",
+     "title": "중국 OEM 끊고 국내 공장으로 바꾼 이유: 비용·품질·납기 비교",
+     "meta_desc": "3년간 중국 OEM을 사용하다 국내 공장으로 전환한 실제 사례. 단가 차이, 품질 변화, 납기 개선 효과를 수치로 공유합니다.",
+     "kw_unsplash": "domestic manufacturing korea factory"},
+    {"type": "case", "kw": "금속 부품 임가공 업체 발굴 사례",
+     "title": "금속 부품 임가공 업체 3곳 바꿔본 후기: 선정 기준이 달라졌다",
+     "meta_desc": "3개 임가공 업체를 순서대로 사용하면서 배운 것들. 견적서 읽는 법, 불량률 기준, 장기 거래 조건 협상 노하우를 정리했습니다.",
+     "kw_unsplash": "metal parts subcontract manufacturing"},
+    {"type": "case", "kw": "화장품 소량 OEM 시작 사례",
+     "title": "화장품 브랜드 첫 소량 OEM: 식약처 등록부터 라벨 디자인까지",
+     "meta_desc": "1인 화장품 브랜드가 소량 OEM 공장을 선정하고 식약처 등록, 용기 선택, 라벨 디자인까지 진행한 실제 과정을 담았습니다.",
+     "kw_unsplash": "cosmetics small batch manufacturing"},
+    {"type": "case", "kw": "프레스 금형 개발 비용 절감 사례",
+     "title": "프레스 금형 개발비 30% 절감한 방법: 설계 변경과 공장 협상 후기",
+     "meta_desc": "프레스 부품 금형 개발 과정에서 재료비 절감, 공정 단순화, 공장 장기 계약으로 비용을 30% 낮춘 실전 사례를 공유합니다.",
+     "kw_unsplash": "metal press stamping factory"},
 ]
 
 # 추천 글 전용 SEO 타이틀 템플릿 (지역 × 산업 × 카운트)
@@ -567,6 +609,22 @@ def generate_post_content(post_meta):
 4. ## 정리 — 핵심 5가지 요약
 
 실용성에 초점. 각 체크포인트는 구체적인 수치나 기준 포함.
+"""
+    elif post_type == "case":
+        user_prompt = f"""다음 제목으로 케이스 스터디 글을 작성해주세요: "{title}"
+
+**구조:**
+1. 인트로 — 주인공(스타트업/브랜드/제조사)과 상황 소개, 타겟 키워드 포함 (100자 이내)
+2. ## 배경: 어떤 문제가 있었나 — 구체적인 상황 묘사, 수치 포함
+3. ## 해결 과정 ① — 첫 번째 시도, 결과 (키워드 변형어 포함 H2)
+4. ## 해결 과정 ② — 두 번째 접근, 전환점
+5. ## 핵심 결과 — 수치로 표현 (비용 절감 %, 납기 단축 일수 등)
+6. ## 이 경험에서 배운 것 — 독자가 바로 적용할 수 있는 인사이트 3-5가지
+7. ## 자주 묻는 질문 (FAQ) — Q/A 형식 4개 (실제 검색 쿼리 스타일)
+8. ## 정리
+
+스토리텔링 형식으로 생생하게 작성. 구체적인 수치와 에피소드 포함. 
+가상의 사례지만 실제처럼 느껴지도록 디테일하게 작성하세요.
 """
     else:
         user_prompt = f"""다음 제목으로 글을 작성해주세요: "{title}"
