@@ -58,7 +58,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "heroVariant": "split"
 }/*EDITMODE-END*/;
 
-const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search', 'landing', 'grants'];
+const APP_ROUTES = ['home', 'ai', 'list', 'rfq', 'chat', 'detail', 'mypage', 'admin', 'terms', 'privacy', 'report', 'search', 'landing', 'grants', 'community'];
 const AUTH_ROUTES = ['login', 'signup', 'verify', 'forgot'];
 
 // Parse route and factoryId from current URL once at startup
@@ -565,6 +565,7 @@ function App() {
         <AdminPage onOpenFactory={(id) => openFactory(id, 'admin')} onAdminAuth={() => { setAuthed(true); }}/>
       )}
       {route === 'grants' && <GrantsPage onNav={nav} authed={authed} onGate={showGate}/>}
+      {route === 'community' && <CommunityPage onNav={nav} authed={authed}/>}
       {route === 'terms' && <TermsPage />}
       {route === 'privacy' && <PrivacyPage />}
       {route === 'report' && <ReportPage params={reportParams} onNav={nav}/>}

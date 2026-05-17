@@ -70,6 +70,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
     { id: 'rfq',    label: '견적 요청', badge: rfqCount > 0 ? rfqCount : null },
     { id: 'grants', label: '정부지원금' },
     { id: 'magazine', label: '매거진', external: '/magazine/' },
+    { id: 'community', label: '게시판' },
     // { id: 'chat',  label: '채팅' },  // 채팅 탭 — 추후 활성화
   ];
   const isCompact = density === 'compact';
@@ -2937,6 +2938,7 @@ const DetailSideInfo = ({ f, indLabels }) => {
           <span className="detail-email-notice">
             {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
           </span>
+          {!f.email && <EmailAlertButton factoryId={f.id} factoryName={f.name} />}
         </dd></>
         {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
         {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
@@ -3846,6 +3848,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   <span className="detail-email-notice">
                     {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
                   </span>
+                  {!f.email && <EmailAlertButton factoryId={f.id} factoryName={f.name} />}
                 </dd></>
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
                 {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
@@ -12062,6 +12065,223 @@ const SiteFooter = ({ onNav }) => (
 );
 
 Object.assign(window, { TermsPage, PrivacyPage, ReportPage, SiteFooter });
+
+// ─────────────────────────────────────────────────────────────
+// EmailAlertButton — 이메일 없는 공장에 수집 시 알림 신청
+// ─────────────────────────────────────────────────────────────
+const EmailAlertButton = ({ factoryId, factoryName }) => {
+  const [status, setStatus] = React.useState('idle'); // idle | loading | done | error
+
+  React.useEffect(() => {
+    if (!window._sb || !factoryId) return;
+    window._sb.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      window._sb.from('factory_email_alerts')
+        .select('id').eq('factory_id', String(factoryId)).eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => { if (data) setStatus('done'); });
+    });
+  }, [factoryId]);
+
+  const handleClick = async () => {
+    if (!window._sb) return;
+    const { data: { user } } = await window._sb.auth.getUser();
+    if (!user) { alert('로그인 후 이용 가능합니다.'); return; }
+    setStatus('loading');
+    const userProfile = await window._sb.from('user_profiles').select('contact_email').eq('id', user.id).maybeSingle();
+    const userEmail = userProfile?.data?.contact_email || user.email || '';
+    const { error } = await window._sb.from('factory_email_alerts').upsert({
+      user_id: user.id, factory_id: String(factoryId),
+      factory_name: factoryName, user_email: userEmail,
+    }, { onConflict: 'user_id,factory_id' });
+    setStatus(error ? 'error' : 'done');
+  };
+
+  if (status === 'done') return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, color:'#10b981', marginTop:4 }}>
+      ✅ 이메일 수집 시 알림 신청됨
+    </span>
+  );
+  return (
+    <button onClick={handleClick} disabled={status === 'loading'} style={{
+      display:'inline-flex', alignItems:'center', gap:4, marginTop:6,
+      padding:'5px 10px', fontSize:11, fontWeight:500, borderRadius:6, cursor:'pointer',
+      background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe',
+    }}>
+      🔔 {status === 'loading' ? '신청 중...' : '이메일 수집 시 알림받기'}
+    </button>
+  );
+};
+Object.assign(window, { EmailAlertButton });
+
+// ─────────────────────────────────────────────────────────────
+// CommunityPage — 제조 의뢰 게시판
+// ─────────────────────────────────────────────────────────────
+const CommunityPage = ({ onNav, authed }) => {
+  const [posts, setPosts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [showForm, setShowForm] = React.useState(false);
+  const [form, setForm] = React.useState({ title:'', content:'', process:'', quantity:'', deadline:'', budget:'', region:'' });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [activePost, setActivePost] = React.useState(null);
+  const [replies, setReplies] = React.useState([]);
+  const [replyText, setReplyText] = React.useState('');
+
+  const loadPosts = async () => {
+    setLoading(true);
+    const { data } = await window._sb.from('community_posts')
+      .select('*').order('created_at', { ascending: false }).limit(50);
+    setPosts(data || []);
+    setLoading(false);
+  };
+
+  React.useEffect(() => { loadPosts(); }, []);
+
+  const loadReplies = async (postId) => {
+    const { data } = await window._sb.from('community_replies')
+      .select('*').eq('post_id', postId).order('created_at', { ascending: true });
+    setReplies(data || []);
+  };
+
+  const openPost = async (post) => {
+    setActivePost(post);
+    await loadReplies(post.id);
+    await window._sb.from('community_posts').update({ views: (post.views||0)+1 }).eq('id', post.id);
+  };
+
+  const submitPost = async () => {
+    if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
+    if (!authed) { onNav?.('login'); return; }
+    setSubmitting(true);
+    const { data: { user } } = await window._sb.auth.getUser();
+    const profile = await window._sb.from('user_profiles').select('contact_name,company_name').eq('id', user.id).maybeSingle();
+    const authorName = profile?.data?.company_name || profile?.data?.contact_name || '익명';
+    await window._sb.from('community_posts').insert({ ...form, user_id: user.id, author_name: authorName });
+    setForm({ title:'', content:'', process:'', quantity:'', deadline:'', budget:'', region:'' });
+    setShowForm(false);
+    setSubmitting(false);
+    loadPosts();
+  };
+
+  const submitReply = async () => {
+    if (!replyText.trim() || !activePost) return;
+    if (!authed) { onNav?.('login'); return; }
+    const { data: { user } } = await window._sb.auth.getUser();
+    const profile = await window._sb.from('user_profiles').select('contact_name,company_name').eq('id', user.id).maybeSingle();
+    const authorName = profile?.data?.company_name || profile?.data?.contact_name || '익명';
+    await window._sb.from('community_replies').insert({ post_id: activePost.id, user_id: user.id, content: replyText, author_name: authorName });
+    setReplyText('');
+    loadReplies(activePost.id);
+  };
+
+  const fmtDate = iso => new Date(iso).toLocaleDateString('ko-KR', { month:'short', day:'numeric' });
+  const inp = { padding:'10px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:13, width:'100%', boxSizing:'border-box' };
+
+  if (activePost) return (
+    <div style={{ maxWidth:780, margin:'0 auto', padding:'24px 20px' }}>
+      <button onClick={() => setActivePost(null)} style={{ background:'none', border:'none', color:'#1d4ed8', cursor:'pointer', fontSize:13, marginBottom:16 }}>← 목록으로</button>
+      <div style={{ background:'#fff', borderRadius:12, padding:'24px', border:'1px solid #e5e7eb', marginBottom:20 }}>
+        <span style={{ fontSize:11, background:'#eff6ff', color:'#1d4ed8', padding:'3px 8px', borderRadius:4, fontWeight:600 }}>의뢰</span>
+        <h2 style={{ fontSize:18, fontWeight:700, margin:'12px 0 8px' }}>{activePost.title}</h2>
+        <p style={{ fontSize:12, color:'#9ca3af', margin:'0 0 16px' }}>{activePost.author_name} · {fmtDate(activePost.created_at)}</p>
+        {activePost.content && <p style={{ fontSize:14, color:'#374151', lineHeight:1.7, marginBottom:16 }}>{activePost.content}</p>}
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+          {activePost.process && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>⚙️ {activePost.process}</span>}
+          {activePost.quantity && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📦 {activePost.quantity}</span>}
+          {activePost.deadline && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📅 {activePost.deadline}</span>}
+          {activePost.budget && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>💰 {activePost.budget}</span>}
+          {activePost.region && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📍 {activePost.region}</span>}
+        </div>
+      </div>
+      <h3 style={{ fontSize:15, fontWeight:600, marginBottom:12 }}>답변 {replies.length}개</h3>
+      {replies.map(r => (
+        <div key={r.id} style={{ background:'#f9fafb', borderRadius:10, padding:'14px 16px', marginBottom:10, border:'1px solid #e5e7eb' }}>
+          <p style={{ fontSize:12, fontWeight:600, color:'#374151', margin:'0 0 6px' }}>{r.author_name} · {fmtDate(r.created_at)}</p>
+          <p style={{ fontSize:13, color:'#374151', margin:0, lineHeight:1.6 }}>{r.content}</p>
+        </div>
+      ))}
+      <div style={{ marginTop:16, display:'flex', gap:8 }}>
+        <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
+          placeholder="답변을 입력하세요 (제조사분들의 답변 환영합니다)"
+          style={{ ...inp, flex:1, minHeight:70, resize:'vertical' }} />
+        <button onClick={submitReply} style={{ padding:'0 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600, whiteSpace:'nowrap' }}>등록</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:900, margin:'0 auto', padding:'24px 20px' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
+        <div>
+          <h1 style={{ fontSize:22, fontWeight:800, margin:0 }}>제조 의뢰 게시판</h1>
+          <p style={{ fontSize:13, color:'#6b7280', margin:'4px 0 0' }}>필요한 제조 조건을 올리면 제조사가 직접 답변해드립니다</p>
+        </div>
+        <button onClick={() => authed ? setShowForm(!showForm) : onNav?.('login')}
+          style={{ padding:'10px 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+          + 의뢰 올리기
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ background:'#f9fafb', border:'1px solid #e5e7eb', borderRadius:12, padding:'20px', marginBottom:24 }}>
+          <h3 style={{ fontSize:15, fontWeight:700, margin:'0 0 16px' }}>제조 의뢰 등록</h3>
+          <div style={{ display:'grid', gap:10 }}>
+            <input value={form.title} onChange={e => setForm({...form,title:e.target.value})} placeholder="제목 (예: 플라스틱 케이스 소량 사출 업체 찾습니다)*" style={inp} />
+            <textarea value={form.content} onChange={e => setForm({...form,content:e.target.value})} placeholder="상세 내용 (소재, 사이즈, 요구사항 등)" style={{...inp, minHeight:80, resize:'vertical'}} />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <input value={form.process} onChange={e => setForm({...form,process:e.target.value})} placeholder="가공 방식 (예: 사출, CNC)" style={inp} />
+              <input value={form.quantity} onChange={e => setForm({...form,quantity:e.target.value})} placeholder="수량 (예: 500개)" style={inp} />
+              <input value={form.deadline} onChange={e => setForm({...form,deadline:e.target.value})} placeholder="납기 (예: 3주 이내)" style={inp} />
+              <input value={form.budget} onChange={e => setForm({...form,budget:e.target.value})} placeholder="예산 (예: 100만원 이하)" style={inp} />
+              <input value={form.region} onChange={e => setForm({...form,region:e.target.value})} placeholder="희망 지역 (예: 경기, 전국)" style={inp} />
+            </div>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button onClick={() => setShowForm(false)} style={{ padding:'9px 16px', background:'#f3f4f6', border:'1px solid #e5e7eb', borderRadius:8, cursor:'pointer', fontSize:13 }}>취소</button>
+              <button onClick={submitPost} disabled={submitting} style={{ padding:'9px 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+                {submitting ? '등록 중...' : '등록하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading && <div style={{ textAlign:'center', padding:40, color:'#9ca3af' }}>불러오는 중...</div>}
+      {!loading && posts.length === 0 && (
+        <div style={{ textAlign:'center', padding:60, color:'#9ca3af' }}>
+          <p style={{ fontSize:16 }}>아직 등록된 의뢰가 없어요</p>
+          <p style={{ fontSize:13 }}>첫 번째로 제조 의뢰를 올려보세요!</p>
+        </div>
+      )}
+      <div style={{ display:'grid', gap:12 }}>
+        {posts.map(p => (
+          <div key={p.id} onClick={() => openPost(p)} style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:12, padding:'18px 20px', cursor:'pointer', transition:'box-shadow 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
+            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <span style={{ fontSize:11, background: p.status==='open' ? '#dcfce7' : '#f3f4f6', color: p.status==='open' ? '#16a34a' : '#9ca3af', padding:'2px 7px', borderRadius:4, fontWeight:600, marginRight:8 }}>
+                  {p.status === 'open' ? '모집중' : '마감'}
+                </span>
+                <span style={{ fontSize:15, fontWeight:600, color:'#111827' }}>{p.title}</span>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
+                  {p.process && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>⚙️ {p.process}</span>}
+                  {p.quantity && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📦 {p.quantity}</span>}
+                  {p.region && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📍 {p.region}</span>}
+                  {p.deadline && <span style={{ fontSize:11, background:'#f3f4f6', padding:'3px 8px', borderRadius:5 }}>📅 {p.deadline}</span>}
+                </div>
+              </div>
+              <div style={{ textAlign:'right', fontSize:11, color:'#9ca3af', flexShrink:0 }}>
+                <div>{p.author_name}</div>
+                <div>{fmtDate(p.created_at)}</div>
+                <div style={{ marginTop:4 }}>👁 {p.views||0}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+Object.assign(window, { CommunityPage });
 
 
 // tweaks-panel.jsx
