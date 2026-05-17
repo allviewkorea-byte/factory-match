@@ -12215,6 +12215,9 @@ const CommunityPage = ({ onNav, authed }) => {
     await window._sb.from('community_posts').update({ views: (post.views||0)+1 }).eq('id', post.id);
   };
 
+  const [file, setFile] = React.useState(null);
+  const [uploading, setUploading] = React.useState(false);
+
   const submitPost = async () => {
     if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!authed) { onNav?.('login'); return; }
@@ -12222,8 +12225,31 @@ const CommunityPage = ({ onNav, authed }) => {
     const { data: { user } } = await window._sb.auth.getUser();
     const profile = await window._sb.from('user_profiles').select('contact_name,company_name').eq('id', user.id).maybeSingle();
     const authorName = profile?.data?.company_name || profile?.data?.contact_name || '익명';
-    await window._sb.from('community_posts').insert({ ...form, user_id: user.id, author_name: authorName });
+
+    let attachment_url = null;
+    let attachment_name = null;
+
+    if (file) {
+      setUploading(true);
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { data: uploadData, error: uploadError } = await window._sb.storage
+        .from('community-attachments')
+        .upload(path, file, { upsert: true });
+      if (!uploadError && uploadData) {
+        const { data: urlData } = window._sb.storage.from('community-attachments').getPublicUrl(path);
+        attachment_url = urlData?.publicUrl || null;
+        attachment_name = file.name;
+      }
+      setUploading(false);
+    }
+
+    await window._sb.from('community_posts').insert({
+      ...form, user_id: user.id, author_name: authorName,
+      attachment_url, attachment_name,
+    });
     setForm({ title:'', content:'', process:'', quantity:'', deadline:'', budget:'', region:'' });
+    setFile(null);
     setShowForm(false);
     setSubmitting(false);
     setPage(0);
@@ -12294,6 +12320,19 @@ const CommunityPage = ({ onNav, authed }) => {
               {activePost.budget && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>💰 {activePost.budget}</span>}
               {activePost.region && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📍 {activePost.region}</span>}
             </div>
+            {activePost.attachment_url && (
+              <div style={{ marginTop:14, padding:'10px 14px', background:'#f0f9ff', borderRadius:8, border:'1px solid #bae6fd', display:'inline-flex', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:13 }}>📎</span>
+                <a href={activePost.attachment_url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize:13, color:'#0369a1', fontWeight:500, textDecoration:'none' }}>
+                  {activePost.attachment_name || '첨부파일 열기'}
+                </a>
+                <a href={activePost.attachment_url} download={activePost.attachment_name}
+                  style={{ fontSize:11, color:'#6b7280', textDecoration:'none', padding:'2px 8px', background:'#e0f2fe', borderRadius:4 }}>
+                  다운로드
+                </a>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -12345,10 +12384,17 @@ const CommunityPage = ({ onNav, authed }) => {
               <input value={form.budget} onChange={e => setForm({...form,budget:e.target.value})} placeholder="예산 (예: 100만원 이하)" style={inp} />
               <input value={form.region} onChange={e => setForm({...form,region:e.target.value})} placeholder="희망 지역 (예: 경기, 전국)" style={inp} />
             </div>
+            <div style={{ marginTop:4 }}>
+              <label style={{ fontSize:12, color:'#6b7280', display:'block', marginBottom:6 }}>📎 첨부파일 (도면, 사양서 등 — 선택)</label>
+              <input type="file" accept=".pdf,.dwg,.dxf,.xlsx,.xls,.docx,.doc,.png,.jpg,.jpeg,.zip"
+                onChange={e => setFile(e.target.files[0] || null)}
+                style={{ fontSize:12, color:'#374151' }} />
+              {file && <span style={{ fontSize:11, color:'#1d4ed8', marginLeft:8 }}>{file.name}</span>}
+            </div>
             <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-              <button onClick={() => setShowForm(false)} style={{ padding:'9px 16px', background:'#f3f4f6', border:'1px solid #e5e7eb', borderRadius:8, cursor:'pointer', fontSize:13 }}>취소</button>
-              <button onClick={submitPost} disabled={submitting} style={{ padding:'9px 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-                {submitting ? '등록 중...' : '등록하기'}
+              <button onClick={() => { setShowForm(false); setFile(null); }} style={{ padding:'9px 16px', background:'#f3f4f6', border:'1px solid #e5e7eb', borderRadius:8, cursor:'pointer', fontSize:13 }}>취소</button>
+              <button onClick={submitPost} disabled={submitting || uploading} style={{ padding:'9px 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
+                {uploading ? '업로드 중...' : submitting ? '등록 중...' : '등록하기'}
               </button>
             </div>
           </div>
