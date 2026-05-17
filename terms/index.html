@@ -22,8 +22,32 @@
   <div class="mg-header-inner">
     <a href="/" class="mg-logo"><img src="/logo.svg" alt="공장매칭" class="mg-logo-img" onerror="this.style.display='none'"><img src="/logo-text.png" alt="공장매칭 FactoryMatch" class="mg-logo-text" onerror="this.style.display='none'"></a>
     <nav class="mg-nav"><a href="/">홈</a><a href="/#list">제조사 탐색</a><a href="/magazine/">매거진</a></nav>
+    <a href="/" class="mg-cta" id="mg-header-cta">로그인 및 가입하기</a>
   </div>
 </header>
+<script>
+(function() {
+  const SUPA_URL = 'https://yezxwlzyiqgewpkkyget.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs';
+  fetch(SUPA_URL + '/auth/v1/user', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + (
+      (() => { try {
+        const k = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (!k) return '';
+        const d = JSON.parse(localStorage.getItem(k));
+        return d?.access_token || '';
+      } catch(e) { return ''; } })()
+    )}
+  }).then(r => r.ok ? r.json() : null).then(user => {
+    const cta = document.getElementById('mg-header-cta');
+    if (!cta) return;
+    if (user && user.id) {
+      cta.textContent = '견적 요청';
+      cta.href = '/?utm_source=magazine&utm_medium=header_cta#rfq';
+    }
+  }).catch(() => {});
+})();
+</script>
 
 <div class="legal-wrap">
   <h1>이용약관</h1>
