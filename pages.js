@@ -12378,7 +12378,7 @@ const CommunityPage = ({ onNav, authed }) => {
             style={{ display:'grid', gridTemplateColumns:'50px 1fr 90px 80px 60px', gap:0, padding:'14px 16px', borderBottom:'1px solid #f3f4f6', cursor:'pointer', background:'#fff', transition:'background 0.1s', alignItems:'center' }}
             onMouseEnter={e => e.currentTarget.style.background='#f8faff'}
             onMouseLeave={e => e.currentTarget.style.background='#fff'}>
-            <span style={{ textAlign:'center', fontSize:12, color:'#9ca3af' }}>{idx + 1}</span>
+            <span style={{ textAlign:'center', fontSize:12, color:'#9ca3af' }}>{posts.length - idx}</span>
             <div style={{ minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                 <span style={{ fontSize:11, padding:'2px 6px', borderRadius:4, fontWeight:600, whiteSpace:'nowrap',
