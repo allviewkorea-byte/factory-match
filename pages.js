@@ -12125,6 +12125,48 @@ const CommunityPage = ({ onNav, authed }) => {
   const [activePost, setActivePost] = React.useState(null);
   const [replies, setReplies] = React.useState([]);
   const [replyText, setReplyText] = React.useState('');
+  const [currentUserId, setCurrentUserId] = React.useState(null);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [editingPost, setEditingPost] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({});
+
+  React.useEffect(() => {
+    window._sb?.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setCurrentUserId(user.id);
+      window._sb.from('user_profiles').select('user_type').eq('id', user.id).maybeSingle()
+        .then(({ data }) => { if (data?.user_type === 'admin') setIsAdmin(true); });
+    });
+  }, []);
+
+  const canManage = (post) => isAdmin || post.user_id === currentUserId;
+
+  const deletePost = async (post) => {
+    if (!window.confirm('게시물을 삭제할까요?')) return;
+    await window._sb.from('community_posts').delete().eq('id', post.id);
+    setActivePost(null);
+    loadPosts();
+  };
+
+  const toggleStatus = async (post) => {
+    const next = post.status === 'open' ? 'closed' : 'open';
+    await window._sb.from('community_posts').update({ status: next }).eq('id', post.id);
+    setActivePost({ ...post, status: next });
+    loadPosts();
+  };
+
+  const saveEdit = async () => {
+    await window._sb.from('community_posts').update(editForm).eq('id', activePost.id);
+    setActivePost({ ...activePost, ...editForm });
+    setEditingPost(false);
+    loadPosts();
+  };
+
+  const deleteReply = async (replyId) => {
+    if (!window.confirm('댓글을 삭제할까요?')) return;
+    await window._sb.from('community_replies').delete().eq('id', replyId);
+    loadReplies(activePost.id);
+  };
 
   const loadPosts = async () => {
     setLoading(true);
@@ -12178,31 +12220,74 @@ const CommunityPage = ({ onNav, authed }) => {
 
   if (activePost) return (
     <div style={{ maxWidth:780, margin:'0 auto', padding:'24px 20px' }}>
-      <button onClick={() => setActivePost(null)} style={{ background:'none', border:'none', color:'#1d4ed8', cursor:'pointer', fontSize:13, marginBottom:16 }}>← 목록으로</button>
+      <button onClick={() => { setActivePost(null); setEditingPost(false); }} style={{ background:'none', border:'none', color:'#1d4ed8', cursor:'pointer', fontSize:13, marginBottom:16 }}>← 목록으로</button>
       <div style={{ background:'#fff', borderRadius:12, padding:'24px', border:'1px solid #e5e7eb', marginBottom:20 }}>
-        <span style={{ fontSize:11, background:'#eff6ff', color:'#1d4ed8', padding:'3px 8px', borderRadius:4, fontWeight:600 }}>의뢰</span>
-        <h2 style={{ fontSize:18, fontWeight:700, margin:'12px 0 8px' }}>{activePost.title}</h2>
-        <p style={{ fontSize:12, color:'#9ca3af', margin:'0 0 16px' }}>{activePost.author_name} · {fmtDate(activePost.created_at)}</p>
-        {activePost.content && <p style={{ fontSize:14, color:'#374151', lineHeight:1.7, marginBottom:16 }}>{activePost.content}</p>}
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-          {activePost.process && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>⚙️ {activePost.process}</span>}
-          {activePost.quantity && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📦 {activePost.quantity}</span>}
-          {activePost.deadline && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📅 {activePost.deadline}</span>}
-          {activePost.budget && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>💰 {activePost.budget}</span>}
-          {activePost.region && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📍 {activePost.region}</span>}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+          <span style={{ fontSize:11, background: activePost.status==='open' ? '#dcfce7' : '#f3f4f6', color: activePost.status==='open' ? '#16a34a' : '#9ca3af', padding:'3px 8px', borderRadius:4, fontWeight:600 }}>
+            {activePost.status === 'open' ? '모집중' : '마감'}
+          </span>
+          {canManage(activePost) && (
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={() => toggleStatus(activePost)} style={{ padding:'5px 10px', fontSize:11, borderRadius:6, cursor:'pointer', border:'1px solid #e5e7eb', background:'#f9fafb', color:'#374151', fontWeight:500 }}>
+                {activePost.status === 'open' ? '🔒 마감 처리' : '🟢 모집 재개'}
+              </button>
+              <button onClick={() => { setEditingPost(true); setEditForm({ title:activePost.title, content:activePost.content, process:activePost.process, quantity:activePost.quantity, deadline:activePost.deadline, budget:activePost.budget, region:activePost.region }); }}
+                style={{ padding:'5px 10px', fontSize:11, borderRadius:6, cursor:'pointer', border:'1px solid #bfdbfe', background:'#eff6ff', color:'#1d4ed8', fontWeight:500 }}>
+                ✏️ 수정
+              </button>
+              <button onClick={() => deletePost(activePost)} style={{ padding:'5px 10px', fontSize:11, borderRadius:6, cursor:'pointer', border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontWeight:500 }}>
+                🗑 삭제
+              </button>
+            </div>
+          )}
         </div>
+
+        {editingPost ? (
+          <div style={{ display:'grid', gap:10 }}>
+            <input value={editForm.title||''} onChange={e => setEditForm({...editForm,title:e.target.value})} style={{ padding:'10px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:14, fontWeight:600 }} />
+            <textarea value={editForm.content||''} onChange={e => setEditForm({...editForm,content:e.target.value})} style={{ padding:'10px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:13, minHeight:80, resize:'vertical' }} />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+              {[['process','가공 방식'],['quantity','수량'],['deadline','납기'],['budget','예산'],['region','희망 지역']].map(([k,ph]) => (
+                <input key={k} value={editForm[k]||''} onChange={e => setEditForm({...editForm,[k]:e.target.value})} placeholder={ph} style={{ padding:'8px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:13 }} />
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button onClick={() => setEditingPost(false)} style={{ padding:'8px 14px', background:'#f3f4f6', border:'1px solid #e5e7eb', borderRadius:8, cursor:'pointer', fontSize:13 }}>취소</button>
+              <button onClick={saveEdit} style={{ padding:'8px 16px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>저장</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h2 style={{ fontSize:18, fontWeight:700, margin:'0 0 8px' }}>{activePost.title}</h2>
+            <p style={{ fontSize:12, color:'#9ca3af', margin:'0 0 16px' }}>{activePost.author_name} · {fmtDate(activePost.created_at)}</p>
+            {activePost.content && <p style={{ fontSize:14, color:'#374151', lineHeight:1.7, marginBottom:16 }}>{activePost.content}</p>}
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {activePost.process && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>⚙️ {activePost.process}</span>}
+              {activePost.quantity && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📦 {activePost.quantity}</span>}
+              {activePost.deadline && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📅 {activePost.deadline}</span>}
+              {activePost.budget && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>💰 {activePost.budget}</span>}
+              {activePost.region && <span style={{ fontSize:12, background:'#f3f4f6', padding:'4px 10px', borderRadius:6 }}>📍 {activePost.region}</span>}
+            </div>
+          </>
+        )}
       </div>
+
       <h3 style={{ fontSize:15, fontWeight:600, marginBottom:12 }}>답변 {replies.length}개</h3>
       {replies.map(r => (
         <div key={r.id} style={{ background:'#f9fafb', borderRadius:10, padding:'14px 16px', marginBottom:10, border:'1px solid #e5e7eb' }}>
-          <p style={{ fontSize:12, fontWeight:600, color:'#374151', margin:'0 0 6px' }}>{r.author_name} · {fmtDate(r.created_at)}</p>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+            <p style={{ fontSize:12, fontWeight:600, color:'#374151', margin:0 }}>{r.author_name} · {fmtDate(r.created_at)}</p>
+            {(isAdmin || r.user_id === currentUserId) && (
+              <button onClick={() => deleteReply(r.id)} style={{ background:'none', border:'none', color:'#ef4444', cursor:'pointer', fontSize:11 }}>삭제</button>
+            )}
+          </div>
           <p style={{ fontSize:13, color:'#374151', margin:0, lineHeight:1.6 }}>{r.content}</p>
         </div>
       ))}
       <div style={{ marginTop:16, display:'flex', gap:8 }}>
         <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
           placeholder="답변을 입력하세요 (제조사분들의 답변 환영합니다)"
-          style={{ ...inp, flex:1, minHeight:70, resize:'vertical' }} />
+          style={{ padding:'10px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:13, flex:1, minHeight:70, resize:'vertical' }} />
         <button onClick={submitReply} style={{ padding:'0 20px', background:'#1d4ed8', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600, whiteSpace:'nowrap' }}>등록</button>
       </div>
     </div>
