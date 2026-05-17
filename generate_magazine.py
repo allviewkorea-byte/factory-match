@@ -412,21 +412,49 @@ def fetch_factories(industry_key, region, count):
     try:
         search_kw = next((ind["name"] for ind in INDUSTRIES if ind["key"] == industry_key), industry_key)
         url = f"{SUPABASE_URL}/rest/v1/factories"
+
+        # 1차: 지역 + 업종 필터
         params = {
-            "select": "id,name,address,business_number,factory_type",
+            "select": "id,name,address,industries,factory_type",
             "limit": str(count * 5),
         }
         if region:
             params["address"] = f"ilike.*{region}*"
-        params["factory_type"] = f"ilike.*{search_kw}*"
+        params["industries"] = f"ilike.*{search_kw}*"
 
         res = requests.get(url, params=params, headers=SUPABASE_HEADERS, timeout=15)
+        rows = []
         if res.status_code == 200:
             rows = res.json() or []
+
+        # 2차: 결과 없으면 factory_type으로 fallback
+        if not rows:
+            params2 = {
+                "select": "id,name,address,industries,factory_type",
+                "limit": str(count * 5),
+                "factory_type": f"ilike.*{search_kw}*",
+            }
+            if region:
+                params2["address"] = f"ilike.*{region}*"
+            res2 = requests.get(url, params=params2, headers=SUPABASE_HEADERS, timeout=15)
+            if res2.status_code == 200:
+                rows = res2.json() or []
+
+        # 3차: 지역 없이 업종만
+        if not rows and region:
+            params3 = {
+                "select": "id,name,address,industries,factory_type",
+                "limit": str(count * 5),
+                "industries": f"ilike.*{search_kw}*",
+            }
+            res3 = requests.get(url, params=params3, headers=SUPABASE_HEADERS, timeout=15)
+            if res3.status_code == 200:
+                rows = res3.json() or []
+
+        if rows:
             random.shuffle(rows)
             return rows[:count]
-        else:
-            print(f"  ⚠️ 공장 조회 응답 코드: {res.status_code}, {res.text[:200]}")
+        print(f"  ⚠️ 공장 조회 결과 없음: {industry_key} / {region}")
     except Exception as e:
         print(f"  ⚠️ 공장 조회 실패: {e}")
     return []
@@ -570,7 +598,7 @@ def generate_post_content(post_meta):
 def render_factories_html(factories):
     """추천 업체 카드 HTML 생성"""
     if not factories:
-        return ""
+        return '<div class="mg-rec-section"><p style="color:#9ca3af;font-size:13px;padding:16px 0">현재 공장매칭에서 관련 제조사를 검색해보세요.</p></div>'
     html = '<div class="mg-rec-section">'
     for i, f in enumerate(factories, 1):
         name = f.get("name", "회사명")
@@ -602,8 +630,7 @@ def markdown_to_html(md, factories_html=""):
     """마크다운 → HTML 변환"""
     html = md
 
-    if factories_html:
-        html = re.sub(r'\[FACTORIES_PLACEHOLDER\]', factories_html, html)
+    html = re.sub(r'\[FACTORIES_PLACEHOLDER\]', factories_html, html)
 
     html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
     html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
