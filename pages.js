@@ -1270,6 +1270,16 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
     <div className="page page-home">
       <ParticleCanvas />
       <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
+        {!hasResults && (
+          <div className="home-hero-bg-left"
+            style={{backgroundImage:"url('https://images.unsplash.com/photo-1565098772267-60af42b81ef2?w=700&q=80')"}}
+          />
+        )}
+        {!hasResults && (
+          <div className="home-hero-bg-right"
+            style={{backgroundImage:"url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=700&q=80')"}}
+          />
+        )}
         {!hasResults && <h1 className="home-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="home-headline-accent">제조공장</span></h1>}
         {!hasResults && <p className="home-subline">{HOME_SUBLINE}</p>}
 
