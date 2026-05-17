@@ -1271,17 +1271,13 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
       <ParticleCanvas />
       <div className={`home-hero ${hasResults ? 'home-hero-compact' : ''}`}>
         {!hasResults && (
-          <img
-            src="https://images.unsplash.com/photo-1565098772267-60af42b81ef2?auto=format&fit=crop&w=600&q=80"
-            alt="CNC 가공 공장"
-            className="home-hero-img home-hero-img-left"
+          <div className="home-hero-bg-left"
+            style={{backgroundImage:"url('https://images.unsplash.com/photo-1565098772267-60af42b81ef2?w=700&q=80')"}}
           />
         )}
         {!hasResults && (
-          <img
-            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=80"
-            alt="스마트 제조 공장"
-            className="home-hero-img home-hero-img-right"
+          <div className="home-hero-bg-right"
+            style={{backgroundImage:"url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=700&q=80')"}}
           />
         )}
         {!hasResults && <h1 className="home-headline">AI가 찾아주는 우리 회사에 딱 맞는 <span className="home-headline-accent">제조공장</span></h1>}
