@@ -5419,8 +5419,17 @@ function OnboardingPage({ onComplete, onNav }) {
   const [role, setRole] = useAuthState(null);
   const [name, setName] = useAuthState('');
   const [companyName, setCompanyName] = useAuthState('');
+  const [phone, setPhone] = useAuthState('');
+  const [email, setEmail] = useAuthState('');
   const [loading, setLoading] = useAuthState(false);
   const [error, setError] = useAuthState('');
+
+  const fmtPhone = (v) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
+    return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+  };
 
   const handleComplete = async () => {
     if (!name.trim()) { setError('이름을 입력해주세요'); return; }
@@ -5437,6 +5446,8 @@ function OnboardingPage({ onComplete, onNav }) {
         contact_name: name.trim(),
         user_type: role,
         company_name: companyName.trim(),
+        contact_phone: phone.trim(),
+        contact_email: email.trim(),
         business_number: '',
         status: 'pending',
       });
@@ -5538,6 +5549,38 @@ function OnboardingPage({ onComplete, onNav }) {
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               placeholder="(주)회사명"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
+
+          {/* 연락처 */}
+          <div>
+            <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
+              연락처 <span style={{color: '#6b7280', fontWeight: 400}}>(선택)</span>
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(fmtPhone(e.target.value))}
+              placeholder="010-1234-5678"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
+
+          {/* 이메일 */}
+          <div>
+            <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
+              이메일 <span style={{color: '#6b7280', fontWeight: 400}}>(선택)</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="example@company.com"
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'}
