@@ -2270,20 +2270,66 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
             </button>
           )}
         </div>
-        <div className="list-search-chips">
-          <Chip active={activeProcess === 'all'} onClick={() => setActiveProcess('all')}>전체</Chip>
-          {PROCESSES.slice(0, 6).map(p => (
-            <Chip
-              key={p.id}
-              active={activeProcess === p.id}
-              onClick={() => setActiveProcess(activeProcess === p.id ? 'all' : p.id)}
-            >
-              {p.label}
-            </Chip>
-          ))}
-          <div className="chip-sep"/>
-          <Chip active={oemOnly} onClick={() => setOemOnly(!oemOnly)}>OEM</Chip>
-          <Chip active={exportOnly} onClick={() => setExportOnly(!exportOnly)}>수출 가능</Chip>
+        <div className="list-search-chips-icon">
+          {[
+            {id:'all',       label:'전체',       emoji:'🏭'},
+            {id:'cnc',       label:'CNC 가공',   emoji:'⚙️'},
+            {id:'injection', label:'사출 성형',  emoji:'🧩'},
+            {id:'press',     label:'프레스',     emoji:'🔨'},
+            {id:'mold',      label:'금형 제작',  emoji:'🔧'},
+            {id:'welding',   label:'용접/제관',  emoji:'🔥'},
+            {id:'casting',   label:'주조',       emoji:'🪣'},
+            {id:'painting',  label:'도장/표면처리',emoji:'🎨'},
+            {id:'sewing',    label:'봉제',       emoji:'🧵'},
+            {id:'laser_cut', label:'레이저 가공',emoji:'⚡'},
+            {id:'foodproc',  label:'식품가공',   emoji:'🍱'},
+            {id:'assembly',  label:'임가공/조립',emoji:'🏗️'},
+          ].map(p => {
+            const isActive = activeProcess === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setActiveProcess(p.id === 'all' ? 'all' : (activeProcess === p.id ? 'all' : p.id))}
+                style={{
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+                  padding:'10px 8px', minWidth:70, borderRadius:10, cursor:'pointer', border:'none',
+                  background: isActive ? '#eff6ff' : '#f9fafb',
+                  outline: isActive ? '2px solid #1d4ed8' : '1px solid #e5e7eb',
+                  transition:'all 0.15s', flexShrink:0,
+                }}
+              >
+                <span style={{fontSize:22}}>{p.emoji}</span>
+                <span style={{fontSize:11,fontWeight:isActive?600:400,color:isActive?'#1d4ed8':'#374151',whiteSpace:'nowrap'}}>{p.label}</span>
+              </button>
+            );
+          })}
+          <div style={{borderLeft:'1px solid #e5e7eb',margin:'0 4px',alignSelf:'stretch'}}/>
+          <button
+            onClick={() => setOemOnly(!oemOnly)}
+            style={{
+              display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+              padding:'10px 8px',minWidth:56,borderRadius:10,cursor:'pointer',border:'none',
+              background:oemOnly?'#eff6ff':'#f9fafb',
+              outline:oemOnly?'2px solid #1d4ed8':'1px solid #e5e7eb',
+              transition:'all 0.15s',flexShrink:0,
+            }}
+          >
+            <span style={{fontSize:22}}>🤝</span>
+            <span style={{fontSize:11,fontWeight:oemOnly?600:400,color:oemOnly?'#1d4ed8':'#374151'}}>OEM</span>
+          </button>
+          <button
+            onClick={() => setExportOnly(!exportOnly)}
+            style={{
+              display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+              padding:'10px 8px',minWidth:56,borderRadius:10,cursor:'pointer',border:'none',
+              background:exportOnly?'#eff6ff':'#f9fafb',
+              outline:exportOnly?'2px solid #1d4ed8':'1px solid #e5e7eb',
+              transition:'all 0.15s',flexShrink:0,
+            }}
+          >
+            <span style={{fontSize:22}}>🌍</span>
+            <span style={{fontSize:11,fontWeight:exportOnly?600:400,color:exportOnly?'#1d4ed8':'#374151'}}>수출가능</span>
+          </button>
         </div>
       </div>
 

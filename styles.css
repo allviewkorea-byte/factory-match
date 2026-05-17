@@ -974,6 +974,12 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 6px;
   flex-wrap: wrap;
 }
+.list-search-chips-icon {
+  display: flex; align-items: center; gap: 8px;
+  overflow-x: auto; padding: 8px 0 4px;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.list-search-chips-icon::-webkit-scrollbar { display: none; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 11px;
