@@ -9289,18 +9289,18 @@ const DataStatusTab = () => {
     const total = total_res.count || 0;
 
     const queries = [
-      { key: 'website',      label: '웹사이트',      icon: '🌐', filter: { column: 'website',       op: 'not.is', val: null } },
-      { key: 'phone',        label: '전화번호',      icon: '📞', filter: { column: 'phone',          op: 'not.is', val: null } },
-      { key: 'email',        label: '이메일',        icon: '📧', filter: { column: 'email',          op: 'not.is', val: null } },
-      { key: 'photos',       label: '사진(Google)',  icon: '📸', filter: { column: 'photos',         op: 'not.is', val: null } },
-      { key: 'google_rating',label: 'Google 평점',  icon: '⭐', filter: { column: 'google_rating',  op: 'not.is', val: null } },
-      { key: 'ai_summary',   label: 'AI 요약',       icon: '🤖', filter: { column: 'ai_summary',     op: 'not.is', val: null } },
-      { key: 'latitude',     label: '위경도',        icon: '📍', filter: { column: 'latitude',       op: 'not.is', val: null } },
-      { key: 'dart_code',    label: 'DART 연결',     icon: '📋', filter: { column: 'dart_code',      op: 'not.is', val: null } },
+      { key: 'website',       label: '웹사이트',      icon: '🌐', col: 'website' },
+      { key: 'phone',         label: '전화번호',      icon: '📞', col: 'phone' },
+      { key: 'email',         label: '이메일',        icon: '📧', col: 'email' },
+      { key: 'google_photos', label: '사진(Google)',  icon: '📸', col: 'google_photos' },
+      { key: 'google_rating', label: 'Google 평점',  icon: '⭐', col: 'google_rating' },
+      { key: 'ai_summary',    label: 'AI 요약',       icon: '🤖', col: 'ai_summary' },
+      { key: 'lat',           label: '위경도',        icon: '📍', col: 'lat' },
+      { key: 'dart_corp_code',label: 'DART 연결',     icon: '📋', col: 'dart_corp_code' },
     ];
 
     const results = await Promise.all(queries.map(async q => {
-      const res = await sb.from('factories').select('*', { count: 'estimated', head: true }).not(q.filter.column, 'is', null);
+      const res = await sb.from('factories').select('*', { count: 'estimated', head: true }).not(q.col, 'is', null);
       return { ...q, count: res.count || 0 };
     }));
 
