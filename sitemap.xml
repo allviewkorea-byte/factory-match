@@ -20,4 +20,14 @@
   <url><loc>https://factorymatch.co.kr/magazine/posts/경기-도장-표면처리-업체-추천-5선/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://factorymatch.co.kr/magazine/posts/경남-cnc-가공-업체-추천-7선/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://factorymatch.co.kr/magazine/posts/경남-용접-제관-업체-추천-5선/</loc><changefreq>weekly</changefreq></url>
+  <url>
+    <loc>https://factorymatch.co.kr/privacy/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://factorymatch.co.kr/terms/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
 </urlset>
