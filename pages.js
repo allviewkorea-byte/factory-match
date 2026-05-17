@@ -12144,9 +12144,8 @@ const CommunityPage = ({ onNav, authed }) => {
   const deletePost = async (post) => {
     if (!window.confirm('게시물을 삭제할까요?')) return;
     await window._sb.from('community_posts').delete().eq('id', post.id);
+    setPosts(prev => prev.filter(p => p.id !== post.id));
     setActivePost(null);
-    setPage(0);
-    loadPosts(true);
   };
 
   const toggleStatus = async (post) => {
