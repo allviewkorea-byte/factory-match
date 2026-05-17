@@ -838,6 +838,7 @@ def render_article_html(post, body_html, body_md, hero_photo):
       <a href="/">견적 요청</a>
       <a href="/#grants">정부지원금</a>
       <a href="/magazine/" class="active">매거진</a>
+      <a href="/#community">게시판</a>
     </nav>
     <a href="/" class="mg-cta" id="mg-header-cta">로그인 및 가입하기</a>
   </div>
