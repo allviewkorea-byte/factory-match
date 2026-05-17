@@ -9276,6 +9276,94 @@ const AdminGrantsTab = () => {
   );
 };
 
+// DataStatusTab — 데이터 수집 현황 모니터링
+const DataStatusTab = () => {
+  const [stats, setStats] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [updatedAt, setUpdatedAt] = React.useState(null);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    const sb = window._sb;
+    const total_res = await sb.from('factories').select('*', { count: 'estimated', head: true });
+    const total = total_res.count || 0;
+
+    const queries = [
+      { key: 'website',      label: '웹사이트',      icon: '🌐', filter: { column: 'website',       op: 'not.is', val: null } },
+      { key: 'phone',        label: '전화번호',      icon: '📞', filter: { column: 'phone',          op: 'not.is', val: null } },
+      { key: 'email',        label: '이메일',        icon: '📧', filter: { column: 'email',          op: 'not.is', val: null } },
+      { key: 'photos',       label: '사진(Google)',  icon: '📸', filter: { column: 'photos',         op: 'not.is', val: null } },
+      { key: 'google_rating',label: 'Google 평점',  icon: '⭐', filter: { column: 'google_rating',  op: 'not.is', val: null } },
+      { key: 'ai_summary',   label: 'AI 요약',       icon: '🤖', filter: { column: 'ai_summary',     op: 'not.is', val: null } },
+      { key: 'latitude',     label: '위경도',        icon: '📍', filter: { column: 'latitude',       op: 'not.is', val: null } },
+      { key: 'dart_code',    label: 'DART 연결',     icon: '📋', filter: { column: 'dart_code',      op: 'not.is', val: null } },
+    ];
+
+    const results = await Promise.all(queries.map(async q => {
+      const res = await sb.from('factories').select('*', { count: 'estimated', head: true }).not(q.filter.column, 'is', null);
+      return { ...q, count: res.count || 0 };
+    }));
+
+    setStats({ total, items: results });
+    setUpdatedAt(new Date().toLocaleTimeString('ko-KR'));
+    setLoading(false);
+  };
+
+  React.useEffect(() => { fetchStats(); }, []);
+
+  if (loading) return <div style={{padding:40,textAlign:'center'}}><GearSpinnerCenter size={40} message="수집 현황 집계 중..."/></div>;
+  if (!stats) return null;
+
+  return (
+    <section className="admin-panel" style={{padding: '24px 28px'}}>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 24}}>
+        <div>
+          <h2 style={{fontSize:18, fontWeight:700, margin:0}}>데이터 수집 현황</h2>
+          <p style={{fontSize:12, color:'#9ca3af', margin:'4px 0 0'}}>기준: 전체 {stats.total.toLocaleString()}개 공장 · {updatedAt} 기준</p>
+        </div>
+        <button onClick={fetchStats} style={{padding:'8px 16px', borderRadius:8, background:'#f3f4f6', border:'1px solid #e5e7eb', cursor:'pointer', fontSize:13, fontWeight:500}}>🔄 새로고침</button>
+      </div>
+
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:16}}>
+        {stats.items.map(item => {
+          const pct = stats.total > 0 ? Math.round(item.count / stats.total * 100) : 0;
+          const color = pct >= 50 ? '#10b981' : pct >= 20 ? '#f59e0b' : '#ef4444';
+          return (
+            <div key={item.key} style={{background:'#f9fafb', borderRadius:12, padding:'18px 20px', border:'1px solid #e5e7eb'}}>
+              <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+                <span style={{fontSize:22}}>{item.icon}</span>
+                <span style={{fontSize:13, fontWeight:600, color:'#374151'}}>{item.label}</span>
+              </div>
+              <div style={{fontSize:24, fontWeight:700, color:'#111827', marginBottom:6}}>
+                {item.count.toLocaleString()}<span style={{fontSize:14, color:'#9ca3af', fontWeight:400}}>개</span>
+              </div>
+              <div style={{height:6, background:'#e5e7eb', borderRadius:3, marginBottom:6, overflow:'hidden'}}>
+                <div style={{height:'100%', width:`${pct}%`, background:color, borderRadius:3, transition:'width 0.6s ease'}}/>
+              </div>
+              <div style={{fontSize:12, color, fontWeight:600}}>{pct}%</div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{marginTop:24, padding:'16px 20px', background:'#eff6ff', borderRadius:10, border:'1px solid #bfdbfe'}}>
+        <p style={{fontSize:13, fontWeight:600, color:'#1d4ed8', margin:'0 0 8px'}}>📌 일일 수집 스크립트 실행 순서 (Windows 로컬)</p>
+        <code style={{fontSize:11, color:'#374151', lineHeight:1.8, display:'block', whiteSpace:'pre-wrap'}}>
+{`cd C:\\Users\\micro\\factory-match
+git pull origin main
+py enrich_geocode.py        ← 위경도
+py enrich_factoryon.py      ← 공장온 데이터
+py enrich_website_naver.py  ← 웹사이트·전화
+py enrich_google_places.py  ← 사진·평점
+py enrich_crosscheck.py     ← 교차검증
+py enrich_ai_summary.py     ← AI 요약
+py enrich_email_only.py     ← 이메일`}
+        </code>
+      </div>
+    </section>
+  );
+};
+
 // AdminPage — 운영자 대시보드
 // ──────────────────────────────────────────────────────────
 const AdminPage = ({ onOpenFactory, onAdminAuth }) => {
@@ -9567,6 +9655,7 @@ const AdminPage = ({ onOpenFactory, onAdminAuth }) => {
           { id: 'logs',      label: '업로드 이력', desc: '데이터 업로드 기록.' },
           { id: 'reports',   label: '신고 관리', desc: '사용자가 신고한 정보 오류 문의 목록.' },
           { id: 'signups',   label: '가입 신청', desc: '제조사 소유권 인증 신청 목록. 사업자등록증 검토 후 승인.' },
+          { id: 'data_status', label: '📊 수집 현황', desc: '공장 데이터 수집 현황. 웹사이트·사진·이메일·AI요약 등 항목별 보유 수량.' },
           { id: 'analytics', label: '통계', desc: '사이트 방문자 및 사용 통계.' },
           { id: 'visitors',  label: '비회원 활동', desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
           { id: 'grants',    label: '지원사업 관리', desc: '정부지원금 공고 관리.' },
@@ -9591,6 +9680,7 @@ const AdminPage = ({ onOpenFactory, onAdminAuth }) => {
         { id: 'logs',      desc: '데이터 업로드 기록.' },
         { id: 'reports',   desc: '사용자가 신고한 정보 오류 문의 목록.' },
         { id: 'signups',   desc: '제조사 소유권 인증 신청 목록. 사업자등록증 검토 후 승인.' },
+        { id: 'data_status', desc: '공장 데이터 수집 현황. 웹사이트·사진·이메일·AI요약 등 항목별 보유 수량.' },
         { id: 'analytics', desc: '사이트 방문자 및 사용 통계.' },
         { id: 'visitors',  desc: '비로그인 사용자의 공장 조회 및 검색 로그.' },
         { id: 'grants',    desc: '정부지원금 공고 관리.' },
@@ -9601,6 +9691,8 @@ const AdminPage = ({ onOpenFactory, onAdminAuth }) => {
           ℹ️ {t.desc}
         </div>
       ))}
+
+      {tab === 'data_status' && <DataStatusTab />}
 
       {tab === 'factories' && <AdminFactoriesTab onOpenFactory={onOpenFactory}/>}
 
