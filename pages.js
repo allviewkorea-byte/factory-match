@@ -12321,7 +12321,7 @@ const CommunityPage = ({ onNav, authed }) => {
   );
 
   return (
-    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px 120px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px 60px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:800, margin:0 }}>제조 의뢰 게시판</h1>
@@ -12411,9 +12411,6 @@ const CommunityPage = ({ onNav, authed }) => {
             {loading ? '불러오는 중...' : '더보기'}
           </button>
         </div>
-      )}
-      {!hasMore && posts.length > 0 && (
-        <p style={{ textAlign:'center', marginTop:20, fontSize:12, color:'#9ca3af' }}>모든 게시물을 불러왔습니다.</p>
       )}
     </div>
   );
