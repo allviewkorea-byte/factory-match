@@ -9357,7 +9357,8 @@ py enrich_website_naver.py  ← 웹사이트·전화
 py enrich_google_places.py  ← 사진·평점
 py enrich_crosscheck.py     ← 교차검증
 py enrich_ai_summary.py     ← AI 요약
-py enrich_email_only.py     ← 이메일`}
+py enrich_email_only.py     ← 이메일
+py enrich_dart.py           ← DART 재무정보 (IP 승인 후 실행)`}
         </code>
       </div>
     </section>
