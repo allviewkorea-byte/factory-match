@@ -3976,11 +3976,47 @@ const RfqPage = ({ rfqIds, setRfqIds, onOpenFactory, onNav }) => {
                 </div>
                 {rfqShowExtra && (
                   <>
-                    <div className="rfq-field">
-                      <label>가공 방식</label>
-                      <select value={form.process} onChange={e => setForm({ ...form, process: e.target.value })}>
-                        {PROCESSES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                      </select>
+                    <div className="rfq-field rfq-field-full">
+                      <label>가공 방식 <span style={{fontWeight:400,color:'#9ca3af'}}>(복수 선택 가능)</span></label>
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(80px,1fr))',gap:10,marginTop:8}}>
+                        {[
+                          {id:'cnc',        label:'CNC 가공',    emoji:'⚙️'},
+                          {id:'injection',  label:'사출 성형',   emoji:'🧩'},
+                          {id:'press',      label:'프레스',      emoji:'🔨'},
+                          {id:'mold',       label:'금형 제작',   emoji:'🔧'},
+                          {id:'welding',    label:'용접/제관',   emoji:'🔥'},
+                          {id:'casting',    label:'주조',        emoji:'🪣'},
+                          {id:'coating',    label:'도장/표면처리',emoji:'🎨'},
+                          {id:'sewing',     label:'봉제',        emoji:'🧵'},
+                          {id:'laser_cut',  label:'레이저 가공', emoji:'⚡'},
+                          {id:'printing',   label:'인쇄/프린팅', emoji:'🖨️'},
+                          {id:'assembly',   label:'조립/임가공', emoji:'🏭'},
+                          {id:'packaging',  label:'포장',        emoji:'📦'},
+                        ].map(p => {
+                          const selected = (form.process_ids || []).includes(p.id);
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                const cur = form.process_ids || [];
+                                const next = selected ? cur.filter(x => x !== p.id) : [...cur, p.id];
+                                setForm({...form, process_ids: next, process: next[0] || 'cnc'});
+                              }}
+                              style={{
+                                display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+                                padding:'12px 6px', borderRadius:10, cursor:'pointer', border:'none',
+                                background: selected ? '#eff6ff' : '#f9fafb',
+                                outline: selected ? '2px solid #1d4ed8' : '1px solid #e5e7eb',
+                                transition:'all 0.15s',
+                              }}
+                            >
+                              <span style={{fontSize:24}}>{p.emoji}</span>
+                              <span style={{fontSize:11,fontWeight:selected?600:400,color:selected?'#1d4ed8':'#374151',textAlign:'center',lineHeight:1.3}}>{p.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="rfq-field">
                       <label>주요 소재</label>
