@@ -12246,7 +12246,7 @@ const CommunityPage = ({ onNav, authed }) => {
   const inp = { padding:'10px 12px', border:'1px solid #e5e7eb', borderRadius:8, fontSize:13, width:'100%', boxSizing:'border-box' };
 
   if (activePost) return (
-    <div style={{ maxWidth:780, margin:'0 auto', padding:'24px 20px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px', minHeight:'calc(100vh - 300px)' }}>
       <button onClick={() => { setActivePost(null); setEditingPost(false); }} style={{ background:'none', border:'none', color:'#1d4ed8', cursor:'pointer', fontSize:13, marginBottom:16 }}>← 목록으로</button>
       <div style={{ background:'#fff', borderRadius:12, padding:'24px', border:'1px solid #e5e7eb', marginBottom:20 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
