@@ -2209,13 +2209,27 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         const proc = PROCESSES.find(p => p.id === activeProcess);
         const kwList = proc ? [proc.label, ...(proc.aliases || [])] : [activeProcess];
         const pidMatch = f.processes.includes(activeProcess);
-        const textMatch = kwList.some(kw =>
-          (f.summary || '').includes(kw) ||
-          (f.factory_type || '').includes(kw) ||
-          (f.name || '').includes(kw) ||
-          (f.industries || []).some(ind => ind.includes(kw)) ||
-          (f.products || []).some(pr => pr.includes(kw))
-        );
+
+        // ai_summary products/equipment 파싱
+        let aiProducts = [], aiEquip = [];
+        try {
+          const ai = f.ai_summary ? (typeof f.ai_summary === 'string' ? JSON.parse(f.ai_summary) : f.ai_summary) : null;
+          if (ai) {
+            aiProducts = (ai.products || []).map(p => String(p).toLowerCase());
+            aiEquip = (ai.equipment || []).map(e => String(e).toLowerCase());
+          }
+        } catch {}
+
+        const textMatch = kwList.some(kw => {
+          const k = kw.toLowerCase();
+          return (f.summary || '').includes(kw) ||
+            (f.factory_type || '').includes(kw) ||
+            (f.name || '').includes(kw) ||
+            (f.industries || []).some(ind => ind.includes(kw)) ||
+            (f.products || []).some(pr => pr.includes(kw)) ||
+            aiProducts.some(p => p.includes(k) || k.includes(p)) ||
+            aiEquip.some(e => e.includes(k) || k.includes(e));
+        });
         if (!pidMatch && !textMatch) return false;
       }
       if (activeRegion === 'other') {

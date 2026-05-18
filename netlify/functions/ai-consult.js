@@ -116,6 +116,29 @@ async function fetchFactoriesByKeywords(keywords) {
   return resp.json();
 }
 
+async function callClaude(apiKey, contextMsg, timeout, messages) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [...(messages || []), { role: 'user', content: contextMsg }],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const text = (data.content || []).find(b => b.type === 'text')?.text?.trim() || '';
+    const jsonStr = text.startsWith('```') ? text.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '') : text;
+    return JSON.parse(jsonStr);
+  } catch { clearTimeout(timer); return null; }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: RESPONSE_HEADERS, body: '' };
@@ -267,18 +290,46 @@ ${aiData ? `- 주요제품: ${(aiData.products || []).join(', ')}
     ])];
     const factories = await fetchFactoriesByKeywords(searchKeywords).catch(() => []);
     if (factories.length > 0) {
-      const actualMax = factories.map(f => scoreFactory(f, st)).reduce((a, b) => Math.max(a, b), 1);
-      result.matchedFactories = factories
-        .map(f => ({ id: f.id, _score: scoreFactory(f, st) }))
-        .filter(f => f._score > 0)
+      const scored = factories
+        .map(f => ({ ...f, _score: scoreFactory(f, st) }))
+        .filter(f => f._score >= 30)
         .sort((a, b) => b._score - a._score)
-        .slice(0, 6)
-        .map(f => ({
+        .slice(0, 6);
+
+      if (scored.length > 0) {
+        const topScore = scored[0]._score;
+
+        // ai_summary 있는 공장 정보로 Claude에게 추가 컨텍스트 제공
+        const aiSummaryContext = scored
+          .filter(f => f.ai_summary)
+          .map(f => {
+            try {
+              const ai = typeof f.ai_summary === 'string' ? JSON.parse(f.ai_summary) : f.ai_summary;
+              const parts = [];
+              if (ai.intro) parts.push(ai.intro);
+              if (ai.products?.length) parts.push(`주요제품: ${ai.products.slice(0,3).join(', ')}`);
+              if (ai.equipment?.length) parts.push(`설비: ${ai.equipment.slice(0,2).join(', ')}`);
+              if (ai.strengths?.length) parts.push(`강점: ${ai.strengths.slice(0,2).join(', ')}`);
+              return `- ${f.name}(${f.city||''}): ${parts.join(' / ')}`;
+            } catch { return null; }
+          })
+          .filter(Boolean);
+
+        if (aiSummaryContext.length > 0) {
+          // ai_summary 기반 추가 답변 생성
+          const contextMsg = `검색 결과 ${scored.length}개 공장을 찾았습니다. 주요 공장 정보:\n${aiSummaryContext.join('\n')}\n\n이 정보를 바탕으로 사용자에게 구체적으로 어떤 공장이 적합한지 1-2문장으로 자연스럽게 안내해주세요. JSON 형식: {"reply":"...","searchReady":false,"searchTerms":null}`;
+
+          try {
+            const followUp = await callClaude(apiKey, contextMsg, 8000, messages);
+            if (followUp?.reply) result.reply = followUp.reply;
+          } catch {}
+        }
+
+        result.matchedFactories = scored.map(f => ({
           id: f.id,
-          matchPct: actualMax > 0
-            ? Math.min(98, Math.max(38, Math.round((f._score / actualMax) * 100)))
-            : 60,
+          matchPct: Math.min(96, Math.max(40, Math.round((f._score / topScore) * 96))),
         }));
+      }
     }
   }
 
