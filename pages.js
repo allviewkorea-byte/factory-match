@@ -10324,7 +10324,7 @@ const AdminGoogleMismatchTab = () => {
 {`cd C:\Users\micro\factory-match; git pull origin main; py enrich_geocode.py; py enrich_factoryon.py; py enrich_website_naver.py; py enrich_google_places.py; py enrich_crosscheck.py; py enrich_ai_summary.py; py enrich_email_only.py; py enrich_dart.py`}
             </code>
             <div style={{marginTop:8, fontSize:12, color:'#f5c842', fontWeight:700}}>
-              ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지)
+              ① 좌표변환 → ② 공장ON → ③ 네이버website → ④ 구글Places → ⑤ 크로스체크 → ⑥ AI요약 → ⑦ 이메일수집(2페이지) → ⑧ DART재무
             </div>
           </div>
 
