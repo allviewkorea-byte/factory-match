@@ -7263,7 +7263,9 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
 
   React.useEffect(() => {
     if (!ids || ids.length === 0) { setLoading(false); return; }
-    window._sb.from('factories').select('id,name,city,region').in('id', ids)
+    window._sb.from('factories')
+      .select('id,name,city,region,factory_type,google_photos,google_rating,summary,address')
+      .in('id', ids)
       .then(({ data }) => {
         if (data) setFactories(data.map(window._dbRowToFactory));
         setLoading(false);
@@ -7275,9 +7277,11 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
   return (
     <section className={compact ? '' : 'mypage-card mypage-card-full'}>
       {!compact && <header className="mypage-card-head"><h3>관심 제조사</h3></header>}
-      <ul className="fav-list">
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap:12, padding: compact ? '8px 0' : '8px 0' }}>
         {ids.map(id => {
           const f = factories.find(x => x.id === id);
+          const photo = f?.google_photos?.[0] || null;
+          const bg = f ? getCardBg(f) : '#e5e7eb';
           const handleRemove = (e) => {
             e.stopPropagation();
             try {
@@ -7287,20 +7291,35 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
             window.location.reload();
           };
           return (
-            <li key={id} style={{ position:'relative' }}>
-              <button className="fav-row" onClick={() => onOpenFactory && onOpenFactory(id)}>
-                <div className="fav-body">
-                  <h4>{f ? f.name : '불러오는 중…'}</h4>
-                  <span>{f ? (f.city || f.regionRaw || '') : ''}</span>
+            <div key={id} style={{ position:'relative', borderRadius:12, overflow:'hidden', border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}
+              onClick={() => onOpenFactory && onOpenFactory(id)}>
+              {/* 썸네일 */}
+              <div style={{ height:120, background: bg, overflow:'hidden', position:'relative' }}>
+                {photo
+                  ? <img src={photo} alt={f?.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none'; }}/>
+                  : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <span style={{ fontSize:36 }}>{getCardIcon(f || {})}</span>
+                    </div>
+                }
+              </div>
+              {/* 정보 */}
+              <div style={{ padding:'10px 12px 12px' }}>
+                <div style={{ fontWeight:700, fontSize:14, color:'#111827', marginBottom:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {f ? f.name : '불러오는 중…'}
                 </div>
-                <Icon name="chevron_right" size={14} stroke={2} className="fav-arrow"/>
-              </button>
+                <div style={{ fontSize:12, color:'#6b7280', marginBottom:4 }}>{f?.city || f?.regionRaw || ''}</div>
+                {f?.factory_type && <div style={{ fontSize:11, color:'#9ca3af', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{f.factory_type}</div>}
+                {f?.google_rating && <div style={{ fontSize:11, color:'#d97706', marginTop:2 }}>★ {f.google_rating}</div>}
+              </div>
+              {/* 관심 취소 버튼 */}
               <button onClick={handleRemove} title="관심 취소"
-                style={{ position:'absolute', right:32, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#e11d48', cursor:'pointer', fontSize:16, lineHeight:1 }}>♥</button>
-            </li>
+                style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,0.45)', border:'none', color:'#fff', cursor:'pointer', fontSize:14, lineHeight:1, borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                ♥
+              </button>
+            </div>
           );
         })}
-      </ul>
+      </div>
     </section>
   );
 };
