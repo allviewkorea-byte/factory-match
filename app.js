@@ -236,7 +236,17 @@ function App() {
         setAuthed(true);
         const cur = window.location.hash.replace('#/', '').replace('#', '') || 'home';
         if (['auth', 'signup', 'onboarding'].includes(cur)) {
-          nav('home');
+          // 게이트 복귀 경로 확인
+          const returnRoute = localStorage.getItem('fm-gate-return') || 'home';
+          const aiBackup = localStorage.getItem('fm-ai-session-backup');
+          if (returnRoute === 'ai' && aiBackup) {
+            try { window._aiConsultSession = JSON.parse(aiBackup); } catch {}
+          }
+          try {
+            localStorage.removeItem('fm-gate-return');
+            localStorage.removeItem('fm-ai-session-backup');
+          } catch {}
+          nav(returnRoute);
         }
       }
     };
@@ -386,13 +396,32 @@ function App() {
   const handleOnboardingComplete = (data) => {
     setProfile(data);
     try { localStorage.setItem('fm-profile', JSON.stringify(data || {})); } catch {}
+    // 게이트 복귀 경로가 있으면 welcome 후 그쪽으로
+    const returnRoute = localStorage.getItem('fm-gate-return');
+    const aiBackup = localStorage.getItem('fm-ai-session-backup');
+    if (returnRoute === 'ai' && aiBackup) {
+      try { window._aiConsultSession = JSON.parse(aiBackup); } catch {}
+      try { localStorage.removeItem('fm-gate-return'); localStorage.removeItem('fm-ai-session-backup'); } catch {}
+    }
     nav('welcome');
   };
   const handleEnterApp = () => {
     window.logVisitor?.('signup_completed');
     try { localStorage.setItem('fm-authed', '1'); } catch {}
     setAuthed(true);
-    nav('home');
+    // 게이트에서 복귀 경로 확인
+    const returnRoute = localStorage.getItem('fm-gate-return') || 'home';
+    const aiBackup = localStorage.getItem('fm-ai-session-backup');
+    if (returnRoute === 'ai' && aiBackup) {
+      try {
+        window._aiConsultSession = JSON.parse(aiBackup);
+      } catch {}
+    }
+    try {
+      localStorage.removeItem('fm-gate-return');
+      localStorage.removeItem('fm-ai-session-backup');
+    } catch {}
+    nav(returnRoute);
   };
   const handleLogout = () => {
     // 1) UI 즉시 로그아웃 상태로 (signOut이 hang해도 UI는 반응)
@@ -417,6 +446,15 @@ function App() {
 
   const showGate = (reason) => {
     window.logVisitor?.('signup_triggered', { trigger: reason });
+    // AI 상담 중 게이트 뜰 때 대화 내용 + 복귀 경로 저장
+    if (reason === 'ai_consult' && window._aiConsultSession?.messages?.length > 0) {
+      try {
+        localStorage.setItem('fm-gate-return', 'ai');
+        localStorage.setItem('fm-ai-session-backup', JSON.stringify(window._aiConsultSession));
+      } catch {}
+    } else if (reason) {
+      try { localStorage.setItem('fm-gate-return', route); } catch {}
+    }
     setGateReason(reason);
   };
   const closeGate = () => setGateReason(null);
