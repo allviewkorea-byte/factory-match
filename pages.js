@@ -5557,6 +5557,8 @@ function OnboardingPage({ onComplete, onNav }) {
   const handleComplete = async () => {
     if (!name.trim()) { setError('이름을 입력해주세요'); return; }
     if (!companyName.trim()) { setError('회사명을 입력해주세요'); return; }
+    if (!phone.trim()) { setError('연락처를 입력해주세요'); return; }
+    if (!email.trim()) { setError('이메일을 입력해주세요'); return; }
     if (!role) { setError('바이어 또는 제조사를 선택해주세요'); return; }
     setLoading(true);
     setError('');
@@ -5681,7 +5683,7 @@ function OnboardingPage({ onComplete, onNav }) {
           {/* 연락처 */}
           <div>
             <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
-              연락처 <span style={{color: '#6b7280', fontWeight: 400}}>(선택)</span>
+              연락처 <span style={{color: '#ef4444'}}>*</span>
             </label>
             <input
               type="tel"
@@ -5697,7 +5699,7 @@ function OnboardingPage({ onComplete, onNav }) {
           {/* 이메일 */}
           <div>
             <label style={{fontSize: 13, fontWeight: 600, color: 'var(--ink-2, #374151)', display: 'block', marginBottom: 8}}>
-              이메일 <span style={{color: '#6b7280', fontWeight: 400}}>(선택)</span>
+              이메일 <span style={{color: '#ef4444'}}>*</span>
             </label>
             <input
               type="email"
