@@ -10940,7 +10940,7 @@ const TermsPage = () => {
             <li><strong>회사명:</strong> 주식회사 올뷰코리아 (AVK)</li>
             <li><strong>서비스명:</strong> 공장매칭(FactoryMatch)</li>
             <li><strong>대표 이메일:</strong> <a href="mailto:dlwjdgh1889@naver.com">dlwjdgh1889@naver.com</a></li>
-            <li><strong>웹사이트:</strong> [본 서비스 URL]</li>
+            <li><strong>웹사이트:</strong> <a href="https://factorymatch.co.kr" target="_blank">https://factorymatch.co.kr</a></li>
           </ul>
         </section>
 
