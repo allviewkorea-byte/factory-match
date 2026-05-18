@@ -1193,6 +1193,59 @@ const ParticleCanvas = () => {
   );
 };
 
+// ── 홈 매거진 캐러셀 ──────────────────────────────────────────
+const HomeMagazineCarousel = () => {
+  const [posts, setPosts] = React.useState([]);
+  const [idx, setIdx] = React.useState(0);
+  const PER = 4;
+
+  React.useEffect(() => {
+    fetch('/magazine/data/posts.json')
+      .then(r => r.json())
+      .then(d => setPosts(d.posts || []))
+      .catch(() => {});
+  }, []);
+
+  if (posts.length === 0) return null;
+
+  const total = posts.length;
+  const maxIdx = Math.max(0, total - PER);
+  const visible = posts.slice(idx, idx + PER);
+
+  const typeLabel = { guide:'발주 가이드', compare:'비교·선택', checklist:'체크리스트', trend:'트렌드', case:'케이스 스터디', recommend:'산업별 추천' };
+  const typeColor = { guide:'#1d4ed8', compare:'#7c3aed', checklist:'#059669', trend:'#d97706', case:'#dc2626', recommend:'#0891b2' };
+
+  return (
+    <div className="home-magazine-section">
+      <div className="home-magazine-header">
+        <span className="home-magazine-title">📰 제조업 매거진</span>
+        <a href="/magazine/" className="home-magazine-more">전체 보기 →</a>
+      </div>
+      <div className="home-magazine-row">
+        <button className="home-mag-arrow home-mag-arrow-left" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0}>‹</button>
+        <div className="home-magazine-grid">
+          {visible.map((p, i) => (
+            <a key={p.slug || i} href={`/magazine/posts/${p.slug}/`} className="home-mag-card">
+              <div className="home-mag-thumb">
+                {p.thumbnail
+                  ? <img src={p.thumbnail} alt={p.title} loading="lazy" onError={e => { e.target.parentNode.style.background='#1e3a5f'; e.target.style.display='none'; }}/>
+                  : <div style={{ width:'100%', height:'100%', background:'#1e3a5f' }}/>
+                }
+              </div>
+              <div className="home-mag-info">
+                {p.type && <span className="home-mag-type" style={{ background: typeColor[p.type] || '#374151' }}>{typeLabel[p.type] || p.type}</span>}
+                <p className="home-mag-title">{p.title}</p>
+                <span className="home-mag-date">{p.date || ''}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+        <button className="home-mag-arrow home-mag-arrow-right" onClick={() => setIdx(Math.min(maxIdx, idx + 1))} disabled={idx >= maxIdx}>›</button>
+      </div>
+    </div>
+  );
+};
+
 const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) => {
   const [q, setQ] = useStateP('');
   const [isFocused, setIsFocused] = useStateP(false);
@@ -1346,34 +1399,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
         )}
 
         {!hasResults && !loading && (
-          <div className="home-industry-section">
-            <p className="home-industry-title">어떤 공장을 찾으세요?</p>
-            <div className="home-industry-grid">
-              {[
-                {id:'cnc',       label:'CNC 가공',    emoji:'⚙️'},
-                {id:'injection', label:'사출 성형',   emoji:'🧩'},
-                {id:'press',     label:'프레스',      emoji:'🔨'},
-                {id:'mold',      label:'금형 제작',   emoji:'🔧'},
-                {id:'welding',   label:'용접/제관',   emoji:'🔥'},
-                {id:'casting',   label:'주조',        emoji:'🪣'},
-                {id:'painting',  label:'도장/표면처리',emoji:'🎨'},
-                {id:'sewing',    label:'봉제',        emoji:'🧵'},
-                {id:'laser_cut', label:'레이저 가공', emoji:'⚡'},
-                {id:'foodproc',  label:'식품가공',    emoji:'🍱'},
-                {id:'assembly',  label:'임가공/조립', emoji:'🏗️'},
-                {id:'all',       label:'전체 보기',   emoji:'🏭'},
-              ].map(p => (
-                <button
-                  key={p.id}
-                  className="home-industry-item"
-                  onClick={() => onSearch?.(p.id === 'all' ? '' : p.label)}
-                >
-                  <span className="home-industry-emoji">{p.emoji}</span>
-                  <span className="home-industry-label">{p.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <HomeMagazineCarousel />
         )}
         {!hasResults && !loading && (
           <div className="ldg3-hero-illust">
