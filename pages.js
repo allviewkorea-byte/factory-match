@@ -1227,12 +1227,23 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
     if (!authed) { onGate?.('search'); return; }
     setLoading(true);
     try {
-      const resp = await fetch('/.netlify/functions/ai-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
-      if (!resp.ok) throw new Error('API 오류');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 25000);
+      let resp;
+      try {
+        resp = await fetch('/.netlify/functions/ai-match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.message || `API 오류 (${resp.status})`);
+      }
       const data = await resp.json();
       data.topCategories = (data.topCategories || []).map((c, i) => ({
         glyph: 'metal', count: 0, avgLead: '협의', avgPrice: '협의', ...c, id: c.id || `ai-${i}`,
@@ -1266,6 +1277,10 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
       }
     } catch (e) {
       console.error('AI match failed:', e);
+      const msg = e.name === 'AbortError'
+        ? 'AI 분석 시간이 초과됐어요. 다시 시도해주세요.'
+        : (e.message || 'AI 분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+      setAiResults({ _error: msg });
     } finally {
       setLoading(false);
     }
@@ -1361,7 +1376,15 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
         )}
       </div>
 
-      {hasResults && (
+      {hasResults && aiResults?._error && (
+        <div style={{ maxWidth:760, margin:'40px auto', padding:'24px', background:'#fef2f2', borderRadius:12, border:'1px solid #fecaca', textAlign:'center' }}>
+          <p style={{ fontSize:15, color:'#dc2626', margin:'0 0 12px' }}>⚠️ {aiResults._error}</p>
+          <button onClick={() => { setAiResults(null); }} style={{ padding:'8px 20px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:8, cursor:'pointer', fontSize:13 }}>
+            다시 검색하기
+          </button>
+        </div>
+      )}
+      {hasResults && !aiResults?._error && (
         <div className="home-results">
 
           {/* 1. 공급망 분석 */}
