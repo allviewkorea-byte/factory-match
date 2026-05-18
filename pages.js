@@ -1197,6 +1197,7 @@ const ParticleCanvas = () => {
 const HomeMagazineCarousel = () => {
   const [posts, setPosts] = React.useState([]);
   const [idx, setIdx] = React.useState(0);
+  const [sliding, setSliding] = React.useState(null); // 'left' | 'right' | null
   const PER = 4;
 
   React.useEffect(() => {
@@ -1212,39 +1213,60 @@ const HomeMagazineCarousel = () => {
   const maxIdx = Math.max(0, total - PER);
   const visible = posts.slice(idx, idx + PER);
 
+  const go = (dir) => {
+    if (sliding) return;
+    const next = dir === 'right' ? Math.min(maxIdx, idx + 1) : Math.max(0, idx - 1);
+    if (next === idx) return;
+    setSliding(dir);
+    setTimeout(() => { setIdx(next); setSliding(null); }, 280);
+  };
+
   const typeLabel = { guide:'발주 가이드', compare:'비교·선택', checklist:'체크리스트', trend:'트렌드', case:'케이스 스터디', recommend:'산업별 추천' };
-  const typeColor = { guide:'#1d4ed8', compare:'#7c3aed', checklist:'#059669', trend:'#d97706', case:'#dc2626', recommend:'#0891b2' };
 
   return (
     <div className="home-magazine-section">
-      <div className="home-magazine-header">
-        <span className="home-magazine-title">📰 제조업 매거진</span>
-        <a href="/magazine/" className="home-magazine-more">전체 보기 →</a>
-      </div>
+      <p className="home-magazine-title">📰 제조업 매거진</p>
       <div className="home-magazine-row">
-        <button className="home-mag-arrow home-mag-arrow-left" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0}>‹</button>
-        <div className="home-magazine-grid">
+        <button className="home-mag-arrow" onClick={() => go('left')} disabled={idx === 0}>‹</button>
+        <div className="home-magazine-grid" style={{
+          opacity: sliding ? 0 : 1,
+          transform: sliding === 'right' ? 'translateX(-20px)' : sliding === 'left' ? 'translateX(20px)' : 'translateX(0)',
+          transition: sliding ? 'opacity 0.25s, transform 0.25s' : 'none',
+        }}>
           {visible.map((p, i) => {
             const thumb = p.thumbnail || p.thumbnail_url || '';
             return (
-            <a key={p.slug || i} href={`/magazine/posts/${p.slug}/`} className="home-mag-card">
-              <div className="home-mag-thumb" style={{ backgroundImage: thumb ? `url(${thumb})` : 'none' }}>
-                {!thumb && <div style={{ width:'100%', height:'100%', background:'#dbeafe' }}/>}
-                {(p.type || p.category) && (
-                  <div style={{ position:'absolute', bottom:10, left:10, background:'rgba(0,0,0,0.65)', color:'#fff', padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:600 }}>
-                    {typeLabel[p.type || p.category] || p.type || p.category}
-                  </div>
-                )}
-              </div>
-              <div className="home-mag-info">
-                <p className="home-mag-title">{p.title}</p>
-                <span className="home-mag-date">{p.date || (p.published_at || '').slice(0,10) || ''}</span>
-              </div>
-            </a>
+              <a key={p.slug || i} href={`/magazine/posts/${p.slug}/`} className="home-mag-card">
+                <div className="home-mag-thumb" style={{ backgroundImage: thumb ? `url(${thumb})` : 'none' }}>
+                  {!thumb && <div style={{ width:'100%', height:'100%', background:'#dbeafe' }}/>}
+                  {(p.type || p.category) && (
+                    <div style={{ position:'absolute', bottom:10, left:10, background:'rgba(0,0,0,0.65)', color:'#fff', padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:600 }}>
+                      {typeLabel[p.type || p.category] || p.type || p.category}
+                    </div>
+                  )}
+                </div>
+                <div className="home-mag-info">
+                  <p className="home-mag-title">{p.title}</p>
+                  <span className="home-mag-date">{p.date || (p.published_at || '').slice(0,10) || ''}</span>
+                </div>
+              </a>
             );
           })}
         </div>
-        <button className="home-mag-arrow home-mag-arrow-right" onClick={() => setIdx(Math.min(maxIdx, idx + 1))} disabled={idx >= maxIdx}>›</button>
+        <button className="home-mag-arrow" onClick={() => go('right')} disabled={idx >= maxIdx}>›</button>
+      </div>
+      <div style={{ textAlign:'center', marginTop:20 }}>
+        <a href="/magazine/" style={{
+          display:'inline-block', padding:'10px 32px', borderRadius:8,
+          border:'1.5px solid #1d4ed8', color:'#1d4ed8', fontWeight:600,
+          fontSize:14, textDecoration:'none', background:'#fff',
+          transition:'all 0.15s',
+        }}
+          onMouseEnter={e => { e.target.style.background='#1d4ed8'; e.target.style.color='#fff'; }}
+          onMouseLeave={e => { e.target.style.background='#fff'; e.target.style.color='#1d4ed8'; }}
+        >
+          전체 보기
+        </a>
       </div>
     </div>
   );
