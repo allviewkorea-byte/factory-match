@@ -36,18 +36,22 @@ web_search 도구를 활용해 제조사 정보, 업계 동향, 기술 정보를
   "searchTerms": null
 }
 
-공장 매칭이 필요한 경우 searchReady: true로:
+⚠️ 업체/공장 추천·검색·매칭 요청이면 반드시 searchReady: true — 예외 없음:
 {
-  "reply": "적합한 공장을 찾아볼게요!",
+  "reply": "경기도 도장·표면처리 업체 찾아봤습니다. 태성분체(시흥)는 분체도장 30년 전문, 예온산업(화성)은 특수도장까지 가능합니다. 오른쪽에서 확인해보세요!",
   "searchReady": true,
   "searchTerms": {
     "industries": ["machine"],
-    "processes": ["cnc"],
-    "materials": ["알루미늄"],
-    "keywords": ["키워드1", "키워드2"]
+    "processes": ["painting"],
+    "materials": [],
+    "keywords": ["도장", "표면처리", "분체도장", "경기"]
   }
 }
 
+searchReady: true 사용 기준:
+- "추천해줘", "찾아줘", "알려줘", "업체", "공장", "제조사" 포함 시 → 반드시 true
+- web_search로 업체명을 찾은 경우 → 반드시 true (찾은 업체명을 keywords에 포함)
+- 단순 지식 질문(공정 설명, 가격 문의 등) → false 가능
 industries: machine / electronics / chemical / food / textile 중 선택
 processes: cnc / injection / press / mold / cutting / welding / painting / assembly 중 선택`;
 
