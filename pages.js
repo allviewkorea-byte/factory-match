@@ -1226,14 +1226,15 @@ const HomeMagazineCarousel = () => {
         <div className="home-magazine-grid">
           {visible.map((p, i) => (
             <a key={p.slug || i} href={`/magazine/posts/${p.slug}/`} className="home-mag-card">
-              <div className="home-mag-thumb">
-                {p.thumbnail
-                  ? <img src={p.thumbnail} alt={p.title} loading="lazy" onError={e => { e.target.parentNode.style.background='#1e3a5f'; e.target.style.display='none'; }}/>
-                  : <div style={{ width:'100%', height:'100%', background:'#1e3a5f' }}/>
-                }
+              <div className="home-mag-thumb" style={{ backgroundImage: p.thumbnail ? `url(${p.thumbnail})` : 'none' }}>
+                {!p.thumbnail && <div style={{ width:'100%', height:'100%', background:'#dbeafe' }}/>}
+                {p.type && (
+                  <div style={{ position:'absolute', bottom:10, left:10, background:'rgba(0,0,0,0.65)', color:'#fff', padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:600 }}>
+                    {typeLabel[p.type] || p.type}
+                  </div>
+                )}
               </div>
               <div className="home-mag-info">
-                {p.type && <span className="home-mag-type" style={{ background: typeColor[p.type] || '#374151' }}>{typeLabel[p.type] || p.type}</span>}
                 <p className="home-mag-title">{p.title}</p>
                 <span className="home-mag-date">{p.date || ''}</span>
               </div>
