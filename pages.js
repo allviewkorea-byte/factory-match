@@ -7416,7 +7416,10 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
         if (!user) { setLoadingProfile(false); return; }
         const { data } = await window._sb.from('user_profiles').select('*').eq('id', user.id).maybeSingle();
         if (data) {
-          setDbProfile(data);
+          // user_metadata에서 avatar_url 보강
+          const meta = user.user_metadata || {};
+          const avatarUrl = meta.avatar_url || meta.picture || meta.profile_image || '';
+          setDbProfile({ ...data, avatar_url: data.avatar_url || avatarUrl });
           setEditForm({ contact_name: data.contact_name || '', contact_phone: data.contact_phone || '' });
         }
         try {
@@ -7508,7 +7511,12 @@ const MyPage = ({ profile: profileProp, onSwitchRole, onOpenFactory, onNav }) =>
       {/* ── 프로필 카드 ── */}
       <header className="mypage-hero">
         <div className="mypage-hero-id">
-          <div className="mypage-avatar">{name.slice(0, 1)}</div>
+          <div className="mypage-avatar" style={{ overflow:'hidden', padding:0 }}>
+            {profile.avatar_url || profileProp?.avatar_url
+              ? <img src={profile.avatar_url || profileProp?.avatar_url} alt={name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'inherit'}} onError={e => { e.target.style.display='none'; e.target.parentNode.textContent = name.slice(0,1); }}/>
+              : name.slice(0, 1)
+            }
+          </div>
           <div className="mypage-hero-info">
             <div className="mypage-role-row">
               <span className={'mypage-role-badge mypage-role-' + (role === 'buyer' ? 'buyer' : 'seller')}>
