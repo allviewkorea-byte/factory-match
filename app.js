@@ -223,20 +223,32 @@ function App() {
       if (!session?.user) return;
       const { data } = await window._sb
         .from('user_profiles')
-        .select('id')
+        .select('id, contact_name, company_name, user_type')
         .eq('id', session.user.id)
         .maybeSingle();
+
+      // user_metadata에서 아바타 URL 추출 (카카오/네이버)
+      const meta = session.user.user_metadata || {};
+      const avatarUrl = meta.avatar_url || meta.picture || meta.profile_image || '';
+
       if (!data) {
-        // 신규 소셜 유저 → 온보딩 팝업
         try { localStorage.setItem('fm-authed', '1'); } catch {}
         setAuthed(true);
         nav('onboarding');
       } else {
         try { localStorage.setItem('fm-authed', '1'); } catch {}
-        setAuthed(true);
+        // 프로필 정보 저장 (avatar_url 포함)
+        const profileData = {
+          name: data.contact_name || '',
+          company: data.company_name || '',
+          role: data.user_type || '',
+          avatar_url: avatarUrl,
+        };
+        setProfile(profileData);
+        try { localStorage.setItem('fm-profile', JSON.stringify(profileData)); } catch {}
+
         const cur = window.location.hash.replace('#/', '').replace('#', '') || 'home';
         if (['auth', 'signup', 'onboarding'].includes(cur)) {
-          // 게이트 복귀 경로 확인
           const returnRoute = localStorage.getItem('fm-gate-return') || 'home';
           const aiBackup = localStorage.getItem('fm-ai-session-backup');
           if (returnRoute === 'ai' && aiBackup) {

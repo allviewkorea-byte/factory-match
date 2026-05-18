@@ -42,7 +42,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '네이버 사용자 정보 조회 실패' }) };
     }
 
-    const { id: naverId, email: naverEmail, name } = profileData.response;
+    const { id: naverId, email: naverEmail, name, profile_image } = profileData.response;
 
     // 이메일이 없을 경우 가상 이메일 생성 (개발 중 상태에서 이메일 미제공 가능)
     const email = naverEmail || `naver_${naverId}@factorymatch.naver`;
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           email,
           password,
-          data: { provider: 'naver', naver_id: naverId, full_name: name || '' },
+          data: { provider: 'naver', naver_id: naverId, full_name: name || '', avatar_url: profile_image || '' },
         }),
       });
       sbData = await sbRes.json();

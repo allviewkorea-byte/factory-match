@@ -63,6 +63,7 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
   const displayName = isAdmin ? '관리자' : (profile?.name || profile?.email?.split('@')[0] || '');
   const displayOrg = isAdmin ? 'FactoryMatch' : (profile?.company_name || '');
   const displayInitial = isAdmin ? '관' : (displayName ? displayName[0] : '');
+  const avatarUrl = profile?.avatar_url || '';
   const navItems = [
     { id: 'home',   label: '홈' },
     { id: 'ai',     label: 'AI 상담' },
@@ -118,7 +119,12 @@ const Header = ({ route, onNav, density, onLogout, authed, rfqCount = 0, profile
                 <Icon name="shield" size={16} stroke={1.8}/>
               </button>
               <button className="hdr-user" onClick={() => onNav('mypage')}>
-                <span className="hdr-avatar">{displayInitial}</span>
+                <span className="hdr-avatar">
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt={displayInitial} style={{width:'100%',height:'100%',borderRadius:'50%',objectFit:'cover'}} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                    : null}
+                  <span style={{display: avatarUrl ? 'none' : 'block'}}>{displayInitial}</span>
+                </span>
                 <span className="hdr-user-meta">
                 <span className="hdr-user-name">{displayName}{!isAdmin && profile?.role ? ' · ' + (profile.role === 'buyer' ? 'Buyer' : 'Manufacturer') : ''}</span>
                 <span className="hdr-user-org">{displayOrg}</span>
