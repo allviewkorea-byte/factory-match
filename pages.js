@@ -10875,7 +10875,7 @@ const TermsPage = () => {
             <li>제조업체 정보의 정정 또는 삭제를 원하는 경우, 다음 방법으로 요청할 수 있습니다:
               <ul>
                 <li>사이트 내 신고 폼: [정정·삭제 요청] (서비스 내 별도 페이지)</li>
-                <li>이메일: privacy@avk-agency.com</li>
+                <li>이메일: dlwjdgh1889@naver.com</li>
               </ul>
             </li>
             <li>회사는 요청을 접수한 후 영업일 기준 5일 이내에 검토 및 처리합니다.</li>
@@ -10939,7 +10939,7 @@ const TermsPage = () => {
           <ul className="legal-company-info">
             <li><strong>회사명:</strong> 주식회사 올뷰코리아 (AVK)</li>
             <li><strong>서비스명:</strong> 공장매칭(FactoryMatch)</li>
-            <li><strong>대표 이메일:</strong> <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+            <li><strong>대표 이메일:</strong> <a href="mailto:dlwjdgh1889@naver.com">dlwjdgh1889@naver.com</a></li>
             <li><strong>웹사이트:</strong> [본 서비스 URL]</li>
           </ul>
         </section>
@@ -11083,7 +11083,7 @@ const PrivacyPage = () => {
           <p>위 권리 행사는 다음 방법으로 가능합니다:</p>
           <ul>
             <li>사이트 내 정정·삭제 요청 폼 (서비스 내 별도 페이지)</li>
-            <li>이메일: <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+            <li>이메일: <a href="mailto:dlwjdgh1889@naver.com">dlwjdgh1889@naver.com</a></li>
           </ul>
           <p>회사는 요청 접수 후 영업일 기준 5일 이내에 처리합니다.</p>
         </section>
@@ -11093,7 +11093,7 @@ const PrivacyPage = () => {
           <p>본 서비스에 게시된 제조업체 정보의 정정 또는 삭제를 원하는 경우 다음 방법으로 요청할 수 있습니다:</p>
           <ol>
             <li>사이트 내 신고 폼: 별도 페이지에서 신청</li>
-            <li>이메일: <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+            <li>이메일: <a href="mailto:dlwjdgh1889@naver.com">dlwjdgh1889@naver.com</a></li>
           </ol>
           <p>요청 시 다음 정보를 포함해주세요:</p>
           <ul>
@@ -11129,7 +11129,7 @@ const PrivacyPage = () => {
           <ul className="legal-company-info">
             <li><strong>회사명:</strong> 주식회사 올뷰코리아</li>
             <li><strong>책임자:</strong> 개인정보 보호 담당자</li>
-            <li><strong>이메일:</strong> <a href="mailto:privacy@avk-agency.com">privacy@avk-agency.com</a></li>
+            <li><strong>이메일:</strong> <a href="mailto:dlwjdgh1889@naver.com">dlwjdgh1889@naver.com</a></li>
           </ul>
         </section>
 
