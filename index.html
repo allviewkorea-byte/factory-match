@@ -23,6 +23,74 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
 <link rel="stylesheet" href="/styles.min.css"/>
+<!-- 구조화 데이터 (Schema.org) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "공장매칭",
+  "alternateName": "FactoryMatch",
+  "url": "https://factorymatch.co.kr",
+  "description": "전국 22만 제조공장 AI 매칭 플랫폼. OEM·ODM·사출·CNC·봉제 등 제조사를 빠르게 찾고 무료로 견적 요청하세요.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://factorymatch.co.kr/#list?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "공장매칭 (FactoryMatch)",
+  "url": "https://factorymatch.co.kr",
+  "logo": "https://factorymatch.co.kr/logo.svg",
+  "description": "전국 22만 제조공장 AI 매칭 플랫폼. 제조사 찾기, 공장 매칭, 견적 요청 서비스.",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "dlwjdgh1889@naver.com",
+    "contactType": "customer service",
+    "availableLanguage": "Korean"
+  },
+  "sameAs": [
+    "https://factorymatch.co.kr"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "제조공장 AI 매칭 서비스",
+  "provider": {
+    "@type": "Organization",
+    "name": "공장매칭 (FactoryMatch)"
+  },
+  "serviceType": "B2B 제조사 매칭",
+  "description": "AI 기반으로 OEM·ODM·사출성형·CNC가공·봉제·임가공 등 전국 22만 제조공장을 매칭해드리는 서비스입니다.",
+  "areaServed": {
+    "@type": "Country",
+    "name": "대한민국"
+  },
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "제조 서비스",
+    "itemListElement": [
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "OEM 공장 매칭"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "ODM 제조사 찾기"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "사출성형 공장 추천"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "CNC 가공 업체 매칭"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "봉제 공장 찾기"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "식품 임가공 업체"}},
+      {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "무료 견적 요청"}}
+    ]
+  }
+}
+</script>
 </head>
 <body>
 <div id="app"></div>
