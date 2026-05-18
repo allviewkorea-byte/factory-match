@@ -2787,32 +2787,71 @@ function FactoryMap({ addr, name, lat, lng }) {
 }
 
 // ── 스트리트뷰 or 일반지도 폴백 ──────────────────────────────────────────
-const StreetViewOrMap = ({ lat, lng, gmapsKey }) => {
-  const [mode, setMode] = React.useState('loading');
+const StreetViewOrMap = ({ lat, lng, addr, gmapsKey }) => {
+  const [src, setSrc] = React.useState(null);
+  const [isStreetView, setIsStreetView] = React.useState(false);
 
   React.useEffect(() => {
-    if (!lat || !lng || !gmapsKey) { setMode('map'); return; }
-    setMode('loading');
-    fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${gmapsKey}`)
-      .then(r => r.json())
-      .then(d => setMode(d.status === 'OK' ? 'sv' : 'map'))
-      .catch(() => setMode('map'));
-  }, [lat, lng]);
+    if (!gmapsKey) {
+      setSrc(null); return;
+    }
 
-  if (mode === 'loading') return <GearSpinnerCenter size={60} message="지도 불러오는 중..."/>;
+    const tryStreetView = async () => {
+      // 1차: lat/lng로 스트리트뷰 시도
+      if (lat && lng) {
+        try {
+          const r = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${gmapsKey}`);
+          const d = await r.json();
+          if (d.status === 'OK') {
+            setSrc(`https://www.google.com/maps/embed/v1/streetview?key=${gmapsKey}&location=${lat},${lng}&heading=0&pitch=0&fov=90`);
+            setIsStreetView(true);
+            return;
+          }
+        } catch {}
+      }
 
-  const src = mode === 'sv'
-    ? `https://www.google.com/maps/embed/v1/streetview?key=${gmapsKey}&location=${lat},${lng}&heading=0&pitch=0&fov=90`
-    : `https://www.google.com/maps/embed/v1/place?key=${gmapsKey}&q=${lat},${lng}&zoom=16`;
+      // 2차: 주소로 스트리트뷰 시도
+      if (addr) {
+        try {
+          const r = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${gmapsKey}`);
+          const d = await r.json();
+          if (d.status === 'OK') {
+            setSrc(`https://www.google.com/maps/embed/v1/streetview?key=${gmapsKey}&location=${encodeURIComponent(addr)}&heading=0&pitch=0&fov=90`);
+            setIsStreetView(true);
+            return;
+          }
+        } catch {}
+      }
+
+      // 3차: 일반 지도로 폴백
+      setIsStreetView(false);
+      if (lat && lng) {
+        setSrc(`https://www.google.com/maps/embed/v1/place?key=${gmapsKey}&q=${lat},${lng}&zoom=16`);
+      } else if (addr) {
+        setSrc(`https://www.google.com/maps/embed/v1/place?key=${gmapsKey}&q=${encodeURIComponent(addr)}&zoom=16`);
+      }
+    };
+
+    tryStreetView();
+  }, [lat, lng, addr, gmapsKey]);
+
+  if (!src) return <GearSpinnerCenter size={60} message="지도 불러오는 중..."/>;
 
   return (
-    <iframe
-      title={mode === 'sv' ? 'streetview' : 'map'}
-      width="100%"
-      style={{border:0, borderRadius:10, display:'block', minHeight:400}}
-      src={src}
-      allowFullScreen
-    />
+    <div style={{ position:'relative' }}>
+      <iframe
+        title={isStreetView ? 'streetview' : 'map'}
+        width="100%"
+        style={{ border:0, borderRadius:10, display:'block', minHeight:400 }}
+        src={src}
+        allowFullScreen
+      />
+      {isStreetView && (
+        <span style={{ position:'absolute', top:10, left:10, background:'rgba(0,0,0,0.6)', color:'#fff', fontSize:11, fontWeight:600, padding:'3px 8px', borderRadius:4 }}>
+          📍 로드뷰
+        </span>
+      )}
+    </div>
   );
 };
 
