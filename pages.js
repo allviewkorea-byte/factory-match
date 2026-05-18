@@ -1463,55 +1463,7 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
             </div>
           )}
 
-          {/* 4. 추천 카테고리 */}
-          {!loading && aiResults?.topCategories?.length > 0 && (
-            <>
-              <div className="sx-mode-banner is-on">
-                <div className="sx-mode-banner-icon"><Icon name="sparkle" size={16} stroke={2.4}/></div>
-                <div>
-                  <strong>"{q}"</strong>에 가장 적합한 <strong>3개 카테고리</strong>를 추출했습니다 · 매칭률·거래량·리드타임 종합 분석
-                </div>
-                <div className="sx-mode-banner-meta">
-                  <span className="sx-mode-pulse"/>
-                  Claude AI
-                </div>
-              </div>
-              <div className="sx-rec-h">
-                <h2><Icon name="sparkle" size={16} stroke={2.2}/>추천 카테고리</h2>
-              </div>
-              <div className="sx-rec-grid">
-                {aiResults.topCategories.map((r, i) => (
-                  <button key={r.id || i} className="sx-rec" onClick={() => onSearch?.(r.title)}>
-                    <div className="sx-rec-rank">RANK <strong>0{i + 1}</strong></div>
-                    <div className="sx-rec-glyph"><SXGlyph kind={r.glyph}/></div>
-                    <div>
-                      <div className="sx-rec-title-row">
-                        <h3>{r.title}</h3>
-                        <span className="sx-rec-match"><Icon name="sparkle" size={9} stroke={2.6}/>매칭 {r.match}%</span>
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-4)', fontFamily: 'var(--font-num)', marginTop: 2, fontWeight: 500 }}>{r.en}</div>
-                    </div>
-                    <p className="sx-rec-desc">{r.desc}</p>
-                    <div className="sx-rec-tags">{(r.tags || []).map(t => <span key={t} className="sx-rec-tag">{t}</span>)}</div>
-                    <div className="sx-rec-stats">
-                      <div className="sx-rec-count">
-                        <span className="sx-rec-count-n">{r.count}</span>
-                        <span className="sx-rec-count-l">개사</span>
-                      </div>
-                      <div className="sx-rec-stats-meta">
-                        {r.avgLead && <span>평균 리드 <strong>{r.avgLead}</strong></span>}
-                        {r.avgPrice && <span>단가 <strong>{r.avgPrice}</strong></span>}
-                      </div>
-                    </div>
-                    <div className="sx-rec-cta">
-                      <span>제조사 더 보기</span>
-                      <Icon name="arrow_right" size={15} stroke={2.4} className="sx-rec-cta-arrow"/>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          {/* 추천 카테고리 제거됨 */}
         </div>
       )}
     </div>
