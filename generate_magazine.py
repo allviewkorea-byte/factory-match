@@ -983,6 +983,7 @@ def generate_post(post_meta):
         "region":        post_meta.get("region", ""),
         "count_label":   count_label,
         "thumbnail_url": photo["thumb_url"] if photo else "",
+        "thumbnail":     photo["thumb_url"] if photo else "",
         "hero_image_url":photo["url"] if photo else "",
         "published_at":  now,
         "views":         0,

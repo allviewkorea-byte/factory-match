@@ -1224,22 +1224,25 @@ const HomeMagazineCarousel = () => {
       <div className="home-magazine-row">
         <button className="home-mag-arrow home-mag-arrow-left" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0}>‹</button>
         <div className="home-magazine-grid">
-          {visible.map((p, i) => (
+          {visible.map((p, i) => {
+            const thumb = p.thumbnail || p.thumbnail_url || '';
+            return (
             <a key={p.slug || i} href={`/magazine/posts/${p.slug}/`} className="home-mag-card">
-              <div className="home-mag-thumb" style={{ backgroundImage: p.thumbnail ? `url(${p.thumbnail})` : 'none' }}>
-                {!p.thumbnail && <div style={{ width:'100%', height:'100%', background:'#dbeafe' }}/>}
-                {p.type && (
+              <div className="home-mag-thumb" style={{ backgroundImage: thumb ? `url(${thumb})` : 'none' }}>
+                {!thumb && <div style={{ width:'100%', height:'100%', background:'#dbeafe' }}/>}
+                {(p.type || p.category) && (
                   <div style={{ position:'absolute', bottom:10, left:10, background:'rgba(0,0,0,0.65)', color:'#fff', padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:600 }}>
-                    {typeLabel[p.type] || p.type}
+                    {typeLabel[p.type || p.category] || p.type || p.category}
                   </div>
                 )}
               </div>
               <div className="home-mag-info">
                 <p className="home-mag-title">{p.title}</p>
-                <span className="home-mag-date">{p.date || ''}</span>
+                <span className="home-mag-date">{p.date || (p.published_at || '').slice(0,10) || ''}</span>
               </div>
             </a>
-          ))}
+            );
+          })}
         </div>
         <button className="home-mag-arrow home-mag-arrow-right" onClick={() => setIdx(Math.min(maxIdx, idx + 1))} disabled={idx >= maxIdx}>›</button>
       </div>
