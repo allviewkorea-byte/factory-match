@@ -13,13 +13,13 @@ const PROCESS_CATEGORIES = [
   {
     id: 'cutting_machining', label: '절삭/기계가공',
     items: [
-      { id: 'cnc', label: 'CNC 가공', aliases: ['CNC', 'cnc', '머시닝', '기계가공'] },
-      { id: 'cutting', label: '절삭 가공', aliases: ['절삭', '절삭가공'] },
-      { id: 'lathe', label: '선반 가공', aliases: ['선반', '선반가공', '터닝'] },
-      { id: 'milling', label: '밀링 가공', aliases: ['밀링', '밀링가공'] },
+      { id: 'cnc', label: 'CNC 가공', aliases: ['CNC', 'cnc', '머시닝', '기계가공', 'CNC가공', '정밀가공', '밀링', '선반', '절삭'] },
+      { id: 'cutting', label: '절삭 가공', aliases: ['절삭', '절삭가공', '정밀절삭'] },
+      { id: 'lathe', label: '선반 가공', aliases: ['선반', '선반가공', '터닝', 'NC선반'] },
+      { id: 'milling', label: '밀링 가공', aliases: ['밀링', '밀링가공', 'MC가공'] },
       { id: 'grinding', label: '연삭 가공', aliases: ['연삭', '연삭가공', '그라인딩'] },
-      { id: 'edm', label: '방전 가공(EDM)', aliases: ['방전', 'EDM', '방전가공'] },
-      { id: 'laser_cut', label: '레이저 커팅', aliases: ['레이저', '레이저커팅', '레이저가공'] },
+      { id: 'edm', label: '방전 가공(EDM)', aliases: ['방전', 'EDM', '방전가공', '와이어컷'] },
+      { id: 'laser_cut', label: '레이저 커팅', aliases: ['레이저', '레이저커팅', '레이저가공', '레이저절단'] },
       { id: 'waterjet', label: '워터젯', aliases: ['워터젯', '수압절삭'] },
       { id: 'plasma_cut', label: '플라즈마 커팅', aliases: ['플라즈마', '플라즈마커팅'] },
     ]
@@ -27,9 +27,9 @@ const PROCESS_CATEGORIES = [
   {
     id: 'forming', label: '성형/변형',
     items: [
-      { id: 'press', label: '프레스' },
+      { id: 'press', label: '프레스', aliases: ['프레스', '프레스가공', '판금', '판금가공', '스탬핑'] },
       { id: 'forging', label: '단조' },
-      { id: 'casting', label: '주조' },
+      { id: 'casting', label: '주조', aliases: ['주조', '다이캐스팅', '주물', '알루미늄주조', '압주조'] },
       { id: 'die_casting', label: '다이캐스팅' },
       { id: 'extrusion', label: '압출' },
       { id: 'drawing', label: '인발' },
@@ -40,7 +40,7 @@ const PROCESS_CATEGORIES = [
   {
     id: 'plastic', label: '플라스틱/고무 가공',
     items: [
-      { id: 'injection', label: '사출 성형' },
+      { id: 'injection', label: '사출 성형', aliases: ['사출', '사출성형', '플라스틱사출', '인서트사출', '이중사출'] },
       { id: 'injection_multi', label: '다색 사출' },
       { id: 'injection_insert', label: '인서트 사출' },
       { id: 'blow_molding', label: '블로우 성형' },
@@ -53,7 +53,7 @@ const PROCESS_CATEGORIES = [
   {
     id: 'mold_tool', label: '금형/툴링',
     items: [
-      { id: 'mold', label: '금형 제작' },
+      { id: 'mold', label: '금형 제작', aliases: ['금형', '금형제작', '사출금형', '프레스금형', '다이'] },
       { id: 'jig_fixture', label: '지그/픽스처' },
       { id: 'die_making', label: '다이 제작' },
     ]
@@ -61,7 +61,7 @@ const PROCESS_CATEGORIES = [
   {
     id: 'joining', label: '접합/용접',
     items: [
-      { id: 'welding', label: '용접 (일반)' },
+      { id: 'welding', label: '용접 (일반)', aliases: ['용접', '제관', '구조물', '철구조', '용접가공'] },
       { id: 'tig_welding', label: 'TIG 용접' },
       { id: 'mig_welding', label: 'MIG 용접' },
       { id: 'laser_welding', label: '레이저 용접' },
@@ -73,7 +73,7 @@ const PROCESS_CATEGORIES = [
   {
     id: 'surface', label: '표면처리/도장',
     items: [
-      { id: 'painting', label: '도장 (일반)' },
+      { id: 'painting', label: '도장 (일반)', aliases: ['도장', '분체도장', '표면처리', '도금', '아노다이징'] },
       { id: 'powder_coating', label: '분체 도장' },
       { id: 'anodizing', label: '아노다이징' },
       { id: 'plating', label: '도금' },

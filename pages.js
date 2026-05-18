@@ -2211,6 +2211,8 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         const pidMatch = f.processes.includes(activeProcess);
         const textMatch = kwList.some(kw =>
           (f.summary || '').includes(kw) ||
+          (f.factory_type || '').includes(kw) ||
+          (f.name || '').includes(kw) ||
           (f.industries || []).some(ind => ind.includes(kw)) ||
           (f.products || []).some(pr => pr.includes(kw))
         );
@@ -2299,7 +2301,7 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
         <div className="list-search-input">
           <Icon name="search" size={16} stroke={2}/>
           <input
-            placeholder="가공방식 · 소재 · 제품 · 회사명"
+            placeholder="회사명 · 제품 · 소재 · 가공방식"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
