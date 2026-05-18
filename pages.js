@@ -5816,6 +5816,7 @@ function OnboardingPage({ onComplete, onNav }) {
               onFocus={e => e.target.style.borderColor = 'var(--brand, #3b82f6)'}
               onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
+            <p style={{fontSize: 11, color: '#6b7280', marginTop: 5}}>견적 응답·알림 수신 목적으로 수집되며, 마케팅에는 사용되지 않습니다.</p>
           </div>
 
           {/* 역할 선택 - 큰 카드형 */}
