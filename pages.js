@@ -1469,6 +1469,34 @@ const HomePage = ({ onSearch, onOpenFactory, density, authed, onGate, onNav }) =
             </div>
           )}
 
+          {/* AI 상담 이어가기 */}
+          {!loading && aiResults && !aiResults._error && (
+            <div style={{ textAlign:'center', margin:'8px 0 24px' }}>
+              <button
+                onClick={() => {
+                  if (window._aiConsultSession === undefined) window._aiConsultSession = {};
+                  window._aiConsultSession = {
+                    messages: [{ role: 'user', text: q }, { role: 'ai', text: `"${q}"에 대한 분석을 마쳤어요. 더 구체적인 조건이나 궁금한 점이 있으시면 말씀해주세요.` }],
+                    factories: [],
+                    resolvedFactories: [],
+                  };
+                  onNav?.('ai');
+                }}
+                style={{
+                  display:'inline-flex', alignItems:'center', gap:8,
+                  padding:'13px 28px', borderRadius:10, cursor:'pointer',
+                  background:'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                  color:'#fff', border:'none', fontSize:15, fontWeight:600,
+                  boxShadow:'0 4px 14px rgba(29,78,216,0.35)',
+                }}
+              >
+                <span>✨</span>
+                AI 상담으로 이어 가시겠습니까?
+                <span style={{ fontSize:18 }}>→</span>
+              </button>
+            </div>
+          )}
+
           {/* 추천 카테고리 제거됨 */}
         </div>
       )}
