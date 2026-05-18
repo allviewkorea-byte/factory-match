@@ -3004,7 +3004,7 @@ const DetailSideInfo = ({ f, indLabels }) => {
           <span className="detail-email-notice">
             {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
           </span>
-          {!f.email && <EmailAlertButton factoryId={f.id} factoryName={f.name} />}
+
         </dd></>
         {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
         {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
@@ -3914,7 +3914,7 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
                   <span className="detail-email-notice">
                     {f.email ? '이메일로 견적 요청이 가능합니다' : '운영팀을 통해 견적 요청이 전달됩니다'}
                   </span>
-                  {!f.email && <EmailAlertButton factoryId={f.id} factoryName={f.name} />}
+        
                 </dd></>
                 {f.representative && <><dt>대표자</dt><dd>{f.representative}</dd></>}
                 {f.industrial_complex && <><dt>산업단지</dt><dd>{f.industrial_complex}</dd></>}
