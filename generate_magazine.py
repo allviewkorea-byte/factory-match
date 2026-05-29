@@ -25,7 +25,7 @@ import re
 import random
 import hashlib
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
@@ -402,8 +402,8 @@ def weighted_choice(items, weight_key='weight'):
             return item
     return items[-1]
 
-def fetch_unsplash_photo(keyword):
-    """Unsplash에서 사진 1장 가져오기 + 다운로드 트래킹 (약관 6조 준수)"""
+def fetch_unsplash_photo(keyword, slug=""):
+    """Unsplash에서 사진 1장 가져와서 로컬에 저장 (hotlink 방지)"""
     if not UNSPLASH_ACCESS_KEY:
         return None
     try:
@@ -417,19 +417,32 @@ def fetch_unsplash_photo(keyword):
             data = res.json()
             if data.get("results"):
                 photo = random.choice(data["results"][:15])
+                # 다운로드 트래킹 (약관 6조 준수)
                 try:
                     download_url = photo.get("links", {}).get("download_location")
                     if download_url:
-                        requests.get(
-                            download_url,
-                            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-                            timeout=5
-                        )
+                        requests.get(download_url, headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}, timeout=5)
                 except Exception:
                     pass
+
+                # 이미지 직접 다운로드해서 저장
+                local_path = None
+                local_url = None
+                if slug:
+                    try:
+                        img_res = requests.get(photo["urls"]["regular"], timeout=15)
+                        if img_res.status_code == 200:
+                            post_dir = POSTS_DIR / slug
+                            post_dir.mkdir(parents=True, exist_ok=True)
+                            img_path = post_dir / "hero.jpg"
+                            img_path.write_bytes(img_res.content)
+                            local_url = f"/magazine/posts/{slug}/hero.jpg"
+                    except Exception as e:
+                        print(f"  ⚠️ 이미지 저장 실패: {e}")
+
                 return {
-                    "url": photo["urls"]["regular"],
-                    "thumb_url": photo["urls"]["small"],
+                    "url": local_url or photo["urls"]["regular"],
+                    "thumb_url": local_url or photo["urls"]["small"],
                     "author_name": photo["user"]["name"],
                     "author_url": photo["user"]["links"]["html"] + "?utm_source=factorymatch&utm_medium=referral",
                     "unsplash_url": "https://unsplash.com/?utm_source=factorymatch&utm_medium=referral",
@@ -952,8 +965,11 @@ def generate_post(post_meta):
     """글 1개 생성 → HTML 파일 + posts.json 업데이트"""
     print(f"\n📝 생성: {post_meta['title']}")
 
+    slug     = slugify(post_meta["title"])
+    now      = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
+
     print("  📷 Unsplash 사진 조회...")
-    photo = fetch_unsplash_photo(post_meta.get("kw_unsplash", "factory"))
+    photo = fetch_unsplash_photo(post_meta.get("kw_unsplash", "factory"), slug=slug)
 
     factories = []
     if post_meta["type"] == "recommend":
@@ -967,7 +983,6 @@ def generate_post(post_meta):
     factories_html = render_factories_html(factories)
     body_html = markdown_to_html(md_content, factories_html)
 
-    slug     = slugify(post_meta["title"])
     now      = datetime.now(timezone.utc).isoformat()
     count_label = f"{post_meta['count']}선" if post_meta["type"] == "recommend" else None
 

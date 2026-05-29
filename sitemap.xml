@@ -136,4 +136,22 @@
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://factorymatch.co.kr/magazine/posts/금속가공-발주-전-꼭-확인해야-할-체크리스트-6가지/</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://factorymatch.co.kr/magazine/posts/국내-공장-vs-중국-공장-비용품질납기리스크-비교-분석/</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://factorymatch.co.kr/magazine/posts/중국-oem-vs-국내-공장-실제-비용리스크납기-완벽-비교/</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
