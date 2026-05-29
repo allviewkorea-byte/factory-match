@@ -93,50 +93,54 @@ def fetch_unsplash_photo(keyword, used_urls=None, page=1):
 
 
 def update_html_hero(post_slug, photo):
-    """개별 글 HTML 파일에 히어로 이미지 + attribution 삽입/교체"""
+    """개별 글 HTML 파일에 히어로 이미지 + attribution 삽입/교체 (로컬 저장)"""
     html_path = POSTS_DIR / post_slug / "index.html"
     if not html_path.exists():
         return False
-    
+
+    # 이미지 로컬 저장 (hotlink 방지)
+    local_url = photo["url"]
+    try:
+        img_res = requests.get(photo["url"], timeout=15)
+        if img_res.status_code == 200:
+            hero_path = POSTS_DIR / post_slug / "hero.jpg"
+            hero_path.write_bytes(img_res.content)
+            local_url = f"/magazine/posts/{post_slug}/hero.jpg"
+    except Exception as e:
+        print(f"  ⚠️ 이미지 저장 실패: {e}")
+
     html = html_path.read_text(encoding='utf-8')
-    
-    new_hero = f'<div class="mg-article-hero" style="background-image:url(\'{photo["url"]}\');background-size:cover;background-position:center"></div>'
-    
-    # 1. 히어로 영역 background 적용 — 모든 형태 매칭
-    # 기존 어떤 형태든 (gradient/이미지 있음/없음) 다 교체
+
+    new_hero = f'<div class="mg-article-hero" style="background-image:url(\'{local_url}\');background-size:cover;background-position:center"></div>'
+
     pattern = r'<div class="mg-article-hero"[^>]*></div>'
     if re.search(pattern, html):
         html = re.sub(pattern, new_hero, html, count=1)
-    
-    # 2. OG image 메타태그 업데이트 (빈 값이든 기존 URL이든 교체)
+
     html = re.sub(
         r'<meta property="og:image" content="[^"]*">',
         f'<meta property="og:image" content="{photo["url"]}">',
         html
     )
-    
-    # 3. JSON-LD의 image도 업데이트
     html = re.sub(
         r'"image": "[^"]*"',
         f'"image": "{photo["url"]}"',
         html
     )
-    
-    # 4. 기존 attribution 제거 후 새로 추가 (교체 가능하도록)
-    # 기존 "Photo by ..." 블록 제거
     html = re.sub(
         r'<div style="[^"]*">Photo by <a [^>]*>[^<]*</a> on <a [^>]*>Unsplash</a></div>\s*',
         '',
         html
     )
-    
-    # 새 attribution 추가
+
     attribution = f'<div style="font-size:12px;color:#94a3b8;text-align:right;padding:10px 24px;background:#f8fafc;border-bottom:1px solid #e5e7eb">Photo by <a href="{photo["author_url"]}" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">{photo["author_name"]}</a> on <a href="https://unsplash.com/?utm_source=factorymatch&utm_medium=referral" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:none">Unsplash</a></div>'
     html = html.replace(new_hero, new_hero + '\n  ' + attribution)
-    
+
+    # posts.json thumbnail도 로컬 경로로 업데이트
+    photo["local_url"] = local_url
+
     html_path.write_text(html, encoding='utf-8')
     return True
-
 
 def main():
     print("=" * 60)
@@ -200,13 +204,17 @@ def main():
             continue
         
         used_urls.add(photo["url"])
-        
+
         # posts.json 업데이트
         post["thumbnail_url"] = photo["thumb_url"]
         post["hero_image_url"] = photo["url"]
-        
-        # 개별 글 HTML 파일 업데이트
+
+        # 개별 글 HTML 파일 업데이트 (hero.jpg 로컬 저장 포함)
         if update_html_hero(post["slug"], photo):
+            # 로컬 저장 성공 시 thumbnail도 로컬 경로로 업데이트
+            if photo.get("local_url"):
+                post["thumbnail"] = photo["local_url"]
+                post["thumbnail_url"] = photo["local_url"]
             print(f"  ✅ 완료 ({photo['author_name']})")
             updated += 1
         else:
