@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-05-16T04:27:10.258696+00:00",
+  "updated_at": "2026-05-29T14:34:55.896350+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -271,6 +271,57 @@
       "published_at": "2026-05-16T04:27:10.258696+00:00",
       "views": 0,
       "thumbnail": "https://images.unsplash.com/photo-1615990860014-99e51245218c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5NTIxMjJ8MHwxfHNlYXJjaHw1fHx3ZWxkaW5nJTIwZmFjdG9yeXxlbnwwfDB8fHwxNzc4OTA1NTY3fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    },
+    {
+      "slug": "금형비-40-줄인-실전-사례-설계-단계부터-바꾼-것들",
+      "title": "금형비 40% 줄인 실전 사례: 설계 단계부터 바꾼 것들",
+      "subtitle": "플라스틱 사출 제품 개발 과정에서 DFM 설계 변경으로 금형비를 40% 절감한 실제 사례를 정리했습니다.",
+      "meta_desc": "플라스틱 사출 제품 개발 과정에서 DFM 설계 변경으로 금형비를 40% 절감한 실제 사례를 정리했습니다.",
+      "kw": "플라스틱 사출 금형비 절감 사례",
+      "category": "case",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "",
+      "thumbnail": "",
+      "hero_image_url": "",
+      "published_at": "2026-05-29T14:32:11.440045+00:00",
+      "views": 0
+    },
+    {
+      "slug": "레이저-가공-업체-선정-방법-재질별-단가공차납기-가이드",
+      "title": "레이저 가공 업체 선정 방법: 재질별 단가·공차·납기 가이드",
+      "subtitle": "레이저 가공 업체 선정 시 확인해야 할 소재별(SUS·알루미늄·아크릴) 단가 구조, 공차 기준, 납기 협의 방법을 정리했습니다.",
+      "meta_desc": "레이저 가공 업체 선정 시 확인해야 할 소재별(SUS·알루미늄·아크릴) 단가 구조, 공차 기준, 납기 협의 방법을 정리했습니다.",
+      "kw": "레이저가공 업체 선정 방법",
+      "category": "guide",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "",
+      "thumbnail": "",
+      "hero_image_url": "",
+      "published_at": "2026-05-29T14:33:30.670718+00:00",
+      "views": 0
+    },
+    {
+      "slug": "사출성형-공정-완벽-이해-수지-선택부터-금형-설계까지",
+      "title": "사출성형 공정 완벽 이해: 수지 선택부터 금형 설계까지",
+      "subtitle": "사출성형 공정의 원리, 수지별 특성(PP·ABS·PC·나일론), 금형 설계 기준, 불량 유형과 원인을 정리했습니다.",
+      "meta_desc": "사출성형 공정의 원리, 수지별 특성(PP·ABS·PC·나일론), 금형 설계 기준, 불량 유형과 원인을 정리했습니다.",
+      "kw": "사출성형 공정 이해 가이드",
+      "category": "guide",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "",
+      "thumbnail": "",
+      "hero_image_url": "",
+      "published_at": "2026-05-29T14:34:55.896350+00:00",
+      "views": 0
     }
   ]
 }

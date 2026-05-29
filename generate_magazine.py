@@ -632,7 +632,7 @@ def generate_post_content(post_meta):
 전문성 있고 SEO 친화적인 구조로 작성. 타겟 키워드 "{target_kw}" 자연스럽게 포함. 2000-2500자."""
 
     response = claude.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=4000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}]
