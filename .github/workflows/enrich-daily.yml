@@ -1,0 +1,85 @@
+name: 데이터 수집 자동화 (매일 새벽 3시)
+
+on:
+  schedule:
+    # 한국시간 매일 새벽 3시 (UTC 18:00 전날)
+    - cron: '0 18 * * *'
+  workflow_dispatch:  # 수동 실행 허용
+
+jobs:
+  enrich-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # 최대 90분
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 셋업
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install requests
+
+      # ① 좌표 변환 (카카오 - 무료, 3000건/일)
+      - name: ① 주소 → 좌표 변환 (카카오)
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          DAILY_LIMIT: '3000'
+        run: python enrich_geocode.py
+        continue-on-error: true  # 한 단계 실패해도 다음 단계 계속
+
+      # ② 공장설립 API 데이터 보강
+      - name: ② 공장설립 API 보강
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python enrich_factoryon.py
+        continue-on-error: true
+
+      # ③ 네이버 검색 API (웹사이트/전화번호)
+      - name: ③ 네이버 검색 (웹사이트/전화)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+        run: python enrich_website_naver.py
+        continue-on-error: true
+
+      # ④ Google Places (사진/리뷰/평점) - 별도 워크플로우 유지
+      # enrich_google_places.py는 비용 관리 위해 수동 실행 유지
+
+      # ⑤ 크로스체크 (네이버 vs 구글 웹사이트 검증)
+      - name: ⑤ 웹사이트 크로스체크
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python enrich_crosscheck.py
+        continue-on-error: true
+
+      # ⑥ AI 요약 생성 (Claude API - 500건/일)
+      - name: ⑥ AI 요약 생성
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python enrich_ai_summary.py
+        continue-on-error: true
+
+      # ⑦ 이메일 수집 (비용 없음)
+      - name: ⑦ 이메일 수집
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python enrich_email_only.py
+        continue-on-error: true
+
+      - name: 완료 알림
+        run: |
+          echo "✅ 데이터 수집 완료: $(date +'%Y-%m-%d %H:%M')"
+          echo "다음 실행: 내일 새벽 3시 (KST)"
