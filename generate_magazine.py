@@ -746,12 +746,13 @@ def build_faq_schema(body_md):
       "name": "{q.strip()}",
       "acceptedAnswer": {{"@type": "Answer", "text": "{a_clean}"}}
     }}''')
+    items_joined = ",\n".join(items)
     schema = f'''<script type="application/ld+json">
 {{
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-{",\n".join(items)}
+{items_joined}
   ]
 }}
 </script>'''
