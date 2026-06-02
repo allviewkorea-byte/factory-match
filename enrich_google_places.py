@@ -12,7 +12,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://yezxwlzyiqgewpkkyget.supa
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs"
 PROGRESS_FILE = "google_places_progress.json"
 BATCH_SIZE = 100
-DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "10000"))  # 하루 최대 수집
+DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "3500"))  # $60 예산 기준 (~3,500건)
 DELAY = 0.3  # API 호출 간격 (초)
 
 def supabase_get(path, params=None):
