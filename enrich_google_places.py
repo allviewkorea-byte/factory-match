@@ -259,7 +259,7 @@ def main():
                 "google_place_id": place_id,
                 "google_rating": details.get("rating"),
                 "google_reviews": details.get("user_ratings_total"),
-                "google_photos": json.dumps(photos) if photos else None,
+                "google_photos": json.dumps(photos) if photos else "KEEP_EXISTING",
                 "google_hours": json.dumps(hours) if hours else None,
                 "google_review_texts": json.dumps(review_texts) if review_texts else None,
                 "google_address": details.get("formatted_address") or google_address or None,
@@ -283,7 +283,9 @@ def main():
                 update_data["lat"] = lat
                 update_data["lng"] = lng
 
-            status = supabase_patch(fid, update_data)
+            # 기존 데이터 보호: 새로 수집 못한 필드는 업데이트에서 제외
+        update_data = {k: v for k, v in update_data.items() if v != "KEEP_EXISTING"}
+        status = supabase_patch(fid, update_data)
             done_ids.add(fid)
             processed_today += 1
             total_processed += 1
