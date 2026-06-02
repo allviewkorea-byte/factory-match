@@ -415,7 +415,15 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
             src={f.google_photos[0]}
             alt={f.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            onError={e => { e.target.style.display = 'none'; }}
+            onError={e => {
+              e.target.style.display = 'none';
+              const parent = e.target.parentNode;
+              if (parent && !parent.querySelector('.mcard-img-stripes')) {
+                const stripes = document.createElement('div');
+                stripes.className = 'mcard-img-stripes';
+                parent.appendChild(stripes);
+              }
+            }}
           />
         ) : (
           <>
