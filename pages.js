@@ -2320,7 +2320,12 @@ const ListPage = ({ onOpenFactory, onAddRFQ, rfqIds, density, initialQuery }) =>
     if (sort === 'rating') arr.sort((a, b) => b.rating - a.rating);
     else if (sort === 'response') arr.sort((a, b) => a.responseHr - b.responseHr);
     else if (sort === 'deals') arr.sort((a, b) => b.deals - a.deals);
-    else arr.sort((a, b) => (b.rating * 50 + b.deals / 10) - (a.rating * 50 + a.deals / 10));
+    else arr.sort((a, b) => {
+      // 사진 있는 공장 우선 노출 (보너스 점수)
+      const aPhotoBonus = (a.google_photos && a.google_photos.length > 0) ? 200 : 0;
+      const bPhotoBonus = (b.google_photos && b.google_photos.length > 0) ? 200 : 0;
+      return (b.rating * 50 + b.deals / 10 + bPhotoBonus) - (a.rating * 50 + a.deals / 10 + aPhotoBonus);
+    });
     return arr;
   }, [factories, regionRows, activeProcess, activeRegion, moqMax, oemOnly, exportOnly, sort, query, activeIndustry]);
 
