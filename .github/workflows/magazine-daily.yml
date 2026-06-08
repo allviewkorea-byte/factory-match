@@ -2,8 +2,8 @@ name: 매거진 매일 자동 발행
 
 on:
   schedule:
-    # 한국시간 매일 오전 10시 (UTC 01:00)
-    - cron: '0 1 * * *'
+    # 한국시간 격일 오전 10시 (UTC 01:00, 짝수날)
+    - cron: '0 1 */2 * *'
   workflow_dispatch:  # 수동 실행도 허용
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "📭 변경사항 없음"
           else
-            git commit -m "feat: 매거진 자동 발행 1편 ($(date +'%Y-%m-%d'))"
+            git commit -m "feat: 매거진 자동 발행 ($(date +'%Y-%m-%d'))"
             git push
             echo "✅ 1편 발행 완료"
           fi
