@@ -167,7 +167,7 @@ def main():
             city = f.get("city", "")
             existing_place_id = f.get("google_place_id", "")
 
-            # 이미 place_id가 있으면 바로 상세 정보만 수집
+            # 이미 place_id가 있으면 바로 상세 정보 수집 (사진 + 리뷰)
             if existing_place_id and existing_place_id not in ("NOT_FOUND", "ADDR_MISMATCH", "EXCLUDED"):
                 place_id = existing_place_id
                 details = get_place_details(place_id)
@@ -176,7 +176,13 @@ def main():
                     done_ids.add(fid)
                     processed_today += 1
                     continue
-                # 리뷰 텍스트만 업데이트
+                # 사진 수집
+                photos = []
+                for ph in details.get("photos", [])[:5]:
+                    ref = ph.get("photo_reference")
+                    if ref:
+                        photos.append(get_photo_url(ref))
+                # 리뷰 수집
                 review_texts = []
                 for rv in details.get("reviews", [])[:5]:
                     review_texts.append({
@@ -185,11 +191,20 @@ def main():
                         "text": rv.get("text", ""),
                         "time": rv.get("relative_time_description", ""),
                     })
-                supabase_patch(fid, {"google_review_texts": json.dumps(review_texts) if review_texts else "[]"})
+                update_data = {
+                    "google_review_texts": json.dumps(review_texts) if review_texts else "[]",
+                }
+                if photos:
+                    update_data["google_photos"] = json.dumps(photos)
+                    success += 1
+                    print(f"✅ 사진+리뷰: {name} | 사진 {len(photos)}장 리뷰 {len(review_texts)}개")
+                else:
+                    print(f"📝 리뷰만: {name} | 리뷰 {len(review_texts)}개")
+                update_data = {k: v for k, v in update_data.items() if v != "KEEP_EXISTING"}
+                supabase_patch(fid, update_data)
                 done_ids.add(fid)
                 processed_today += 1
                 total_processed += 1
-                print(f"✅ 리뷰수집: {name} | 리뷰 {len(review_texts)}개")
                 continue
 
             # 1단계: place_id 검색
