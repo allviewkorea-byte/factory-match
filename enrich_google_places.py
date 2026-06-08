@@ -138,7 +138,6 @@ def fetch_factories(offset, limit):
     params = {
         "select": "id,name,city,region,address,phone,website",
         "google_place_id": "is.null",  # place_id 없는 공장에서 새로 수집
-        "website": "not.is.null",
         "ai_summary": "not.is.null",
         "offset": offset,
         "limit": limit,
