@@ -7,7 +7,7 @@ import json
 import time
 import os
 
-GOOGLE_API_KEY = os.environ.get("GOOGLE_PLACES_KEY", "AIzaSyAzqW_ONJjW-ccC2A_n2fKUzyzfTbE5YWo")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_PLACES_KEY", "AIzaSyBA8NVjmUKCSbMtqbz0o6nuGECFmjbGGJY")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://yezxwlzyiqgewpkkyget.supabase.co")
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inllenh3bHp5aXFnZXdwa2t5Z2V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODIzNjcsImV4cCI6MjA5Mjk1ODM2N30.8TGX-bvxrxvawNhMPVihvWBKrQrclbIkJ6ops1eAWDs"
 PROGRESS_FILE = "google_places_progress.json"
@@ -107,8 +107,14 @@ def get_place_details(place_id):
     }
     res = requests.get(url, params=params, timeout=10)
     data = res.json()
-    if data.get("status") == "OK":
-        return data.get("result", {})
+    status = data.get("status")
+    if status == "OK":
+        result = data.get("result", {})
+        photos = result.get("photos", [])
+        print(f"  📍 Place Details OK | 사진:{len(photos)}장 | 리뷰:{len(result.get('reviews',[]))}개")
+        return result
+    else:
+        print(f"  ❌ Place Details 실패: {status} | {data.get('error_message','')}")
     return None
 
 def get_photo_url(photo_reference, max_width=800):
@@ -136,6 +142,7 @@ def fetch_factories(offset, limit):
 def main():
     print("=" * 60)
     print("Google Places 정보 수집 시작")
+    print(f"API 키: ...{GOOGLE_API_KEY[-10:]}")
     print("대상: website + ai_summary 있는 공장")
     print("=" * 60)
 
