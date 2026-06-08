@@ -130,8 +130,9 @@ def fetch_factories(offset, limit):
     url = f"{SUPABASE_URL}/rest/v1/factories"
     params = {
         "select": "id,name,city,region,address,phone,website",
-        "google_place_id": "not.is.null",
-        "google_photos": "is.null",
+        "google_place_id": "is.null",  # place_id 없는 공장에서 새로 수집
+        "website": "not.is.null",
+        "ai_summary": "not.is.null",
         "offset": offset,
         "limit": limit,
         "order": "completeness_score.desc",
