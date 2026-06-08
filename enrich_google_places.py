@@ -61,9 +61,16 @@ def find_place(name, address, city):
     }
     res = requests.get(url, params=params, timeout=10)
     data = res.json()
-    if data.get("status") == "OK" and data.get("candidates"):
+    status = data.get("status")
+    if status == "OK" and data.get("candidates"):
         candidate = data["candidates"][0]
         return candidate.get("place_id"), candidate.get("formatted_address", "")
+    # 첫 3번만 상태 출력
+    if not hasattr(find_place, '_log_count'):
+        find_place._log_count = 0
+    if find_place._log_count < 3:
+        print(f"  🔍 find_place 상태: {status} | 쿼리: {query[:30]}")
+        find_place._log_count += 1
     return None, ""
 
 def verify_address(db_region, db_city, db_address, google_address):
