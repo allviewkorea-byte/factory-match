@@ -284,8 +284,8 @@ def main():
                 update_data["lng"] = lng
 
             # 기존 데이터 보호: 새로 수집 못한 필드는 업데이트에서 제외
-        update_data = {k: v for k, v in update_data.items() if v != "KEEP_EXISTING"}
-        status = supabase_patch(fid, update_data)
+            update_data = {k: v for k, v in update_data.items() if v != "KEEP_EXISTING"}
+            status = supabase_patch(fid, update_data)
             done_ids.add(fid)
             processed_today += 1
             total_processed += 1
