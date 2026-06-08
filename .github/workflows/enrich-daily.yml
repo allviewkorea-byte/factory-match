@@ -31,7 +31,7 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           DAILY_LIMIT: '3000'
         run: python enrich_geocode.py
-        continue-on-error: true  # 한 단계 실패해도 다음 단계 계속
+        continue-on-error: true
 
       # ② 공장설립 API 데이터 보강
       - name: ② 공장설립 API 보강
@@ -51,8 +51,15 @@ jobs:
         run: python enrich_website_naver.py
         continue-on-error: true
 
-      # ④ Google Places (사진/리뷰/평점) - 별도 워크플로우 유지
-      # enrich_google_places.py는 비용 관리 위해 수동 실행 유지
+      # ④ Google Places 사진 수집 (100건/일 - 월 $200 무료 크레딧 내)
+      - name: ④ Google Places 사진 수집
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_PLACES_KEY: ${{ secrets.GOOGLE_PLACES_KEY }}
+          DAILY_LIMIT: '100'
+        run: python enrich_google_places.py
+        continue-on-error: true
 
       # ⑤ 크로스체크 (네이버 vs 구글 웹사이트 검증)
       - name: ⑤ 웹사이트 크로스체크
