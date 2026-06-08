@@ -3398,7 +3398,9 @@ const DetailPage = ({ factoryId, onBack, onAddRFQ, rfqIds, onChat, onReport, bac
             <div key={i}
               className={`detail-photo-thumb ${selectedPhoto === url || (!selectedPhoto && i === 0) ? 'is-active' : ''}`}
               onClick={() => setSelectedPhoto(url)}>
-              <img src={url} alt={`${f.name} 사진 ${i+1}`} onError={e => e.target.style.display='none'}/>
+              <img src={url} alt={`${f.name} 사진 ${i+1}`}
+                onError={e => { e.target.style.display='none'; e.target.parentNode.style.background=getCardBg(f); }}
+                onLoad={e => { if (e.target.naturalWidth < 150 || e.target.naturalHeight < 150) { e.target.style.display='none'; e.target.parentNode.style.background=getCardBg(f); } }}/>
             </div>
           ))}
         </div>
