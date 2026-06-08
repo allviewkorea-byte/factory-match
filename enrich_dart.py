@@ -97,11 +97,13 @@ def load_corp_codes():
         corp_code = (item.findtext("corp_code") or "").strip()
         corp_name = (item.findtext("corp_name")  or "").strip()
         if corp_code and corp_name:
+            bizr_no = (item.findtext("bizr_no") or "").replace("-", "").strip()
             # 회사명 정규화: (주), 주식회사 등 제거 후 소문자로
             key = corp_name.replace("(", "").replace(")", "").replace("주식회사", "").replace("(주)", "").replace("㈜", "").strip()
-            mapping[key] = {"corp_code": corp_code, "corp_name": corp_name}
-            mapping[corp_name] = {"corp_code": corp_code, "corp_name": corp_name}
-
+            mapping[key] = {"corp_code": corp_code, "corp_name": corp_name, "bizr_no": bizr_no}
+            mapping[corp_name] = {"corp_code": corp_code, "corp_name": corp_name, "bizr_no": bizr_no}
+            if bizr_no:
+                mapping[bizr_no] = {"corp_code": corp_code, "corp_name": corp_name, "bizr_no": bizr_no}
     with open(CORP_CODE_FILE, "w", encoding="utf-8") as f:
         json.dump(mapping, f, ensure_ascii=False)
 
