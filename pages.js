@@ -3014,6 +3014,7 @@ const FactoryHeroImg = ({ f, selectedPhoto, onPhotoClick }) => {
     <div className="detail-hero-img" style={{ background: '#e8edf2', padding: 0, cursor: type === 'google' ? 'zoom-in' : 'default' }}
       onClick={() => type === 'google' && onPhotoClick && onPhotoClick(src)}>
       <img src={src} alt={f.name} onError={onImgError}
+        onLoad={e => { if (e.target.naturalWidth < 150 || e.target.naturalHeight < 150) onImgError(); }}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}/>
       {type !== 'google' && (
         <div className="detail-hero-img-label">{type === 'sv' ? 'STREET VIEW' : '지도'}</div>
