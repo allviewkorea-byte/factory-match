@@ -415,15 +415,8 @@ const ManufacturerCard = ({ f, onOpen, density, compact = false, onAddRFQ, rfqId
             src={f.google_photos[0]}
             alt={f.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            onError={e => {
-              e.target.style.display = 'none';
-              const parent = e.target.parentNode;
-              if (parent && !parent.querySelector('.mcard-img-stripes')) {
-                const stripes = document.createElement('div');
-                stripes.className = 'mcard-img-stripes';
-                parent.appendChild(stripes);
-              }
-            }}
+            onError={e => { e.target.style.display = 'none'; const p = e.target.parentNode; if (p && !p.querySelector('.mcard-img-stripes')) { const s = document.createElement('div'); s.className = 'mcard-img-stripes'; p.appendChild(s); const ic = document.createElement('div'); ic.className = 'mcard-icon'; p.appendChild(ic); } }}
+            onLoad={e => { if (e.target.naturalWidth < 150 || e.target.naturalHeight < 150) { e.target.style.display = 'none'; const p = e.target.parentNode; if (p && !p.querySelector('.mcard-img-stripes')) { const s = document.createElement('div'); s.className = 'mcard-img-stripes'; p.appendChild(s); } } }}
           />
         ) : (
           <>
@@ -7357,7 +7350,8 @@ const FavoritesTab = ({ ids, onOpenFactory, onNav, compact = false }) => {
               {/* 썸네일 */}
               <div style={{ height:120, background: bg, overflow:'hidden', position:'relative' }}>
                 {photo
-                  ? <img src={photo} alt={f?.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none'; }}/>
+                  ? <img src={photo} alt={f?.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none'; }}
+              onLoad={e => { if (e.target.naturalWidth < 150 || e.target.naturalHeight < 150) e.target.style.display='none'; }}/>
                   : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       <span style={{ fontSize:36 }}>{getCardIcon(f || {})}</span>
                     </div>
