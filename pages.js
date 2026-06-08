@@ -2976,26 +2976,9 @@ const FactoryHeroImg = ({ f, selectedPhoto, onPhotoClick }) => {
       setType('google');
       return;
     }
-    if (!addr) { setType('color'); return; }
-    let cancelled = false;
-
-    fetch(
-      `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(addr)}&key=${GMAPS_KEY}`
-    )
-      .then(r => r.json())
-      .then(d => {
-        if (cancelled) return;
-        if (d.status === 'OK') {
-          setSrc(`https://maps.googleapis.com/maps/api/streetview?size=800x400&location=${encodeURIComponent(addr)}&fov=90&pitch=0&key=${GMAPS_KEY}`);
-          setType('sv');
-        } else {
-          setSrc(`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(addr)}&zoom=16&size=800x400&maptype=roadmap&markers=color:0x3b82f6|${encodeURIComponent(addr)}&scale=2&key=${GMAPS_KEY}`);
-          setType('map');
-        }
-      })
-      .catch(() => { if (!cancelled) setType('color'); });
-
-    return () => { cancelled = true; };
+    // Street View/Static Maps API 호출 제거 (비용 절감)
+    // 사진 없는 공장은 색상 플레이스홀더로 표시
+    setType('color');
   }, [addr, googlePhotos.length, selectedPhoto]);
 
   const onImgError = () => {
