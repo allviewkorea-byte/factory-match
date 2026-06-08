@@ -13,7 +13,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 PROGRESS_FILE = "google_places_progress.json"
 BATCH_SIZE = 100
 DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "3500"))  # $60 예산 기준 (~3,500건)
-DELAY = 0.3  # API 호출 간격 (초)
+DELAY = 0.5  # API 호출 간격 (초)
 
 def supabase_get(path, params=None):
     headers = {
@@ -30,13 +30,22 @@ def supabase_patch(factory_id, data):
         "Content-Type": "application/json",
         "Prefer": "return=minimal",
     }
-    res = requests.patch(
-        f"{SUPABASE_URL}/rest/v1/factories?id=eq.{factory_id}",
-        headers=headers,
-        json=data,
-        timeout=30
-    )
-    return res.status_code
+    for attempt in range(3):
+        try:
+            res = requests.patch(
+                f"{SUPABASE_URL}/rest/v1/factories?id=eq.{factory_id}",
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            if res.status_code in (200, 204):
+                return res.status_code
+            print(f"  ⚠️ PATCH 실패 (시도 {attempt+1}/3): {res.status_code}")
+            time.sleep(1)
+        except Exception as e:
+            print(f"  ⚠️ PATCH 오류 (시도 {attempt+1}/3): {e}")
+            time.sleep(1)
+    return 500
 
 def load_progress():
     if os.path.exists(PROGRESS_FILE):
