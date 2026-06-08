@@ -4,7 +4,7 @@ on:
   schedule:
     # 한국시간 매일 오전 10시 (UTC 01:00)
     - cron: '0 1 * * *'
-  workflow_dispatch:  # 수동 실행도 허용 (GitHub UI에서 버튼으로 실행 가능)
+  workflow_dispatch:  # 수동 실행도 허용
 
 jobs:
   generate-magazine-post:
@@ -28,15 +28,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install anthropic requests
       
-      - name: 매거진 글 3개 자동 생성
+      - name: 매거진 글 1개 자동 생성
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         run: |
-          python generate_magazine.py --daily
-          sleep 10
-          python generate_magazine.py --daily
-          sleep 10
           python generate_magazine.py --daily
       
       - name: Git 커밋 및 푸시
@@ -47,7 +43,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "📭 변경사항 없음"
           else
-            git commit -m "feat: 매거진 자동 발행 3편 ($(date +'%Y-%m-%d'))"
+            git commit -m "feat: 매거진 자동 발행 1편 ($(date +'%Y-%m-%d'))"
             git push
-            echo "✅ 3편 발행 완료"
+            echo "✅ 1편 발행 완료"
           fi
