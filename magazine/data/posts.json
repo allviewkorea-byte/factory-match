@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-04T05:56:00.790912+00:00",
+  "updated_at": "2026-06-09T05:11:40.096060+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -984,6 +984,57 @@
       "thumbnail": "/magazine/posts/oem-vs-odm-차이점-완벽-정리-제조-위탁-방식-선택-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/oem-vs-odm-차이점-완벽-정리-제조-위탁-방식-선택-가이드/hero.jpg",
       "published_at": "2026-06-04T05:56:00.790912+00:00",
+      "views": 0
+    },
+    {
+      "slug": "금속-부품-임가공-업체-3곳-바꿔본-후기-선정-기준이-달라졌다",
+      "title": "금속 부품 임가공 업체 3곳 바꿔본 후기: 선정 기준이 달라졌다",
+      "subtitle": "3개 임가공 업체를 순서대로 사용하면서 배운 것들. 견적서 읽는 법, 불량률 기준, 장기 거래 조건 협상 노하우를 정리했습니다.",
+      "meta_desc": "3개 임가공 업체를 순서대로 사용하면서 배운 것들. 견적서 읽는 법, 불량률 기준, 장기 거래 조건 협상 노하우를 정리했습니다.",
+      "kw": "금속 부품 임가공 업체 발굴 사례",
+      "category": "case",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/금속-부품-임가공-업체-3곳-바꿔본-후기-선정-기준이-달라졌다/hero.jpg",
+      "thumbnail": "/magazine/posts/금속-부품-임가공-업체-3곳-바꿔본-후기-선정-기준이-달라졌다/hero.jpg",
+      "hero_image_url": "/magazine/posts/금속-부품-임가공-업체-3곳-바꿔본-후기-선정-기준이-달라졌다/hero.jpg",
+      "published_at": "2026-06-09T05:10:24.680519+00:00",
+      "views": 0
+    },
+    {
+      "slug": "중국-oem-공장-찾는-법-알리바바부터-직접-발굴까지-완벽-가이드",
+      "title": "중국 OEM 공장 찾는 법: 알리바바부터 직접 발굴까지 완벽 가이드",
+      "subtitle": "중국 OEM 공장을 찾는 방법, 샘플 주문 프로세스, 품질 검수, 결제 조건, 리스크 관리 방법을 정리했습니다.",
+      "meta_desc": "중국 OEM 공장을 찾는 방법, 샘플 주문 프로세스, 품질 검수, 결제 조건, 리스크 관리 방법을 정리했습니다.",
+      "kw": "중국 OEM 공장 찾는 법",
+      "category": "guide",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "",
+      "thumbnail": "",
+      "hero_image_url": "",
+      "published_at": "2026-06-09T05:11:01.752812+00:00",
+      "views": 0
+    },
+    {
+      "slug": "2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링",
+      "title": "2026년 한국 제조업 트렌드 5가지: 스마트팩토리·친환경·리쇼어링",
+      "subtitle": "2026년 한국 제조업의 핵심 트렌드를 분석합니다. 스마트팩토리, 친환경 소재, 리쇼어링, AI 품질 검사 최신 현황.",
+      "meta_desc": "2026년 한국 제조업의 핵심 트렌드를 분석합니다. 스마트팩토리, 친환경 소재, 리쇼어링, AI 품질 검사 최신 현황.",
+      "kw": "2026 제조업 트렌드",
+      "category": "trend",
+      "industry_key": null,
+      "industry_name": "",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링/hero.jpg",
+      "thumbnail": "/magazine/posts/2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링/hero.jpg",
+      "hero_image_url": "/magazine/posts/2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링/hero.jpg",
+      "published_at": "2026-06-09T05:11:40.096060+00:00",
       "views": 0
     }
   ]
