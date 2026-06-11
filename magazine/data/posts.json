@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-09T05:11:40.096060+00:00",
+  "updated_at": "2026-06-11T05:52:36.258301+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1035,6 +1035,23 @@
       "thumbnail": "/magazine/posts/2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링/hero.jpg",
       "hero_image_url": "/magazine/posts/2026년-한국-제조업-트렌드-5가지-스마트팩토리친환경리쇼어링/hero.jpg",
       "published_at": "2026-06-09T05:11:40.096060+00:00",
+      "views": 0
+    },
+    {
+      "slug": "프레스-가공-발주-전-꼭-알아야-할-7가지",
+      "title": "프레스 가공 발주 전 꼭 알아야 할 7가지",
+      "subtitle": "프레스 가공 발주 시 소재 선택, 공차 기준, 금형비 협의까지 7가지 핵심 사항을 정리했습니다.",
+      "meta_desc": "프레스 가공 발주 시 소재 선택, 공차 기준, 금형비 협의까지 7가지 핵심 사항을 정리했습니다.",
+      "kw": "프레스 가공 발주",
+      "category": "guide",
+      "industry_key": "press",
+      "industry_name": "프레스",
+      "region": "",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/프레스-가공-발주-전-꼭-알아야-할-7가지/hero.jpg",
+      "thumbnail": "/magazine/posts/프레스-가공-발주-전-꼭-알아야-할-7가지/hero.jpg",
+      "hero_image_url": "/magazine/posts/프레스-가공-발주-전-꼭-알아야-할-7가지/hero.jpg",
+      "published_at": "2026-06-11T05:52:36.258301+00:00",
       "views": 0
     }
   ]
