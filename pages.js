@@ -11256,7 +11256,12 @@ const AiConsultPage = ({ onOpenFactory, authed, onGate, factoryContext, userProf
       });
       const data = await resp.json();
       if (data.reply) {
-        setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+        // JSON 코드블록 및 raw JSON 제거
+        const cleanReply = (data.reply || '')
+          .replace(/```[\s\S]*?```/g, '')
+          .replace(/\{[^{}]*"searchReady"[^{}]*\}/g, '')
+          .trim();
+        setMessages(prev => [...prev, { role: 'ai', text: cleanReply || data.reply }]);
       }
       if (data.matchedFactories && data.matchedFactories.length > 0) {
         setFactories(data.matchedFactories);
