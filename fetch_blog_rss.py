@@ -59,6 +59,8 @@ def fetch_rss():
         if not title or not link:
             continue
 
+        # 추적 쿼리스트링 제거 (?fromRss=true&trackingCode=rss 등)
+        link = link.split("?")[0]
         # PC URL → 모바일 URL (구글 모바일 우선 색인에 유리)
         mobile_link = link.replace("https://blog.naver.com/", "https://m.blog.naver.com/")
         mobile_link = mobile_link.replace("http://blog.naver.com/", "https://m.blog.naver.com/")
