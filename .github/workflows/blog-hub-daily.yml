@@ -28,9 +28,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
+      - name: RSS 응답 진단 (임시)
+        run: |
+          echo "=== allviewkorea RSS 응답 진단 ==="
+          curl -s -o blog/_rss_debug.xml -w "HTTP: %{http_code} | size: %{size_download} bytes\n" \
+            -A "Mozilla/5.0" "https://rss.blog.naver.com/allviewkorea.xml" || true
+          echo "--- 앞 600자 ---"
+          head -c 600 blog/_rss_debug.xml || true
+          echo ""
+
       - name: 네이버 블로그 RSS 수집 및 허브 생성
         run: |
-          python fetch_blog_rss.py
+          python fetch_blog_rss.py || echo "스크립트 비정상 종료(진단 계속)"
 
       - name: Git 커밋 및 푸시
         run: |
@@ -40,7 +49,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "📭 변경사항 없음"
           else
-            git commit -m "feat: 블로그 허브 자동 갱신 ($(date +'%Y-%m-%d'))"
+            git commit -m "chore: 블로그 허브 갱신/진단 ($(date +'%Y-%m-%d'))"
             git push
-            echo "✅ 블로그 허브 갱신 완료"
+            echo "✅ 완료"
           fi
