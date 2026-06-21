@@ -24,7 +24,7 @@ from email.utils import parsedate_to_datetime
 
 import requests
 
-BLOG_ID = "allviewkorea"
+BLOG_ID = "dlwjdgh1889"
 RSS_URL = f"https://rss.blog.naver.com/{BLOG_ID}.xml"
 SITE = "https://factorymatch.co.kr"
 HUB_PATH = "/blog/"
