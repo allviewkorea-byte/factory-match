@@ -41,6 +41,7 @@ jobs:
             echo "📭 변경사항 없음"
           else
             git commit -m "feat: 블로그 허브 자동 갱신 ($(date +'%Y-%m-%d'))"
+            git pull --rebase origin main 2>/dev/null || true
             git push
             echo "✅ 블로그 허브 갱신 완료"
           fi
