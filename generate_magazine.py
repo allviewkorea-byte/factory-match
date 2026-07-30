@@ -1133,8 +1133,9 @@ def main():
         mode = "daily"
 
     if mode == "daily":
-        print("\n🌅 매일 자동 생성 모드 (3편/일)\n")
-        posts_meta = plan_daily_posts(n=3)
+        n = int(os.environ.get("MAGAZINE_DAILY_COUNT", "1"))
+        print(f"\n🌅 매일 자동 생성 모드 ({n}편/일)\n")
+        posts_meta = plan_daily_posts(n=n)
         success = 0
         for pm in posts_meta:
             try:
