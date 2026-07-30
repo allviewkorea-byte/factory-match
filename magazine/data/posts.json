@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-11T05:52:36.258301+00:00",
+  "updated_at": "2026-07-30T14:40:16.702316+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1052,6 +1052,23 @@
       "thumbnail": "/magazine/posts/프레스-가공-발주-전-꼭-알아야-할-7가지/hero.jpg",
       "hero_image_url": "/magazine/posts/프레스-가공-발주-전-꼭-알아야-할-7가지/hero.jpg",
       "published_at": "2026-06-11T05:52:36.258301+00:00",
+      "views": 0
+    },
+    {
+      "slug": "부산-사출-성형-업체-찾는-법",
+      "title": "부산 사출 성형 업체 찾는 법",
+      "subtitle": "부산 사출 성형 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "meta_desc": "부산 사출 성형 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "kw": "부산 사출 성형 업체",
+      "category": "guide",
+      "industry_key": "injection",
+      "industry_name": "사출 성형",
+      "region": "부산",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/부산-사출-성형-업체-찾는-법/hero.jpg",
+      "thumbnail": "/magazine/posts/부산-사출-성형-업체-찾는-법/hero.jpg",
+      "hero_image_url": "/magazine/posts/부산-사출-성형-업체-찾는-법/hero.jpg",
+      "published_at": "2026-07-30T14:40:16.702316+00:00",
       "views": 0
     }
   ]
