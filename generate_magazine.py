@@ -1045,6 +1045,32 @@ def plan_initial_posts():
             })
     return plan
 
+ANGLES = [
+    ("업체 찾는 법", "{region} {name} 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.", "guide"),
+    ("견적 비교 가이드", "{region} {name} 견적을 제대로 비교하는 기준과 체크포인트를 정리했습니다.", "compare"),
+    ("발주 전 체크리스트", "{region} {name} 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.", "checklist"),
+]
+
+
+def plan_regional_topics():
+    """지역 x 업종 x 앵글 조합 토픽 자동 생성 (예비 풀)"""
+    topics = []
+    for ind in INDUSTRIES:
+        for region in REGIONS:
+            for suffix, desc_tpl, ptype in ANGLES:
+                topics.append({
+                    "type":        ptype,
+                    "count":       0,
+                    "region":      region,
+                    "title":       f"{region} {ind['name']} {suffix}",
+                    "meta_desc":   desc_tpl.format(region=region, name=ind["name"]),
+                    "kw":          f"{region} {ind['name']} 업체",
+                    "industry":    ind["key"],
+                    "kw_unsplash": ind["kw_unsplash"],
+                })
+    return topics
+
+
 def plan_daily_posts(n=3):
     """매일 n개 글 계획 — 정보성 SEO 토픽만 (가이드·비교·트렌드·체크리스트·케이스)"""
     try:
@@ -1073,7 +1099,12 @@ def plan_daily_posts(n=3):
     fresh = [c for c in candidates if slugify(c["title"]) not in existing_slugs]
 
     if not fresh:
-        print("⚠️ 모든 후보가 이미 발행됨. 토픽 풀 확장 필요.")
+        print("ℹ️ 기본 토픽 소진 → 지역×업종 토픽 풀로 전환합니다.")
+        fresh = [c for c in plan_regional_topics()
+                 if slugify(c["title"]) not in existing_slugs]
+
+    if not fresh:
+        print("⚠️ 지역 토픽까지 모두 발행됨. 토픽 풀 확장 필요.")
         return []
 
     chosen = random.sample(fresh, min(n, len(fresh)))
@@ -1113,8 +1144,10 @@ def main():
             except Exception as e:
                 print(f"  ❌ 실패: {e}")
         print(f"\n✅ 오늘 발행 완료: {success}/{len(posts_meta)}편")
-        if success == 0:
+        if success == 0 and posts_meta:
             sys.exit(1)
+        if not posts_meta:
+            print("ℹ️ 오늘 발행할 신규 토픽이 없습니다. (실패 아님)")
     else:
         plan = plan_initial_posts()
         print(f"\n📋 초기 생성 계획: {len(plan)}개 글\n")
