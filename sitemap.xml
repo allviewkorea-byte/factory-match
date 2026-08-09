@@ -431,8 +431,9 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://factorymatch.co.kr/blog/</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://factorymatch.co.kr/magazine/posts/서울-봉제-공장-견적-비교-가이드/</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
