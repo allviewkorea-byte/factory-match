@@ -437,8 +437,9 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://factorymatch.co.kr/blog/</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://factorymatch.co.kr/magazine/posts/경기-금형-제작-업체-찾는-법/</loc>
+    <lastmod>2026-08-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
