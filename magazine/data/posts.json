@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-13T03:27:48.684002+00:00",
+  "updated_at": "2026-08-15T02:14:47.093279+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1205,6 +1205,23 @@
       "thumbnail": "/magazine/posts/인천-프레스-견적-비교-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/인천-프레스-견적-비교-가이드/hero.jpg",
       "published_at": "2026-08-13T03:27:48.684002+00:00",
+      "views": 0
+    },
+    {
+      "slug": "부산-봉제-공장-발주-전-체크리스트",
+      "title": "부산 봉제 공장 발주 전 체크리스트",
+      "subtitle": "부산 봉제 공장 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "meta_desc": "부산 봉제 공장 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "kw": "부산 봉제 공장 업체",
+      "category": "checklist",
+      "industry_key": "sewing",
+      "industry_name": "봉제 공장",
+      "region": "부산",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/부산-봉제-공장-발주-전-체크리스트/hero.jpg",
+      "thumbnail": "/magazine/posts/부산-봉제-공장-발주-전-체크리스트/hero.jpg",
+      "hero_image_url": "/magazine/posts/부산-봉제-공장-발주-전-체크리스트/hero.jpg",
+      "published_at": "2026-08-15T02:14:47.093279+00:00",
       "views": 0
     }
   ]
