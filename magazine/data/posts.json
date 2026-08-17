@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-15T02:14:47.093279+00:00",
+  "updated_at": "2026-08-17T02:21:09.960225+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1222,6 +1222,23 @@
       "thumbnail": "/magazine/posts/부산-봉제-공장-발주-전-체크리스트/hero.jpg",
       "hero_image_url": "/magazine/posts/부산-봉제-공장-발주-전-체크리스트/hero.jpg",
       "published_at": "2026-08-15T02:14:47.093279+00:00",
+      "views": 0
+    },
+    {
+      "slug": "충남-용접-제관-발주-전-체크리스트",
+      "title": "충남 용접 / 제관 발주 전 체크리스트",
+      "subtitle": "충남 용접 / 제관 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "meta_desc": "충남 용접 / 제관 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "kw": "충남 용접 / 제관 업체",
+      "category": "checklist",
+      "industry_key": "welding",
+      "industry_name": "용접 / 제관",
+      "region": "충남",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/충남-용접-제관-발주-전-체크리스트/hero.jpg",
+      "thumbnail": "/magazine/posts/충남-용접-제관-발주-전-체크리스트/hero.jpg",
+      "hero_image_url": "/magazine/posts/충남-용접-제관-발주-전-체크리스트/hero.jpg",
+      "published_at": "2026-08-17T02:21:09.960225+00:00",
       "views": 0
     }
   ]
