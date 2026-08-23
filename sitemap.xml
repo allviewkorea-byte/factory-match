@@ -473,8 +473,9 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://factorymatch.co.kr/blog/</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://factorymatch.co.kr/magazine/posts/충북-도장-표면처리-발주-전-체크리스트/</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

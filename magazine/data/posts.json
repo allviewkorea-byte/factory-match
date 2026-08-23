@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-21T02:24:23.622110+00:00",
+  "updated_at": "2026-08-23T02:24:54.763900+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1273,6 +1273,23 @@
       "thumbnail": "/magazine/posts/경기-프레스-견적-비교-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/경기-프레스-견적-비교-가이드/hero.jpg",
       "published_at": "2026-08-21T02:24:23.622110+00:00",
+      "views": 0
+    },
+    {
+      "slug": "충북-도장-표면처리-발주-전-체크리스트",
+      "title": "충북 도장 / 표면처리 발주 전 체크리스트",
+      "subtitle": "충북 도장 / 표면처리 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "meta_desc": "충북 도장 / 표면처리 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "kw": "충북 도장 / 표면처리 업체",
+      "category": "checklist",
+      "industry_key": "coating",
+      "industry_name": "도장 / 표면처리",
+      "region": "충북",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/충북-도장-표면처리-발주-전-체크리스트/hero.jpg",
+      "thumbnail": "/magazine/posts/충북-도장-표면처리-발주-전-체크리스트/hero.jpg",
+      "hero_image_url": "/magazine/posts/충북-도장-표면처리-발주-전-체크리스트/hero.jpg",
+      "published_at": "2026-08-23T02:24:54.763900+00:00",
       "views": 0
     }
   ]
