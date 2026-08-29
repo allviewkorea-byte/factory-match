@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-27T11:00:55.889788+00:00",
+  "updated_at": "2026-08-29T07:43:49.315598+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1324,6 +1324,23 @@
       "thumbnail": "/magazine/posts/경기-cnc-가공-견적-비교-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/경기-cnc-가공-견적-비교-가이드/hero.jpg",
       "published_at": "2026-08-27T11:00:55.889788+00:00",
+      "views": 0
+    },
+    {
+      "slug": "전북-프레스-견적-비교-가이드",
+      "title": "전북 프레스 견적 비교 가이드",
+      "subtitle": "전북 프레스 견적을 제대로 비교하는 기준과 체크포인트를 정리했습니다.",
+      "meta_desc": "전북 프레스 견적을 제대로 비교하는 기준과 체크포인트를 정리했습니다.",
+      "kw": "전북 프레스 업체",
+      "category": "compare",
+      "industry_key": "press",
+      "industry_name": "프레스",
+      "region": "전북",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/전북-프레스-견적-비교-가이드/hero.jpg",
+      "thumbnail": "/magazine/posts/전북-프레스-견적-비교-가이드/hero.jpg",
+      "hero_image_url": "/magazine/posts/전북-프레스-견적-비교-가이드/hero.jpg",
+      "published_at": "2026-08-29T07:43:49.315598+00:00",
       "views": 0
     }
   ]
