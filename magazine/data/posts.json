@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-29T07:43:49.315598+00:00",
+  "updated_at": "2026-08-31T06:48:30.184852+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1341,6 +1341,23 @@
       "thumbnail": "/magazine/posts/전북-프레스-견적-비교-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/전북-프레스-견적-비교-가이드/hero.jpg",
       "published_at": "2026-08-29T07:43:49.315598+00:00",
+      "views": 0
+    },
+    {
+      "slug": "대전-주조-공장-발주-전-체크리스트",
+      "title": "대전 주조 공장 발주 전 체크리스트",
+      "subtitle": "대전 주조 공장 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "meta_desc": "대전 주조 공장 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "kw": "대전 주조 공장 업체",
+      "category": "checklist",
+      "industry_key": "casting",
+      "industry_name": "주조 공장",
+      "region": "대전",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/대전-주조-공장-발주-전-체크리스트/hero.jpg",
+      "thumbnail": "/magazine/posts/대전-주조-공장-발주-전-체크리스트/hero.jpg",
+      "hero_image_url": "/magazine/posts/대전-주조-공장-발주-전-체크리스트/hero.jpg",
+      "published_at": "2026-08-31T06:48:30.184852+00:00",
       "views": 0
     }
   ]
