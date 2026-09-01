@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-08-31T06:48:30.184852+00:00",
+  "updated_at": "2026-09-01T06:07:27.667935+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1358,6 +1358,23 @@
       "thumbnail": "/magazine/posts/대전-주조-공장-발주-전-체크리스트/hero.jpg",
       "hero_image_url": "/magazine/posts/대전-주조-공장-발주-전-체크리스트/hero.jpg",
       "published_at": "2026-08-31T06:48:30.184852+00:00",
+      "views": 0
+    },
+    {
+      "slug": "전남-cnc-가공-견적-비교-가이드",
+      "title": "전남 CNC 가공 견적 비교 가이드",
+      "subtitle": "전남 CNC 가공 견적을 제대로 비교하는 기준과 체크포인트를 정리했습니다.",
+      "meta_desc": "전남 CNC 가공 견적을 제대로 비교하는 기준과 체크포인트를 정리했습니다.",
+      "kw": "전남 CNC 가공 업체",
+      "category": "compare",
+      "industry_key": "cnc",
+      "industry_name": "CNC 가공",
+      "region": "전남",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/전남-cnc-가공-견적-비교-가이드/hero.jpg",
+      "thumbnail": "/magazine/posts/전남-cnc-가공-견적-비교-가이드/hero.jpg",
+      "hero_image_url": "/magazine/posts/전남-cnc-가공-견적-비교-가이드/hero.jpg",
+      "published_at": "2026-09-01T06:07:27.667935+00:00",
       "views": 0
     }
   ]
