@@ -515,8 +515,9 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://factorymatch.co.kr/blog/</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://factorymatch.co.kr/magazine/posts/전북-cnc-가공-업체-찾는-법/</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

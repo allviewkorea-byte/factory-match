@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-03T05:33:35.290647+00:00",
+  "updated_at": "2026-09-05T05:23:55.781943+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1392,6 +1392,23 @@
       "thumbnail": "",
       "hero_image_url": "",
       "published_at": "2026-09-03T05:33:35.290647+00:00",
+      "views": 0
+    },
+    {
+      "slug": "전북-cnc-가공-업체-찾는-법",
+      "title": "전북 CNC 가공 업체 찾는 법",
+      "subtitle": "전북 CNC 가공 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "meta_desc": "전북 CNC 가공 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "kw": "전북 CNC 가공 업체",
+      "category": "guide",
+      "industry_key": "cnc",
+      "industry_name": "CNC 가공",
+      "region": "전북",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/전북-cnc-가공-업체-찾는-법/hero.jpg",
+      "thumbnail": "/magazine/posts/전북-cnc-가공-업체-찾는-법/hero.jpg",
+      "hero_image_url": "/magazine/posts/전북-cnc-가공-업체-찾는-법/hero.jpg",
+      "published_at": "2026-09-05T05:23:55.781943+00:00",
       "views": 0
     }
   ]
