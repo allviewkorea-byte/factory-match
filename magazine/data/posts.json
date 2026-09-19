@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-17T05:53:33.247013+00:00",
+  "updated_at": "2026-09-19T05:33:59.150151+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1511,6 +1511,23 @@
       "thumbnail": "/magazine/posts/전북-용접-제관-업체-찾는-법/hero.jpg",
       "hero_image_url": "/magazine/posts/전북-용접-제관-업체-찾는-법/hero.jpg",
       "published_at": "2026-09-17T05:53:33.247013+00:00",
+      "views": 0
+    },
+    {
+      "slug": "부산-금형-제작-발주-전-체크리스트",
+      "title": "부산 금형 제작 발주 전 체크리스트",
+      "subtitle": "부산 금형 제작 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "meta_desc": "부산 금형 제작 공장에 발주하기 전 반드시 확인해야 할 항목을 정리했습니다.",
+      "kw": "부산 금형 제작 업체",
+      "category": "checklist",
+      "industry_key": "mold",
+      "industry_name": "금형 제작",
+      "region": "부산",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/부산-금형-제작-발주-전-체크리스트/hero.jpg",
+      "thumbnail": "/magazine/posts/부산-금형-제작-발주-전-체크리스트/hero.jpg",
+      "hero_image_url": "/magazine/posts/부산-금형-제작-발주-전-체크리스트/hero.jpg",
+      "published_at": "2026-09-19T05:33:59.150151+00:00",
       "views": 0
     }
   ]
