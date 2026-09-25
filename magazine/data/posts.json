@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-09-23T05:38:55.212867+00:00",
+  "updated_at": "2026-09-25T05:58:20.510525+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1562,6 +1562,23 @@
       "thumbnail": "/magazine/posts/전남-사출-성형-발주-전-체크리스트/hero.jpg",
       "hero_image_url": "/magazine/posts/전남-사출-성형-발주-전-체크리스트/hero.jpg",
       "published_at": "2026-09-23T05:38:55.212867+00:00",
+      "views": 0
+    },
+    {
+      "slug": "경남-cnc-가공-업체-찾는-법",
+      "title": "경남 CNC 가공 업체 찾는 법",
+      "subtitle": "경남 CNC 가공 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "meta_desc": "경남 CNC 가공 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "kw": "경남 CNC 가공 업체",
+      "category": "guide",
+      "industry_key": "cnc",
+      "industry_name": "CNC 가공",
+      "region": "경남",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/경남-cnc-가공-업체-찾는-법/hero.jpg",
+      "thumbnail": "/magazine/posts/경남-cnc-가공-업체-찾는-법/hero.jpg",
+      "hero_image_url": "/magazine/posts/경남-cnc-가공-업체-찾는-법/hero.jpg",
+      "published_at": "2026-09-25T05:58:20.510525+00:00",
       "views": 0
     }
   ]
