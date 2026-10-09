@@ -617,8 +617,9 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://factorymatch.co.kr/blog/</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://factorymatch.co.kr/magazine/posts/대구-cnc-가공-발주-전-체크리스트/</loc>
+    <lastmod>2026-10-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
