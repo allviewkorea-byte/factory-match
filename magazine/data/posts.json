@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-25T05:49:09.485469+00:00",
+  "updated_at": "2026-10-27T06:04:42.562450+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -1800,6 +1800,23 @@
       "thumbnail": "/magazine/posts/경북-사출-성형-견적-비교-가이드/hero.jpg",
       "hero_image_url": "/magazine/posts/경북-사출-성형-견적-비교-가이드/hero.jpg",
       "published_at": "2026-10-25T05:49:09.485469+00:00",
+      "views": 0
+    },
+    {
+      "slug": "광주-봉제-공장-업체-찾는-법",
+      "title": "광주 봉제 공장 업체 찾는 법",
+      "subtitle": "광주 봉제 공장 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "meta_desc": "광주 봉제 공장 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "kw": "광주 봉제 공장 업체",
+      "category": "guide",
+      "industry_key": "sewing",
+      "industry_name": "봉제 공장",
+      "region": "광주",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/광주-봉제-공장-업체-찾는-법/hero.jpg",
+      "thumbnail": "/magazine/posts/광주-봉제-공장-업체-찾는-법/hero.jpg",
+      "hero_image_url": "/magazine/posts/광주-봉제-공장-업체-찾는-법/hero.jpg",
+      "published_at": "2026-10-27T06:04:42.562450+00:00",
       "views": 0
     }
   ]
