@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-19T08:30:54.217161+00:00",
+  "updated_at": "2026-11-21T08:06:11.326176+00:00",
   "posts": [
     {
       "slug": "서울-cnc-가공-업체-추천-3선-정밀가공-발주-가이드",
@@ -2021,6 +2021,23 @@
       "thumbnail": "/magazine/posts/부산-용접-제관-업체-찾는-법/hero.jpg",
       "hero_image_url": "/magazine/posts/부산-용접-제관-업체-찾는-법/hero.jpg",
       "published_at": "2026-11-19T08:30:54.217161+00:00",
+      "views": 0
+    },
+    {
+      "slug": "울산-용접-제관-업체-찾는-법",
+      "title": "울산 용접 / 제관 업체 찾는 법",
+      "subtitle": "울산 용접 / 제관 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "meta_desc": "울산 용접 / 제관 업체를 찾는 실전 방법과 선정 기준을 정리했습니다.",
+      "kw": "울산 용접 / 제관 업체",
+      "category": "guide",
+      "industry_key": "welding",
+      "industry_name": "용접 / 제관",
+      "region": "울산",
+      "count_label": null,
+      "thumbnail_url": "/magazine/posts/울산-용접-제관-업체-찾는-법/hero.jpg",
+      "thumbnail": "/magazine/posts/울산-용접-제관-업체-찾는-법/hero.jpg",
+      "hero_image_url": "/magazine/posts/울산-용접-제관-업체-찾는-법/hero.jpg",
+      "published_at": "2026-11-21T08:06:11.326176+00:00",
       "views": 0
     }
   ]
